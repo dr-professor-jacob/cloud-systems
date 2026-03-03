@@ -1,0 +1,7 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+mits_key
+mits_key.pub
+inventory.ini
+hosts.yml

@@ -1,0 +1,20 @@
+---
+- name: Setup Database Server
+  hosts: db_servers
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install MariaDB
+      apt:
+        name: mariadb-server
+        state: present
+
+    - name: Ensure MariaDB is running and enabled
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
