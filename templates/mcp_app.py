@@ -68,4 +68,4 @@ def write_activity(summary: str, calls: str) -> str:
     return f"Written to {path}"
 
 
-mcp.run(transport="sse")
+mcp.run(transport="streamable-http", host="127.0.0.1", port=8000)
