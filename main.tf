@@ -1,10 +1,19 @@
-﻿provider "azurerm" {
+﻿terraform {
+  backend "azurerm" {
+    resource_group_name  = "tfstate-rg"
+    storage_account_name = "cloudv3tfstate"
+    container_name       = "tfstate"
+    key                  = "cloud-systems.tfstate"
+  }
+}
+
+provider "azurerm" {
   features {}
 }
 
 resource "azurerm_resource_group" "rg" {
   name     = "cloud-v3"
-  location = "southcentralus"
+  location = var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -48,7 +57,19 @@ resource "azurerm_network_security_group" "app_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = "75.188.18.74/32"
+    source_address_prefix      = var.allowed_ssh_ip
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowSSHCloudShell"
+    priority                   = 101
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "AzureCloud"
     destination_address_prefix = "*"
   }
 
@@ -60,6 +81,18 @@ resource "azurerm_network_security_group" "app_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTPS"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
@@ -78,7 +111,7 @@ resource "azurerm_network_security_group" "db_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "3306"
-    source_address_prefix      = "*"
+    source_address_prefix      = "10.0.1.0/24"
     destination_address_prefix = "*"
   }
 
@@ -135,11 +168,11 @@ resource "azurerm_linux_virtual_machine" "app_vm" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_B2pts_v2"
-  admin_username      = "jrick"
+  admin_username      = var.admin_username
   disable_password_authentication = true
 
   admin_ssh_key {
-    username   = "jrick"
+    username   = var.admin_username
     public_key = file("mits_key.pub")
   }
 
@@ -163,11 +196,11 @@ resource "azurerm_linux_virtual_machine" "db_vm" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_B2pts_v2"
-  admin_username      = "jrick"
+  admin_username      = var.admin_username
   disable_password_authentication = true
 
   admin_ssh_key {
-    username   = "jrick"
+    username   = var.admin_username
     public_key = file("mits_key.pub")
   }
 
@@ -191,4 +224,9 @@ resource "local_file" "ansible_inventory" {
     public_ip = azurerm_public_ip.app_pip.ip_address
   })
   filename = "inventory.ini"
+}
+
+resource "local_file" "ansible_vars" {
+  content  = "app_domain: \"${azurerm_public_ip.app_pip.ip_address}.nip.io\"\n"
+  filename = "group_vars/all/terraform_outputs.yml"
 }
