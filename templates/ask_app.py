@@ -15,8 +15,8 @@ app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["POST"])
 
 RATE_FILE   = Path("/opt/ask-app/rate.json")
-MAX_PER_IP  = 3    # per rolling 24h window
-MAX_GLOBAL  = 100  # per calendar day
+MAX_PER_IP  = 10   # per rolling 24h window
+MAX_GLOBAL  = 500  # per calendar day
 MAX_INPUT   = 300  # characters
 MAX_TOKENS  = 250
 
