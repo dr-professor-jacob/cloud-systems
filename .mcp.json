@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cloud-infra": {
+      "type": "sse",
+      "url": "https://20.225.50.51.nip.io/mcp/sse"
+    }
+  }
+}

@@ -461,6 +461,28 @@
 
     </div>
 
+    <!-- Live metrics -->
+    <div class="card" id="metrics-card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>Live Server Metrics</span>
+        <span id="metrics-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
+      </div>
+      <div class="row thirds" id="metrics-stats">
+        <div class="stat"><div class="stat-num" id="m-load">—</div><div class="stat-label">Load (1m)</div></div>
+        <div class="stat"><div class="stat-num" id="m-mem">—</div><div class="stat-label">Memory Used</div></div>
+        <div class="stat"><div class="stat-num" id="m-disk">—</div><div class="stat-label">Disk Used</div></div>
+      </div>
+      <table class="vis-table" style="margin-top:1rem;">
+        <tr><td>Uptime</td><td id="m-uptime">—</td></tr>
+        <tr><td>Load avg (1m / 5m / 15m)</td><td id="m-loadfull">—</td></tr>
+        <tr><td>Memory</td><td id="m-memfull">—</td></tr>
+        <tr><td>Disk</td><td id="m-diskfull">—</td></tr>
+        <tr><td>Nginx connections</td><td id="m-nginx">—</td></tr>
+        <tr><td>Last updated by Claude</td><td id="m-updated">—</td></tr>
+      </table>
+      <div class="note" id="metrics-note" style="display:none;"></div>
+    </div>
+
     <!-- Commands -->
     <div class="card">
       <div class="card-title">Deployment — Two Commands</div>
@@ -587,5 +609,35 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
   </main>
 
   <script src="/session.js"></script>
+  <script>
+    function loadMetrics() {
+      fetch('/metrics.json?t=' + Date.now())
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(d => {
+          document.getElementById('m-load').textContent    = d.load ? d.load.split(' ')[0] : '—';
+          document.getElementById('m-mem').textContent     = d.mem_used || '—';
+          document.getElementById('m-disk').textContent    = d.disk_pct ? d.disk_pct + '%' : '—';
+          document.getElementById('m-uptime').textContent  = d.uptime || '—';
+          document.getElementById('m-loadfull').textContent= d.load || '—';
+          document.getElementById('m-memfull').textContent = (d.mem_used && d.mem_total) ? d.mem_used + ' / ' + d.mem_total : '—';
+          document.getElementById('m-diskfull').textContent= (d.disk_used && d.disk_total) ? d.disk_used + ' / ' + d.disk_total + ' (' + d.disk_pct + '%)' : '—';
+          document.getElementById('m-nginx').textContent   = d.nginx_connections || '—';
+          if (d.updated) {
+            const dt = new Date(d.updated);
+            document.getElementById('m-updated').textContent = dt.toUTCString();
+            const age = Math.round((Date.now() - dt.getTime()) / 1000);
+            document.getElementById('metrics-age').textContent = age < 120 ? age + 's ago' : Math.round(age/60) + 'm ago';
+          }
+          document.getElementById('metrics-note').style.display = 'none';
+        })
+        .catch(() => {
+          const note = document.getElementById('metrics-note');
+          note.style.display = '';
+          note.textContent = 'Metrics not yet available. Claude Code will populate this on next run.';
+        });
+    }
+    loadMetrics();
+    setInterval(loadMetrics, 30000);
+  </script>
 </body>
 </html>
