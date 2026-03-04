@@ -53,11 +53,8 @@ try {
   set("v-screen",  (screen.width && screen.height) ? screen.width + " \xd7 " + screen.height : null);
   set("v-ua",      ua || null, "mono");
 
-  var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  set("v-conn", conn
-    ? ((conn.effectiveType ? conn.effectiveType.toUpperCase() : "") +
-       (conn.downlink ? "  \u2022  " + conn.downlink + " Mbps" : ""))
-    : "not reported");
+  set("v-cpu",     navigator.hardwareConcurrency ? navigator.hardwareConcurrency + " logical cores" : null);
+  set("v-cookies", navigator.cookieEnabled ? "enabled" : "disabled");
 } catch(e) {}
 
 // ── Page load time (needs load event to be complete) ────────────────────────
