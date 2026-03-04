@@ -6,111 +6,176 @@
   <title>Cloud Systems</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Segoe UI", system-ui, sans-serif; background: #fff; color: #1a1a1a; }
-    header { background: #0078d4; color: #fff; padding: 1.5rem 2rem; }
-    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: .03em; }
 
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #eef2f7;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #005ea2 0%, #0078d4 100%);
+      color: #fff;
+      padding: 1.1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .hd-left { display: flex; align-items: center; gap: .9rem; }
+    header h1 { font-size: 1.05rem; font-weight: 600; letter-spacing: .04em; }
+
+    .status-pill {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .68rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 99px;
+      padding: .22rem .75rem;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #57ff57;
+      box-shadow: 0 0 7px #57ff57;
+      animation: blink 2.5s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .hd-clocks {
+      text-align: right;
+      font-size: .8rem;
+      display: flex; flex-direction: column; gap: .1rem;
+      font-variant-numeric: tabular-nums;
+      opacity: .9;
+    }
+    #clock-local { opacity: .65; font-size: .72rem; }
+
+    /* ── Layout ── */
     main {
-      max-width: 1000px;
-      margin: 3rem auto;
-      padding: 0 2rem;
+      max-width: 1040px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 3rem;
+      gap: 1.25rem;
+      align-items: start;
     }
-    @media (max-width: 680px) {
-      main { grid-template-columns: 1fr; gap: 2rem; }
+    @media (max-width: 680px) { main { grid-template-columns: 1fr; } }
+    .right { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.06);
+      padding: 1.4rem 1.5rem;
     }
-
-    /* Left: info table */
-    table { width: 100%; border-collapse: collapse; }
-    tr { border-bottom: 1px solid #f0f0f0; }
-    tr:last-child { border-bottom: none; }
-    td { padding: .6rem 0; font-size: .9rem; vertical-align: top; }
-    td:first-child { color: #605e5c; width: 42%; }
-    td:last-child { color: #1a1a1a; font-weight: 500; }
-    .label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0078d4; padding-top: 1.5rem; padding-bottom: .25rem; }
-
-    /* Right: about + visitor */
-    .right { display: flex; flex-direction: column; gap: 2rem; }
-
-    .card-label {
-      font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .1em; color: #0078d4; margin-bottom: .75rem;
+    .card-title {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #0078d4;
+      margin-bottom: .9rem;
+      padding-bottom: .6rem;
+      border-bottom: 1px solid #f0f0f0;
     }
 
-    .highlights { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+    /* ── Infra table ── */
+    .infra-table { width: 100%; border-collapse: collapse; }
+    .infra-table tr.data { border-bottom: 1px solid #f2f2f2; }
+    .infra-table tr.data:last-child { border-bottom: none; }
+    .infra-table tr.data:hover td { background: #f4f8fd; }
+    .infra-table td { padding: .55rem .3rem; font-size: .875rem; vertical-align: top; transition: background .12s; }
+    .infra-table td:first-child { color: #706e6c; width: 46%; }
+    .infra-table td:last-child { color: #1a1a1a; font-weight: 500; }
+    .infra-table tr.section-row td {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #0078d4;
+      padding-top: 1.1rem; padding-bottom: .3rem;
+    }
+    .infra-table tr.section-row:first-child td { padding-top: .1rem; }
+
+    /* ── Highlights ── */
+    .highlights { list-style: none; display: flex; flex-direction: column; gap: .75rem; }
     .highlights li {
-      font-size: .85rem; color: #3a3a3a; line-height: 1.5;
-      padding-left: 1rem; position: relative;
+      font-size: .855rem; color: #333; line-height: 1.55;
+      padding-left: 1.15rem; position: relative;
     }
-    .highlights li::before {
-      content: "→"; position: absolute; left: 0; color: #0078d4; font-weight: 700;
-    }
+    .highlights li::before { content: "→"; position: absolute; left: 0; color: #0078d4; font-weight: 700; }
 
-    .visitor-table { width: 100%; border-collapse: collapse; }
-    .visitor-table tr { border-bottom: 1px solid #f0f0f0; }
-    .visitor-table tr:last-child { border-bottom: none; }
-    .visitor-table td { padding: .5rem 0; font-size: .85rem; vertical-align: top; }
-    .visitor-table td:first-child { color: #605e5c; width: 42%; }
-    .visitor-table td:last-child { color: #1a1a1a; font-weight: 500; font-family: monospace; font-size: .8rem; word-break: break-all; }
+    /* ── Visitor table ── */
+    .vis-table { width: 100%; border-collapse: collapse; }
+    .vis-table tr { border-bottom: 1px solid #f2f2f2; }
+    .vis-table tr:last-child { border-bottom: none; }
+    .vis-table td { padding: .5rem .3rem; font-size: .855rem; vertical-align: top; }
+    .vis-table td:first-child { color: #706e6c; width: 40%; }
+    .vis-table td:last-child { color: #1a1a1a; font-weight: 500; }
+    .mono { font-family: "Cascadia Code", "Fira Code", "Courier New", monospace; font-size: .77rem; word-break: break-all; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Cloud Systems</h1>
+    <div class="hd-left">
+      <h1>Cloud Systems</h1>
+      <div class="status-pill"><span class="status-dot"></span>Operational</div>
+    </div>
+    <div class="hd-clocks">
+      <span id="clock-utc">UTC —:—:—</span>
+      <span id="clock-local"></span>
+    </div>
   </header>
+
   <main>
+    <!-- Left: infrastructure facts -->
+    <div class="card">
+      <div class="card-title">Infrastructure</div>
+      <table class="infra-table">
+        <tr class="section-row"><td colspan="2">Host</td></tr>
+        <tr class="data"><td>Domain</td><td>{{ app_domain }}</td></tr>
+        <tr class="data"><td>Region</td><td>Azure South Central US</td></tr>
+        <tr class="data"><td>Protocol</td><td>HTTP/2, TLS 1.2/1.3</td></tr>
+        <tr class="data"><td>Certificate</td><td>Let's Encrypt (auto-renewing)</td></tr>
 
-    <!-- Left column: infrastructure facts -->
-    <div>
-      <table>
-        <tr><td class="label" colspan="2">Host</td></tr>
-        <tr><td>Domain</td><td>{{ app_domain }}</td></tr>
-        <tr><td>Region</td><td>Azure South Central US</td></tr>
-        <tr><td>Protocol</td><td>HTTP/2, TLS 1.2/1.3</td></tr>
-        <tr><td>Certificate</td><td>Let's Encrypt (auto-renewing)</td></tr>
+        <tr class="section-row"><td colspan="2">Stack</td></tr>
+        <tr class="data"><td>Web server</td><td>nginx</td></tr>
+        <tr class="data"><td>Database</td><td>MariaDB</td></tr>
+        <tr class="data"><td>Provisioning</td><td>Terraform</td></tr>
+        <tr class="data"><td>Configuration</td><td>Ansible</td></tr>
+        <tr class="data"><td>Secrets</td><td>Ansible Vault</td></tr>
+        <tr class="data"><td>State</td><td>Azure Blob Storage</td></tr>
 
-        <tr><td class="label" colspan="2">Stack</td></tr>
-        <tr><td>Web server</td><td>nginx</td></tr>
-        <tr><td>Database</td><td>MariaDB</td></tr>
-        <tr><td>Provisioning</td><td>Terraform</td></tr>
-        <tr><td>Configuration</td><td>Ansible</td></tr>
-        <tr><td>Secrets</td><td>Ansible Vault</td></tr>
-        <tr><td>State</td><td>Azure Blob Storage</td></tr>
-
-        <tr><td class="label" colspan="2">Network</td></tr>
-        <tr><td>App subnet</td><td>10.0.1.0/24 — public</td></tr>
-        <tr><td>DB subnet</td><td>10.0.2.0/24 — private</td></tr>
-        <tr><td>DB access</td><td>App subnet only</td></tr>
-        <tr><td>SSH</td><td>DB reachable via bastion only</td></tr>
+        <tr class="section-row"><td colspan="2">Network</td></tr>
+        <tr class="data"><td>App subnet</td><td>10.0.1.0/24 — public</td></tr>
+        <tr class="data"><td>DB subnet</td><td>10.0.2.0/24 — private</td></tr>
+        <tr class="data"><td>DB access</td><td>App subnet only</td></tr>
+        <tr class="data"><td>SSH</td><td>Via bastion only</td></tr>
       </table>
     </div>
 
-    <!-- Right column: about + live visitor info -->
+    <!-- Right: about + visitor -->
     <div class="right">
-
-      <div>
-        <div class="card-label">About this project</div>
+      <div class="card">
+        <div class="card-title">About this project</div>
         <ul class="highlights">
           <li>Fully automated two-tier deployment — one <code>terraform apply</code> provisions the network, VMs, and NSGs; one <code>ansible-playbook</code> configures everything.</li>
-          <li>Self-healing: Terraform writes the live public IP into Ansible's inventory and group vars on every apply, so the stack always converges to the correct state automatically.</li>
+          <li>Self-healing: Terraform writes the live public IP into Ansible's group vars on every apply, so the stack always converges to the correct state automatically.</li>
           <li>Zero-trust network segmentation — the database is unreachable from the internet; only the app subnet can connect on port 3306.</li>
-          <li>Secrets never touch disk in plaintext — DB credentials are encrypted at rest with Ansible Vault and the Terraform state is stored remotely in Azure Blob Storage.</li>
+          <li>Secrets stay encrypted at rest with Ansible Vault; Terraform state lives in Azure Blob Storage, never on a local machine.</li>
         </ul>
       </div>
 
-      <div>
-        <div class="card-label">Your session</div>
-        <table class="visitor-table">
-          <tr><td>Browser</td><td id="v-browser">—</td></tr>
-          <tr><td>OS</td><td id="v-os">—</td></tr>
-          <tr><td>Language</td><td id="v-lang">—</td></tr>
-          <tr><td>Screen</td><td id="v-screen">—</td></tr>
-          <tr><td>User agent</td><td id="v-ua">—</td></tr>
+      <div class="card">
+        <div class="card-title">Your connection</div>
+        <table class="vis-table">
+          <tr><td>Browser</td><td id="v-browser"></td></tr>
+          <tr><td>OS</td><td id="v-os"></td></tr>
+          <tr><td>Language</td><td id="v-lang"></td></tr>
+          <tr><td>Screen</td><td id="v-screen"></td></tr>
+          <tr><td>Connection</td><td id="v-conn"></td></tr>
+          <tr><td>Page load</td><td id="v-load"></td></tr>
+          <tr><td>User agent</td><td id="v-ua" class="mono"></td></tr>
         </table>
       </div>
-
     </div>
   </main>
 
