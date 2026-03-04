@@ -243,8 +243,8 @@
     <div class="card">
       <div class="card-title">Project Overview</div>
       <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        Two-VM deployment on Azure, built entirely with <strong>Terraform</strong> and <strong>Ansible</strong>.
-        <code>terraform apply</code> provisions the network, VMs, Key Vault, and monitoring.
+        Two-VM deployment on Azure, built entirely with <strong>OpenTofu</strong> and <strong>Ansible</strong>.
+        <code>tofu apply</code> provisions the network, VMs, Key Vault, and monitoring.
         <code>ansible-playbook</code> installs and configures everything on both machines.
         No manual steps at any point.
       </p>
@@ -276,11 +276,11 @@
           <tr class="data"><td>DB SSH</td><td>App subnet only (bastion pattern)</td></tr>
 
           <tr class="section-row"><td colspan="2">Automation Stack</td></tr>
-          <tr class="data"><td>Provisioning</td><td>Terraform</td></tr>
+          <tr class="data"><td>Provisioning</td><td>OpenTofu</td></tr>
           <tr class="data"><td>Configuration</td><td>Ansible</td></tr>
           <tr class="data"><td>Secret encryption</td><td>Ansible Vault</td></tr>
           <tr class="data"><td>Vault password</td><td>Azure Key Vault (runtime fetch)</td></tr>
-          <tr class="data"><td>Terraform state</td><td>Azure Blob Storage (shared, locked)</td></tr>
+          <tr class="data"><td>OpenTofu state</td><td>Azure Blob Storage (shared, locked)</td></tr>
           <tr class="data"><td>Monitoring</td><td>Azure Monitor + email alerts</td></tr>
           <tr class="data"><td>AI interface</td><td>MCP over SSE</td></tr>
         </table>
@@ -488,10 +488,10 @@
       <div class="card-title">Deployment — Two Commands</div>
       <div class="code-section">
         <div class="code-block">
-          <div class="code-label">1 — Provision infrastructure (Terraform)</div>
+          <div class="code-label">1 — Provision infrastructure (OpenTofu)</div>
           <pre><span class="c"># Creates VNet, subnets, NSGs, VMs, Key Vault, Monitor alerts,</span>
 <span class="c"># and writes inventory.ini + group_vars with the live public IP.</span>
-terraform apply -auto-approve</pre>
+tofu apply -auto-approve</pre>
         </div>
         <div class="code-block">
           <div class="code-label">2 — Configure everything (Ansible)</div>
@@ -507,7 +507,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
     <div class="row">
 
       <div class="card">
-        <div class="card-title">Terraform — Key Blocks</div>
+        <div class="card-title">OpenTofu — Key Blocks</div>
         <div class="code-section">
 
           <div class="code-block">
