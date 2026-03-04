@@ -9,15 +9,51 @@
     body { font-family: "Segoe UI", system-ui, sans-serif; background: #fff; color: #1a1a1a; }
     header { background: #0078d4; color: #fff; padding: 1.5rem 2rem; }
     header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: .03em; }
-    main { max-width: 560px; margin: 3rem auto; padding: 0 2rem; }
+
+    main {
+      max-width: 1000px;
+      margin: 3rem auto;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+    @media (max-width: 680px) {
+      main { grid-template-columns: 1fr; gap: 2rem; }
+    }
+
+    /* Left: info table */
     table { width: 100%; border-collapse: collapse; }
     tr { border-bottom: 1px solid #f0f0f0; }
     tr:last-child { border-bottom: none; }
     td { padding: .6rem 0; font-size: .9rem; vertical-align: top; }
-    td:first-child { color: #605e5c; width: 40%; }
+    td:first-child { color: #605e5c; width: 42%; }
     td:last-child { color: #1a1a1a; font-weight: 500; }
-    .section-gap { height: 1.5rem; }
     .label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #0078d4; padding-top: 1.5rem; padding-bottom: .25rem; }
+
+    /* Right: about + visitor */
+    .right { display: flex; flex-direction: column; gap: 2rem; }
+
+    .card-label {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #0078d4; margin-bottom: .75rem;
+    }
+
+    .highlights { list-style: none; display: flex; flex-direction: column; gap: .6rem; }
+    .highlights li {
+      font-size: .85rem; color: #3a3a3a; line-height: 1.5;
+      padding-left: 1rem; position: relative;
+    }
+    .highlights li::before {
+      content: "→"; position: absolute; left: 0; color: #0078d4; font-weight: 700;
+    }
+
+    .visitor-table { width: 100%; border-collapse: collapse; }
+    .visitor-table tr { border-bottom: 1px solid #f0f0f0; }
+    .visitor-table tr:last-child { border-bottom: none; }
+    .visitor-table td { padding: .5rem 0; font-size: .85rem; vertical-align: top; }
+    .visitor-table td:first-child { color: #605e5c; width: 42%; }
+    .visitor-table td:last-child { color: #1a1a1a; font-weight: 500; font-family: monospace; font-size: .8rem; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -25,27 +61,83 @@
     <h1>Cloud Systems</h1>
   </header>
   <main>
-    <table>
-      <tr><td class="label" colspan="2">Host</td></tr>
-      <tr><td>Domain</td><td>{{ app_domain }}</td></tr>
-      <tr><td>Region</td><td>Azure South Central US</td></tr>
-      <tr><td>Protocol</td><td>HTTP/2, TLS 1.2/1.3</td></tr>
-      <tr><td>Certificate</td><td>Let's Encrypt (auto-renewing)</td></tr>
 
-      <tr><td class="label" colspan="2">Stack</td></tr>
-      <tr><td>Web server</td><td>nginx</td></tr>
-      <tr><td>Database</td><td>MariaDB</td></tr>
-      <tr><td>Provisioning</td><td>Terraform</td></tr>
-      <tr><td>Configuration</td><td>Ansible</td></tr>
-      <tr><td>Secrets</td><td>Ansible Vault</td></tr>
-      <tr><td>State</td><td>Azure Blob Storage</td></tr>
+    <!-- Left column: infrastructure facts -->
+    <div>
+      <table>
+        <tr><td class="label" colspan="2">Host</td></tr>
+        <tr><td>Domain</td><td>{{ app_domain }}</td></tr>
+        <tr><td>Region</td><td>Azure South Central US</td></tr>
+        <tr><td>Protocol</td><td>HTTP/2, TLS 1.2/1.3</td></tr>
+        <tr><td>Certificate</td><td>Let's Encrypt (auto-renewing)</td></tr>
 
-      <tr><td class="label" colspan="2">Network</td></tr>
-      <tr><td>App subnet</td><td>10.0.1.0/24 — public</td></tr>
-      <tr><td>DB subnet</td><td>10.0.2.0/24 — private</td></tr>
-      <tr><td>DB access</td><td>App subnet only</td></tr>
-      <tr><td>SSH</td><td>DB reachable via bastion only</td></tr>
-    </table>
+        <tr><td class="label" colspan="2">Stack</td></tr>
+        <tr><td>Web server</td><td>nginx</td></tr>
+        <tr><td>Database</td><td>MariaDB</td></tr>
+        <tr><td>Provisioning</td><td>Terraform</td></tr>
+        <tr><td>Configuration</td><td>Ansible</td></tr>
+        <tr><td>Secrets</td><td>Ansible Vault</td></tr>
+        <tr><td>State</td><td>Azure Blob Storage</td></tr>
+
+        <tr><td class="label" colspan="2">Network</td></tr>
+        <tr><td>App subnet</td><td>10.0.1.0/24 — public</td></tr>
+        <tr><td>DB subnet</td><td>10.0.2.0/24 — private</td></tr>
+        <tr><td>DB access</td><td>App subnet only</td></tr>
+        <tr><td>SSH</td><td>DB reachable via bastion only</td></tr>
+      </table>
+    </div>
+
+    <!-- Right column: about + live visitor info -->
+    <div class="right">
+
+      <div>
+        <div class="card-label">About this project</div>
+        <ul class="highlights">
+          <li>Fully automated two-tier deployment — one <code>terraform apply</code> provisions the network, VMs, and NSGs; one <code>ansible-playbook</code> configures everything.</li>
+          <li>Self-healing: Terraform writes the live public IP into Ansible's inventory and group vars on every apply, so the stack always converges to the correct state automatically.</li>
+          <li>Zero-trust network segmentation — the database is unreachable from the internet; only the app subnet can connect on port 3306.</li>
+          <li>Secrets never touch disk in plaintext — DB credentials are encrypted at rest with Ansible Vault and the Terraform state is stored remotely in Azure Blob Storage.</li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="card-label">Your session</div>
+        <table class="visitor-table">
+          <tr><td>Browser</td><td id="v-browser">—</td></tr>
+          <tr><td>OS</td><td id="v-os">—</td></tr>
+          <tr><td>Language</td><td id="v-lang">—</td></tr>
+          <tr><td>Screen</td><td id="v-screen">—</td></tr>
+          <tr><td>User agent</td><td id="v-ua">—</td></tr>
+        </table>
+      </div>
+
+    </div>
   </main>
+
+  <script>
+    function detectBrowser(ua) {
+      if (/Edg\//.test(ua))    return "Microsoft Edge";
+      if (/OPR\/|Opera/.test(ua)) return "Opera";
+      if (/Firefox\//.test(ua))  return "Firefox";
+      if (/Chrome\//.test(ua))   return "Chrome";
+      if (/Safari\//.test(ua))   return "Safari";
+      return "Unknown";
+    }
+    function detectOS(ua) {
+      if (/Windows NT 10/.test(ua)) return "Windows 10/11";
+      if (/Windows NT/.test(ua))    return "Windows";
+      if (/Mac OS X/.test(ua))      return "macOS";
+      if (/Android/.test(ua))       return "Android";
+      if (/iPhone|iPad/.test(ua))   return "iOS";
+      if (/Linux/.test(ua))         return "Linux";
+      return "Unknown";
+    }
+    const ua = navigator.userAgent;
+    document.getElementById("v-browser").textContent = detectBrowser(ua);
+    document.getElementById("v-os").textContent      = detectOS(ua);
+    document.getElementById("v-lang").textContent    = navigator.language || "—";
+    document.getElementById("v-screen").textContent  = screen.width + " × " + screen.height;
+    document.getElementById("v-ua").textContent      = ua;
+  </script>
 </body>
 </html>
