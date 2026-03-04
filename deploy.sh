@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+START=$(date +%s)
+
 echo "==> git pull"
 git pull
 
@@ -23,4 +25,5 @@ ansible-playbook setup_app.yml -i inventory.ini
 echo "==> Running db playbook"
 ansible-playbook setup_db.yml -i inventory.ini
 
-echo "==> Done: https://${IP}.nip.io"
+ELAPSED=$(( $(date +%s) - START ))
+echo "==> Done: https://${IP}.nip.io  ($(( ELAPSED / 60 ))m $(( ELAPSED % 60 ))s)"
