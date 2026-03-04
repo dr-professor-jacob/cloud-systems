@@ -26,3 +26,26 @@ function loadMetrics() {
 }
 loadMetrics();
 setInterval(loadMetrics, 30000);
+
+function loadActivity() {
+  fetch('/activity.json?t=' + Date.now())
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(d) {
+      if (d.updated) {
+        var dt = new Date(d.updated);
+        document.getElementById('a-updated').textContent = dt.toUTCString();
+        var age = Math.round((Date.now() - dt.getTime()) / 1000);
+        document.getElementById('activity-age').textContent = age < 120 ? age + 's ago' : Math.round(age / 60) + 'm ago';
+      }
+      document.getElementById('a-calls').textContent = d.calls ? d.calls.join(', ') : '—';
+      document.getElementById('a-summary').textContent = d.summary || '—';
+      document.getElementById('activity-note').style.display = 'none';
+    })
+    .catch(function() {
+      var note = document.getElementById('activity-note');
+      note.style.display = '';
+      note.textContent = 'No session logged yet.';
+    });
+}
+loadActivity();
+setInterval(loadActivity, 30000);

@@ -427,21 +427,21 @@
       <div class="card">
         <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) lets AI tools call structured endpoints on a server. Two servers run here:
+          MCP (Model Context Protocol) is an open standard that lets AI assistants call structured tools on a remote server — like an API, but designed for LLMs. This deployment runs two MCP servers:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> on the app VM: exposes uptime, load, memory, disk, and nginx stats. Proxied by nginx at <code>/mcp/</code>.</li>
-          <li><strong>mcp-db</strong> on the DB VM: exposes database query tools. Only reachable through the app VM since the DB has no public IP.</li>
+          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats. Public SSE endpoint below.</li>
+          <li><strong>mcp-db</strong> (DB VM) — database query tools. Private: only reachable through the app VM since the DB has no public IP.</li>
         </ul>
-        <div class="note">
-          Both run over SSE. The <em>cloud-infra</em> server in Claude Code's sidebar points at this deployment and pulls live data from this VM.
+        <div class="note" style="margin-top:.9rem;">
+          Both run as systemd services (Python / FastMCP + uvicorn), proxied through nginx over SSE. Claude Code connects directly and calls tools in real time — the metrics on this page are written by Claude via MCP.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / SSE</span>
           <span class="tag">FastMCP</span>
           <span class="tag">uvicorn</span>
           <span class="tag">nginx proxy</span>
-          <span class="tag">systemd services</span>
+          <span class="tag">systemd</span>
         </div>
       </div>
 
@@ -457,6 +457,47 @@
           <tr><td>Page load</td><td id="v-load"></td></tr>
           <tr><td>User agent</td><td id="v-ua" class="mono"></td></tr>
         </table>
+      </div>
+
+    </div>
+
+    <!-- MCP tools + activity -->
+    <div class="row">
+
+      <div class="card">
+        <div class="card-title">Available MCP Tools</div>
+        <table class="vis-table">
+          <tr><td><code>system_info</code></td><td>Uptime, load averages (1m/5m/15m), memory, and disk usage</td></tr>
+          <tr><td><code>nginx_stats</code></td><td>Active connections and request counts from nginx stub_status</td></tr>
+          <tr><td><code>write_activity</code></td><td>Claude logs a summary of each session — displayed in the card to the right</td></tr>
+        </table>
+        <div class="note" style="margin-top:.9rem;">
+          Want to try it? Add this to your <code>~/.claude/mcp.json</code> (or <code>.mcp.json</code> in any project):
+        </div>
+        <div class="code-block" style="margin-top:.75rem;">
+          <div class="code-label">Connect with Claude Code</div>
+          <pre>{
+  <span class="s">"mcpServers"</span>: {
+    <span class="s">"cloud-infra"</span>: {
+      <span class="s">"type"</span>: <span class="s">"sse"</span>,
+      <span class="s">"url"</span>:  <span class="s">"https://{{ app_domain }}/mcp/sse"</span>
+    }
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Last Claude Session</span>
+          <span id="activity-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
+        </div>
+        <table class="vis-table" style="margin-bottom:.9rem;">
+          <tr><td>When</td><td id="a-updated">—</td></tr>
+          <tr><td>Tools used</td><td id="a-calls">—</td></tr>
+        </table>
+        <p id="a-summary" style="font-size:.875rem;color:#333;line-height:1.6;font-style:italic;">—</p>
+        <div class="note" id="activity-note" style="display:none;"></div>
       </div>
 
     </div>
