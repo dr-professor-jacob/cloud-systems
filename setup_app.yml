@@ -99,6 +99,14 @@
       args:
         creates: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
 
+    - name: Ensure webroot is owned by www-data
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
     - name: Deploy landing page
       template:
         src: templates/index.html.j2
