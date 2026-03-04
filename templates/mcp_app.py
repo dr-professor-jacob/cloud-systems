@@ -51,4 +51,21 @@ def write_site_metrics(uptime: str, load: str, mem_used: str, mem_total: str,
     return f"Written to {path}"
 
 
+@mcp.tool()
+def write_activity(summary: str, calls: str) -> str:
+    """Write a summary of this Claude session to /var/www/html/activity.json for the site to display.
+    summary: one or two sentences describing what was done.
+    calls: comma-separated list of tool names used, e.g. 'system_info, nginx_stats, write_site_metrics'
+    """
+    data = {
+        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "summary": summary,
+        "calls": [c.strip() for c in calls.split(",")],
+    }
+    path = "/var/www/html/activity.json"
+    with open(path, "w") as f:
+        json.dump(data, f)
+    return f"Written to {path}"
+
+
 mcp.run(transport="sse")
