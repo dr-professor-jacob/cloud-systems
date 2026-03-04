@@ -107,6 +107,15 @@
         group: www-data
         mode: '0755'
 
+    - name: Ensure metrics.json exists and is owned by www-data
+      copy:
+        content: '{}'
+        dest: /var/www/html/metrics.json
+        owner: www-data
+        group: www-data
+        mode: '0644'
+        force: no
+
     - name: Deploy landing page
       template:
         src: templates/index.html.j2
