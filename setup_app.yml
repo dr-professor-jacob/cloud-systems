@@ -2,19 +2,77 @@
 - name: Setup Web Server
   hosts: app_servers
   become: yes
+  vars:
+    certbot_email: "jr521816@ohio.edu"
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Install Nginx
+    - name: Install Nginx and Certbot
       apt:
-        name: nginx
+        name:
+          - nginx
+          - certbot
+          - python3-certbot-nginx
         state: present
 
-    - name: Ensure Nginx is started
+    - name: Check if SSL certificate exists
+      stat:
+        path: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+      register: cert_stat
+
+    - name: Deploy HTTP-only Nginx configuration
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      when: not cert_stat.stat.exists
+      notify: Validate and reload Nginx
+
+    - name: Ensure Nginx is started and enabled
       service:
         name: nginx
         state: started
         enabled: yes
+
+    - name: Flush handlers before cert request
+      meta: flush_handlers
+
+    - name: Obtain SSL certificate
+      command: >
+        certbot certonly --webroot -w /var/www/html
+        -d {{ app_domain }} --non-interactive --agree-tos
+        -m {{ certbot_email }}
+      args:
+        creates: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+
+    - name: Deploy landing page
+      template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Deploy HTTPS Nginx configuration
+      template:
+        src: templates/nginx_ssl.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Validate and reload Nginx
+
+  handlers:
+    - name: Validate and reload Nginx
+      command: nginx -t
+      notify: Reload Nginx
+
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
