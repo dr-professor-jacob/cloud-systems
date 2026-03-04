@@ -189,6 +189,8 @@ resource "azurerm_linux_virtual_machine" "app_vm" {
     sku       = "server-arm64"
     version   = "latest"
   }
+
+  boot_diagnostics {}
 }
 
 resource "azurerm_linux_virtual_machine" "db_vm" {
@@ -216,6 +218,43 @@ resource "azurerm_linux_virtual_machine" "db_vm" {
     offer     = "ubuntu-24_04-lts"
     sku       = "server-arm64"
     version   = "latest"
+  }
+
+  boot_diagnostics {}
+}
+
+# ── Azure Monitor ────────────────────────────────────────────────────────────
+
+resource "azurerm_monitor_action_group" "ops" {
+  name                = "cloud-v3-ops"
+  resource_group_name = azurerm_resource_group.rg.name
+  short_name          = "ops"
+
+  email_receiver {
+    name          = "admin"
+    email_address = "jr521816@ohio.edu"
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "app_cpu" {
+  name                = "app-cpu-high"
+  resource_group_name = azurerm_resource_group.rg.name
+  scopes              = [azurerm_linux_virtual_machine.app_vm.id]
+  description         = "App VM CPU > 85% sustained for 5 minutes"
+  severity            = 2
+  frequency           = "PT1M"
+  window_size         = "PT5M"
+
+  criteria {
+    metric_namespace = "Microsoft.Compute/virtualMachines"
+    metric_name      = "Percentage CPU"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 85
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.ops.id
   }
 }
 
