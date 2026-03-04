@@ -248,20 +248,6 @@
         <code>ansible-playbook</code> installs and configures everything on both machines.
         No manual steps at any point.
       </p>
-      <div class="tags">
-        <span class="tag">Terraform</span>
-        <span class="tag">Ansible</span>
-        <span class="tag">Azure</span>
-        <span class="tag">MariaDB</span>
-        <span class="tag">nginx</span>
-        <span class="tag">Let's Encrypt</span>
-        <span class="tag">Ansible Vault</span>
-        <span class="tag">Azure Key Vault</span>
-        <span class="tag">Azure Monitor</span>
-        <span class="tag">MCP / SSE</span>
-        <span class="tag">ARM64</span>
-        <span class="tag">fail2ban</span>
-      </div>
     </div>
 
     <!-- Infra table + Security -->
@@ -312,6 +298,9 @@
           <li><strong>Ansible Vault</strong> encrypts secrets at rest. The decryption password lives in Azure Key Vault and is fetched at runtime by <code>vault_pass.sh</code>, so it never sits on disk locally.</li>
           <li><strong>Azure Monitor</strong> sends an email alert if CPU stays above 85% for 5 minutes.</li>
         </ul>
+        <div class="note">
+          The DB is blocked at two independent layers: the NSG drops anything that isn't from the app subnet, and MariaDB's bind-address means it isn't even listening on other interfaces. Either one alone would be sufficient; both together means there's no single point of misconfiguration that exposes the database.
+        </div>
       </div>
 
     </div>
