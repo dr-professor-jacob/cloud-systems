@@ -188,6 +188,27 @@
       color: #005ea2;
     }
 
+    /* ── Code blocks ── */
+    .code-section { display: flex; flex-direction: column; gap: 1.1rem; }
+    .code-block { background: #0d1117; border-radius: 8px; overflow: hidden; }
+    .code-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: #7d8590; background: #161b22; padding: .4rem .9rem;
+      border-bottom: 1px solid #21262d;
+    }
+    .code-block pre {
+      margin: 0; padding: .9rem 1rem;
+      font-family: "Cascadia Code", "Fira Code", "Courier New", monospace;
+      font-size: .78rem; line-height: 1.6;
+      color: #e6edf3; overflow-x: auto;
+    }
+    .c  { color: #8b949e; }  /* comment */
+    .k  { color: #ff7b72; }  /* keyword */
+    .s  { color: #a5d6ff; }  /* string */
+    .v  { color: #79c0ff; }  /* variable/resource name */
+    .f  { color: #d2a8ff; }  /* function/block */
+    .n  { color: #ffa657; }  /* number/value */
+
     /* ── Note box ── */
     .note {
       background: #f4f8fd;
@@ -457,6 +478,129 @@
           <tr><td>Page load</td><td id="v-load"></td></tr>
           <tr><td>User agent</td><td id="v-ua" class="mono"></td></tr>
         </table>
+      </div>
+
+    </div>
+
+    <!-- Commands -->
+    <div class="card">
+      <div class="card-title">Deployment — Two Commands</div>
+      <div class="code-section">
+        <div class="code-block">
+          <div class="code-label">1 — Provision infrastructure (Terraform)</div>
+          <pre><span class="c"># Creates VNet, subnets, NSGs, VMs, Key Vault, Monitor alerts,</span>
+<span class="c"># and writes inventory.ini + group_vars with the live public IP.</span>
+terraform apply -auto-approve</pre>
+        </div>
+        <div class="code-block">
+          <div class="code-label">2 — Configure everything (Ansible)</div>
+          <pre><span class="c"># Installs and hardens both VMs: nginx, TLS, fail2ban,</span>
+<span class="c"># unattended-upgrades, MariaDB, MCP servers — all idempotent.</span>
+<span class="c"># Vault password fetched from Azure Key Vault at runtime (vault_pass.sh).</span>
+ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config highlights -->
+    <div class="row">
+
+      <div class="card">
+        <div class="card-title">Terraform — Key Blocks</div>
+        <div class="code-section">
+
+          <div class="code-block">
+            <div class="code-label">NSG: DB only reachable from app subnet</div>
+            <pre><span class="f">resource</span> <span class="s">"azurerm_network_security_group"</span> <span class="v">"db_nsg"</span> {
+  <span class="c"># No public IP on DB VM + NSG = two independent</span>
+  <span class="c"># enforcement layers blocking internet access.</span>
+
+  <span class="f">security_rule</span> {
+    name                  = <span class="s">"AllowMySQL"</span>
+    priority              = <span class="n">100</span>
+    direction             = <span class="s">"Inbound"</span>
+    access                = <span class="s">"Allow"</span>
+    destination_port      = <span class="s">"3306"</span>
+    <span class="c"># App subnet CIDR only — nothing else can reach MariaDB</span>
+    source_address_prefix = <span class="s">"10.0.1.0/24"</span>
+  }
+}</pre>
+          </div>
+
+          <div class="code-block">
+            <div class="code-label">Key Vault — Ansible Vault password at rest</div>
+            <pre><span class="f">resource</span> <span class="s">"azurerm_key_vault"</span> <span class="v">"kv"</span> {
+  name      = <span class="s">"cloud-v3-kv"</span>
+  tenant_id = <span class="f">data.azurerm_client_config.current</span>.tenant_id
+  sku_name  = <span class="s">"standard"</span>
+  <span class="c"># Vault password stored here; fetched at runtime</span>
+  <span class="c"># by vault_pass.sh — never touches disk locally.</span>
+}
+
+<span class="c"># Terraform writes the live IP into Ansible's inventory</span>
+<span class="c"># on every apply — no manual IP hunting after redeploy.</span>
+<span class="f">resource</span> <span class="s">"local_file"</span> <span class="v">"ansible_vars"</span> {
+  content  = <span class="s">"app_domain: \"</span><span class="n">${azurerm_public_ip.app_pip.ip_address}</span><span class="s">.nip.io\""</span>
+  filename = <span class="s">"group_vars/all/terraform_outputs.yml"</span>
+}</pre>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Ansible — Key Tasks</div>
+        <div class="code-section">
+
+          <div class="code-block">
+            <div class="code-label">Certbot — HTTP config first, then TLS</div>
+            <pre><span class="c"># Chicken-and-egg: certbot needs port 80 open to</span>
+<span class="c"># validate the domain, but the final nginx config</span>
+<span class="c"># references the cert that doesn't exist yet.</span>
+- <span class="k">name</span>: Deploy HTTP-only nginx config
+  <span class="k">template</span>:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  <span class="k">when</span>: not cert_stat.stat.exists  <span class="c"># skip if cert already exists</span>
+
+- <span class="k">name</span>: Obtain SSL certificate
+  <span class="k">command</span>: >
+    certbot certonly --webroot -w /var/www/html
+    -d {{ app_domain }} --non-interactive
+  args:
+    creates: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+
+- <span class="k">name</span>: Deploy HTTPS nginx config  <span class="c"># now the cert exists</span>
+  <span class="k">template</span>:
+    src: nginx_ssl.conf.j2
+    dest: /etc/nginx/nginx.conf</pre>
+          </div>
+
+          <div class="code-block">
+            <div class="code-label">MariaDB hardening (scripted secure_installation)</div>
+            <pre"><span class="c"># Equivalent to running mysql_secure_installation,</span>
+<span class="c"># but fully automated and idempotent.</span>
+- <span class="k">name</span>: Remove anonymous users
+  <span class="k">mysql_user</span>:
+    name: <span class="s">''</span>
+    host_all: yes
+    state: absent
+
+- <span class="k">name</span>: Disallow remote root login
+  <span class="k">mysql_user</span>:
+    name: root
+    host: <span class="s">'%'</span>
+    state: absent
+
+- <span class="k">name</span>: Bind MariaDB to internal subnet only
+  <span class="k">copy</span>:
+    dest: /etc/mysql/mariadb.conf.d/99-bind.cnf
+    content: |
+      [mysqld]
+      bind-address = {{ db_bind_address }}</pre>
+          </div>
+
+        </div>
       </div>
 
     </div>
