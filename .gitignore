@@ -5,3 +5,4 @@ mits_key
 mits_key.pub
 inventory.ini
 hosts.yml
+group_vars/all/terraform_outputs.yml
