@@ -239,24 +239,29 @@
 
   <main>
 
-    <!-- Overview stats -->
+    <!-- Overview -->
     <div class="card">
       <div class="card-title">Project Overview</div>
-      <div class="stat-row">
-        <div class="stat"><div class="stat-num">2</div><div class="stat-label">Linux VMs</div></div>
-        <div class="stat"><div class="stat-num">1</div><div class="stat-label">VNet / 2 Subnets</div></div>
-        <div class="stat"><div class="stat-num">TLS</div><div class="stat-label">Let's Encrypt</div></div>
-        <div class="stat"><div class="stat-num">IaC</div><div class="stat-label">100% Automated</div></div>
-        <div class="stat"><div class="stat-num">MCP</div><div class="stat-label">AI Interface</div></div>
-        <div class="stat"><div class="stat-num">ARM</div><div class="stat-label">Ampere v8 VMs</div></div>
-      </div>
-      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-top:1rem;">
-        A fully automated, two-VM cloud deployment on Microsoft Azure. Infrastructure is defined entirely
-        in <strong>Terraform</strong> and configured entirely by <strong>Ansible</strong>: a single
-        <code>terraform apply</code> builds the network, VMs, Key Vault, and monitoring stack; a single
-        <code>ansible-playbook</code> installs and hardens every service. No manual steps, no SSH
-        one-liners, no configuration drift.
+      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
+        Two-VM deployment on Azure, built entirely with <strong>Terraform</strong> and <strong>Ansible</strong>.
+        <code>terraform apply</code> provisions the network, VMs, Key Vault, and monitoring.
+        <code>ansible-playbook</code> installs and configures everything on both machines.
+        No manual steps at any point.
       </p>
+      <div class="tags">
+        <span class="tag">Terraform</span>
+        <span class="tag">Ansible</span>
+        <span class="tag">Azure</span>
+        <span class="tag">MariaDB</span>
+        <span class="tag">nginx</span>
+        <span class="tag">Let's Encrypt</span>
+        <span class="tag">Ansible Vault</span>
+        <span class="tag">Azure Key Vault</span>
+        <span class="tag">Azure Monitor</span>
+        <span class="tag">MCP / SSE</span>
+        <span class="tag">ARM64</span>
+        <span class="tag">fail2ban</span>
+      </div>
     </div>
 
     <!-- Infra table + Security -->
@@ -275,7 +280,7 @@
           <tr class="data"><td>App VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
           <tr class="data"><td>DB VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
           <tr class="data"><td>OS</td><td>Ubuntu 24.04 LTS (arm64)</td></tr>
-          <tr class="data"><td>Auth</td><td>SSH key only — no passwords</td></tr>
+          <tr class="data"><td>Auth</td><td>SSH key only, no passwords</td></tr>
 
           <tr class="section-row"><td colspan="2">Network</td></tr>
           <tr class="data"><td>VNet</td><td>10.0.0.0/16</td></tr>
@@ -298,18 +303,15 @@
       <div class="card">
         <div class="card-title">Security Hardening</div>
         <ul class="bullets">
-          <li><strong>SSH key-only authentication.</strong> Password auth is disabled on both VMs. The DB VM has no public IP — SSH in requires tunneling through the app VM.</li>
-          <li><strong>fail2ban</strong> is deployed on both VMs. After 5 failed SSH attempts in 10 minutes, the source IP is banned for 1 hour.</li>
-          <li><strong>Unattended security upgrades</strong> run automatically on both VMs, pulling patches from the Ubuntu security repository without manual intervention.</li>
-          <li><strong>MariaDB hardened at deploy time:</strong> anonymous users removed, test database dropped, remote root login disabled. Equivalent to running <code>mysql_secure_installation</code> fully scripted.</li>
-          <li><strong>MariaDB bound to the DB subnet interface only</strong> — even within the VNet, the database process does not listen on the public-facing NIC.</li>
-          <li><strong>NSG rules are the enforcement layer.</strong> The DB NSG allows port 3306 from <code>10.0.1.0/24</code> only. No internet path to the database exists at the network level.</li>
-          <li><strong>Ansible Vault</strong> encrypts all secrets (DB credentials, etc.) at rest. The decryption password is stored in Azure Key Vault and fetched at runtime via <code>vault_pass.sh</code> — it never touches disk on the operator's machine.</li>
-          <li><strong>Azure Monitor</strong> alerts on sustained CPU &gt; 85% for 5 minutes. Alerts go to email via an Action Group.</li>
+          <li><strong>SSH key-only auth.</strong> Password auth is disabled. The DB VM has no public IP, so reaching it requires tunneling through the app VM.</li>
+          <li><strong>fail2ban</strong> runs on both VMs. 5 failed SSH attempts in 10 minutes gets the source IP banned for an hour.</li>
+          <li><strong>Unattended-upgrades</strong> pulls security patches automatically from the Ubuntu security repo on both machines.</li>
+          <li><strong>MariaDB hardened at deploy time:</strong> anonymous users removed, test database dropped, remote root disabled. Same steps as <code>mysql_secure_installation</code>, scripted through Ansible.</li>
+          <li><strong>MariaDB bound to the DB subnet interface</strong>, so it does not accept connections on the app-facing NIC even within the VNet.</li>
+          <li><strong>DB NSG allows port 3306 from <code>10.0.1.0/24</code> only.</strong> Combined with no public IP on the DB VM, there is no network path from the internet to the database.</li>
+          <li><strong>Ansible Vault</strong> encrypts secrets at rest. The decryption password lives in Azure Key Vault and is fetched at runtime by <code>vault_pass.sh</code>, so it never sits on disk locally.</li>
+          <li><strong>Azure Monitor</strong> sends an email alert if CPU stays above 85% for 5 minutes.</li>
         </ul>
-        <div class="note">
-          The DB VM's isolation is enforced at two independent layers: Azure NSG rules (network-level) and MariaDB's own bind-address configuration (process-level). Either layer alone would block external access; both together are the minimum responsible baseline.
-        </div>
       </div>
 
     </div>
@@ -326,12 +328,11 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 1</div>
-            <div class="tl-title">Terraform + Ansible scaffolding — single VM, HTTP only</div>
+            <div class="tl-title">Terraform + Ansible scaffolding: single VM, HTTP only</div>
             <div class="tl-desc">
-              Started with one VM, one subnet, no TLS. Terraform provisions the VM and public IP; Ansible installs
-              nginx and drops a static page. The goal was proving the IaC pipeline end-to-end before adding complexity.
-              Manually SSHing into a cloud VM to make changes was the comparison point — every subsequent addition had
-              to remain fully automated to be worth keeping.
+              One VM, one subnet, no TLS. Terraform provisions the VM and public IP; Ansible installs nginx and drops a static page.
+              The goal was getting the IaC pipeline working end-to-end before adding anything else.
+              Manually SSHing in to make changes was the baseline to beat.
             </div>
             <div class="tags"><span class="tag">Terraform</span><span class="tag">Ansible</span><span class="tag">nginx</span></div>
           </div>
@@ -344,13 +345,12 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 2</div>
-            <div class="tl-title">Two-tier network — separate app and DB subnets, MariaDB</div>
+            <div class="tl-title">Two-tier network: app and DB on separate subnets, MariaDB</div>
             <div class="tl-desc">
-              Split into two VMs across two subnets. The DB VM gets no public IP; only the app subnet can reach
-              port 3306. Ansible now runs two separate playbooks — one per host group. This is where Terraform's
-              <code>local_file</code> resource became essential: it writes the live public IP directly into
-              Ansible's inventory and group vars on every apply, so re-running the playbook after an IP change
-              always reaches the right host.
+              Split into two VMs across two subnets. The DB VM gets no public IP; only the app subnet can reach port 3306.
+              Ansible now runs two playbooks, one per host group. Terraform's <code>local_file</code> resource
+              writes the live public IP into Ansible's inventory on every apply, so the playbook always targets the right host
+              without any manual edits.
             </div>
             <div class="tags"><span class="tag">Two-tier</span><span class="tag">NSG</span><span class="tag">MariaDB</span><span class="tag">Inventory automation</span></div>
           </div>
@@ -363,14 +363,13 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 3</div>
-            <div class="tl-title">TLS + secrets management — Let's Encrypt, Ansible Vault, remote state</div>
+            <div class="tl-title">TLS + secrets: Let's Encrypt, Ansible Vault, remote state</div>
             <div class="tl-desc">
-              The chicken-and-egg problem with certbot: nginx must be listening on port 80 to complete the
-              ACME challenge, but the final nginx config references the TLS cert. Solved by deploying an
-              HTTP-only config first (with <code>when: not cert_stat.stat.exists</code>), running certbot,
-              then deploying the SSL config. Secrets moved into Ansible Vault. Terraform state moved to
-              Azure Blob Storage so it's never on a local machine and multiple operators can share it safely.
-              Used <code>nip.io</code> to turn the static public IP into a resolvable domain without buying one.
+              certbot has a chicken-and-egg issue: nginx needs to serve port 80 to complete the ACME challenge,
+              but the final nginx config references a cert that doesn't exist yet. Fixed by deploying an HTTP-only config first
+              (<code>when: not cert_stat.stat.exists</code>), running certbot, then swapping in the SSL config.
+              Secrets moved into Ansible Vault. Terraform state moved to Azure Blob Storage so it stays off local machines.
+              Used <code>nip.io</code> to get a real domain from the static IP without buying one.
             </div>
             <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Ansible Vault</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
           </div>
@@ -383,14 +382,12 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 4</div>
-            <div class="tl-title">Hardening — fail2ban, unattended-upgrades, MariaDB lockdown, ARM64 VMs</div>
+            <div class="tl-title">Hardening: fail2ban, unattended-upgrades, MariaDB lockdown, ARM64</div>
             <div class="tl-desc">
-              Added operational security: fail2ban on both VMs for SSH brute-force protection, unattended-upgrades
-              for automated patch management, and full MariaDB hardening scripted through Ansible's
-              <code>mysql_user</code> / <code>mysql_db</code> modules. Switched from Standard_B2s (x86) to
-              <strong>Standard_B2pts_v2</strong> (Ampere ARM64) — same performance tier, lower cost, and Ubuntu
-              24.04 has first-class ARM64 support. All Ansible tasks are idempotent; re-running the playbook
-              on an already-hardened server is a no-op.
+              Added fail2ban for SSH brute-force protection, unattended-upgrades for automated patching, and MariaDB hardening
+              through Ansible's <code>mysql_user</code> / <code>mysql_db</code> modules. Also switched from Standard_B2s (x86) to
+              <strong>Standard_B2pts_v2</strong> (Ampere ARM64): same performance tier, cheaper, and Ubuntu 24.04 supports ARM64 well.
+              All tasks are idempotent, so re-running on an already-configured server changes nothing.
             </div>
             <div class="tags"><span class="tag">fail2ban</span><span class="tag">Unattended-upgrades</span><span class="tag">ARM64</span><span class="tag">MariaDB hardening</span></div>
           </div>
@@ -403,14 +400,12 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 5</div>
-            <div class="tl-title">Azure Key Vault — passwordless Ansible Vault at runtime</div>
+            <div class="tl-title">Azure Key Vault: no local vault password needed</div>
             <div class="tl-desc">
-              Previously, decrypting Ansible Vault required typing (or storing) the vault password locally.
-              Replaced this with <code>vault_pass.sh</code>: a script that calls <code>az keyvault secret show</code>
-              and prints the password to stdout. Ansible's <code>--vault-password-file</code> flag accepts
-              any executable, so it calls the script at runtime. The vault password is stored only in
-              Azure Key Vault, protected by Azure RBAC. Terraform provisions the Key Vault and access policy
-              as part of the same apply.
+              Before this, decrypting Ansible Vault meant either typing the password or storing it in a file.
+              Replaced with <code>vault_pass.sh</code>, a script that calls <code>az keyvault secret show</code> and prints the password to stdout.
+              Ansible's <code>--vault-password-file</code> accepts any executable, so it just calls the script at runtime.
+              The password only ever lives in Azure Key Vault. Terraform provisions the vault as part of the same apply.
             </div>
             <div class="tags"><span class="tag">Azure Key Vault</span><span class="tag">RBAC</span><span class="tag">Passwordless</span></div>
           </div>
@@ -422,15 +417,13 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 6</div>
-            <div class="tl-title">MCP servers + Azure Monitor — AI-accessible infrastructure and alerting</div>
+            <div class="tl-title">MCP servers + Azure Monitor: live infrastructure access and alerting</div>
             <div class="tl-desc">
-              Added two <strong>Model Context Protocol (MCP)</strong> servers: one on the app VM exposing
-              infrastructure tools, one on the DB VM exposing database query tools. Both run as systemd
-              services (Python/FastMCP + uvicorn), proxied through nginx over Server-Sent Events. This lets
-              Claude Code connect directly to the live deployment and query real infrastructure state —
-              the <em>cloud-infra</em> MCP server visible in Claude Code's sidebar is this deployment.
-              Also added Azure Monitor metric alerts: CPU &gt; 85% sustained for 5 minutes triggers an
-              email via Action Group.
+              Added two <strong>Model Context Protocol (MCP)</strong> servers: one on the app VM for infrastructure metrics,
+              one on the DB VM for database queries. Both run as systemd services (Python/FastMCP + uvicorn),
+              proxied through nginx over SSE. Claude Code connects to this deployment directly through the
+              <em>cloud-infra</em> MCP server and can query live system state.
+              Also added Azure Monitor alerts: CPU above 85% for 5 minutes sends an email.
             </div>
             <div class="tags"><span class="tag">MCP / SSE</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
           </div>
@@ -443,19 +436,16 @@
     <div class="row">
 
       <div class="card">
-        <div class="card-title">MCP — AI Interface Layer</div>
+        <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          The Model Context Protocol (MCP) is an open standard for giving AI assistants structured
-          access to external tools and data. Two MCP servers run on this deployment:
+          MCP (Model Context Protocol) lets AI tools call structured endpoints on a server. Two servers run here:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (app VM, port 8000) — exposes tools for querying live system metrics: uptime, load average, memory usage, disk, and nginx connection stats. Proxied by nginx at <code>/mcp/</code>.</li>
-          <li><strong>mcp-db</strong> (DB VM, port 8001) — exposes tools for querying the MariaDB instance. Accessible only through the app VM; the DB VM has no public IP.</li>
+          <li><strong>mcp-infra</strong> on the app VM: exposes uptime, load, memory, disk, and nginx stats. Proxied by nginx at <code>/mcp/</code>.</li>
+          <li><strong>mcp-db</strong> on the DB VM: exposes database query tools. Only reachable through the app VM since the DB has no public IP.</li>
         </ul>
         <div class="note">
-          Both servers speak the MCP protocol over HTTP Server-Sent Events (SSE). Claude Code's
-          <em>cloud-infra</em> server entry points at this deployment — the system info and nginx stats
-          shown in Claude Code come from this live VM in real time.
+          Both run over SSE. The <em>cloud-infra</em> server in Claude Code's sidebar points at this deployment and pulls live data from this VM.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / SSE</span>
@@ -521,7 +511,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
     direction             = <span class="s">"Inbound"</span>
     access                = <span class="s">"Allow"</span>
     destination_port      = <span class="s">"3306"</span>
-    <span class="c"># App subnet CIDR only — nothing else can reach MariaDB</span>
+    <span class="c"># app subnet only; nothing else can reach MariaDB</span>
     source_address_prefix = <span class="s">"10.0.1.0/24"</span>
   }
 }</pre>
@@ -534,11 +524,11 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
   tenant_id = <span class="f">data.azurerm_client_config.current</span>.tenant_id
   sku_name  = <span class="s">"standard"</span>
   <span class="c"># Vault password stored here; fetched at runtime</span>
-  <span class="c"># by vault_pass.sh — never touches disk locally.</span>
+  <span class="c"># by vault_pass.sh; never touches disk locally.</span>
 }
 
 <span class="c"># Terraform writes the live IP into Ansible's inventory</span>
-<span class="c"># on every apply — no manual IP hunting after redeploy.</span>
+<span class="c"># on every apply; no manual IP hunting after redeploy.</span>
 <span class="f">resource</span> <span class="s">"local_file"</span> <span class="v">"ansible_vars"</span> {
   content  = <span class="s">"app_domain: \"</span><span class="n">${azurerm_public_ip.app_pip.ip_address}</span><span class="s">.nip.io\""</span>
   filename = <span class="s">"group_vars/all/terraform_outputs.yml"</span>
