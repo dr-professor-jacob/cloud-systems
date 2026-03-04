@@ -146,8 +146,8 @@
         <tr class="data"><td>AI interface</td><td>MCP over SSE</td></tr>
 
         <tr class="section-row"><td colspan="2">Network</td></tr>
-        <tr class="data"><td>App subnet</td><td>10.0.1.0/24 — public</td></tr>
-        <tr class="data"><td>DB subnet</td><td>10.0.2.0/24 — private</td></tr>
+        <tr class="data"><td>App subnet</td><td>10.0.1.0/24 (public)</td></tr>
+        <tr class="data"><td>DB subnet</td><td>10.0.2.0/24 (private)</td></tr>
         <tr class="data"><td>DB access</td><td>App subnet only</td></tr>
         <tr class="data"><td>SSH</td><td>Via bastion only</td></tr>
       </table>
@@ -158,9 +158,9 @@
       <div class="card">
         <div class="card-title">About this project</div>
         <ul class="highlights">
-          <li>Fully automated two-tier deployment — one <code>terraform apply</code> provisions the network, VMs, and NSGs; one <code>ansible-playbook</code> configures everything.</li>
+          <li>Fully automated two-tier deployment: one <code>terraform apply</code> provisions the network, VMs, and NSGs; one <code>ansible-playbook</code> configures everything.</li>
           <li>Self-healing: Terraform writes the live public IP into Ansible's group vars on every apply, so the stack always converges to the correct state automatically.</li>
-          <li>Zero-trust network segmentation — the database is unreachable from the internet; only the app subnet can connect on port 3306.</li>
+          <li>Zero-trust network segmentation: the database is unreachable from the internet; only the app subnet can connect on port 3306.</li>
           <li>Secrets stay encrypted at rest with Ansible Vault; Terraform state lives in Azure Blob Storage, never on a local machine.</li>
         </ul>
       </div>
