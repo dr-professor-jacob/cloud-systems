@@ -188,6 +188,72 @@
         enabled: yes
         daemon_reload: yes
 
+    # Visitor ask service (Claude demo)
+    - name: Fetch Anthropic API key from Key Vault
+      command: >
+        az keyvault secret show --vault-name cloud-v3-kv
+        --name anthropic-api-key --query value --output tsv
+      delegate_to: localhost
+      become: no
+      register: anthropic_key_result
+      changed_when: false
+
+    - name: Create ask-app virtualenv
+      command: python3 -m venv /opt/ask-app
+      args:
+        creates: /opt/ask-app/bin/python
+
+    - name: Install ask-app dependencies
+      pip:
+        name:
+          - fastapi
+          - uvicorn
+          - anthropic
+        virtualenv: /opt/ask-app
+
+    - name: Deploy ask_app.py
+      copy:
+        src: templates/ask_app.py
+        dest: /opt/ask-app/ask_app.py
+        owner: root
+        group: root
+        mode: '0755'
+      notify: Restart ask-app
+
+    - name: Create ask-app rate data directory
+      file:
+        path: /opt/ask-app
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy ask-app systemd service
+      template:
+        src: templates/ask_app.service
+        dest: /etc/systemd/system/ask-app.service
+        owner: root
+        group: root
+        mode: '0644'
+      vars:
+        anthropic_api_key: "{{ anthropic_key_result.stdout }}"
+      notify: Restart ask-app
+
+    - name: Enable and start ask-app service
+      systemd:
+        name: ask-app
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Deploy ask.js
+      copy:
+        src: templates/ask.js
+        dest: /var/www/html/ask.js
+        owner: root
+        group: root
+        mode: '0644'
+
     - name: Deploy HTTPS Nginx configuration
       template:
         src: templates/nginx_ssl.conf.j2
@@ -215,5 +281,11 @@
     - name: Restart mcp-infra
       systemd:
         name: mcp-infra
+        state: restarted
+        daemon_reload: yes
+
+    - name: Restart ask-app
+      systemd:
+        name: ask-app
         state: restarted
         daemon_reload: yes

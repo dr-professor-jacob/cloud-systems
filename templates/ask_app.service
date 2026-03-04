@@ -1,0 +1,17 @@
+[Unit]
+Description=Visitor Ask — Claude demo endpoint
+After=network.target nginx.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/ask-app
+ExecStart=/opt/ask-app/bin/uvicorn ask_app:app --host 127.0.0.1 --port 8002
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=ANTHROPIC_API_KEY={{ anthropic_api_key }}
+
+[Install]
+WantedBy=multi-user.target
