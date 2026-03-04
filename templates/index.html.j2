@@ -250,6 +250,29 @@
       </p>
     </div>
 
+    <!-- Ask Claude -->
+    <div class="card">
+      <div class="card-title">Ask Claude About This Project</div>
+      <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
+        This is a live Claude API integration — type a question and get a real answer from <strong>claude-haiku</strong> running on the server.
+      </p>
+      <form id="ask-form">
+        <textarea id="ask-input" maxlength="300" rows="3"
+          placeholder="Ask anything about this project…"
+          style="width:100%;box-sizing:border-box;font-family:inherit;font-size:.9rem;border:1px solid #d4d0cb;border-radius:4px;padding:.6rem .75rem;resize:vertical;color:#222;background:#faf9f7;"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;gap:.5rem;flex-wrap:wrap;">
+          <span id="ask-counter" style="font-size:.72rem;color:#888;">300 characters remaining</span>
+          <button id="ask-btn" type="submit"
+            style="font-size:.875rem;padding:.45rem 1.2rem;background:#1a56db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:500;white-space:nowrap;">Ask Claude</button>
+        </div>
+      </form>
+      <div id="ask-answer" style="display:none;margin-top:1rem;background:#f0f4ff;border-left:3px solid #1a56db;padding:.75rem 1rem;border-radius:0 4px 4px 0;">
+        <p id="ask-answer-text" style="margin:0;font-size:.9rem;color:#1a1a2e;line-height:1.7;"></p>
+      </div>
+      <div id="ask-error" style="display:none;margin-top:.6rem;font-size:.85rem;color:#c0392b;"></div>
+      <div id="ask-remaining" style="display:none;margin-top:.5rem;font-size:.72rem;color:#888;"></div>
+    </div>
+
     <!-- Infra table + Security -->
     <div class="row">
 
@@ -498,25 +521,6 @@
         </table>
         <p id="a-summary" style="font-size:.875rem;color:#333;line-height:1.6;font-style:italic;">—</p>
         <div class="note" id="activity-note" style="display:none;"></div>
-
-        <div style="margin-top:1.2rem;border-top:1px solid #e8e5e1;padding-top:1.1rem;">
-          <div style="font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#706e6c;margin-bottom:.6rem;">Ask Claude a Question</div>
-          <form id="ask-form">
-            <textarea id="ask-input" maxlength="300" rows="2"
-              placeholder="Ask anything about this project…"
-              style="width:100%;box-sizing:border-box;font-family:inherit;font-size:.875rem;border:1px solid #d4d0cb;border-radius:4px;padding:.5rem .65rem;resize:vertical;color:#222;background:#faf9f7;"></textarea>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.45rem;">
-              <span id="ask-counter" style="font-size:.72rem;color:#888;">300 characters remaining</span>
-              <button id="ask-btn" type="submit"
-                style="font-size:.82rem;padding:.38rem .9rem;background:#1a56db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:500;">Ask</button>
-            </div>
-          </form>
-          <div id="ask-answer" style="display:none;margin-top:.8rem;background:#f0f4ff;border-left:3px solid #1a56db;padding:.6rem .8rem;border-radius:0 4px 4px 0;">
-            <p id="ask-answer-text" style="margin:0;font-size:.875rem;color:#1a1a2e;line-height:1.6;"></p>
-          </div>
-          <div id="ask-error" style="display:none;margin-top:.6rem;font-size:.82rem;color:#c0392b;"></div>
-          <div id="ask-remaining" style="display:none;margin-top:.4rem;font-size:.72rem;color:#888;"></div>
-        </div>
       </div>
 
     </div>
