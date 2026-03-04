@@ -6,10 +6,10 @@ START=$(date +%s)
 echo "==> git pull"
 git pull
 
-echo "==> terraform apply"
-terraform apply -auto-approve
+echo "==> tofu apply"
+tofu apply -auto-approve
 
-IP=$(terraform output -raw app_public_ip)
+IP=$(tofu output -raw app_public_ip)
 echo "==> App IP: $IP"
 
 echo "==> Waiting for SSH on $IP..."
