@@ -114,30 +114,6 @@
     </div>
   </main>
 
-  <script>
-    function detectBrowser(ua) {
-      if (/Edg\//.test(ua))    return "Microsoft Edge";
-      if (/OPR\/|Opera/.test(ua)) return "Opera";
-      if (/Firefox\//.test(ua))  return "Firefox";
-      if (/Chrome\//.test(ua))   return "Chrome";
-      if (/Safari\//.test(ua))   return "Safari";
-      return "Unknown";
-    }
-    function detectOS(ua) {
-      if (/Windows NT 10/.test(ua)) return "Windows 10/11";
-      if (/Windows NT/.test(ua))    return "Windows";
-      if (/Mac OS X/.test(ua))      return "macOS";
-      if (/Android/.test(ua))       return "Android";
-      if (/iPhone|iPad/.test(ua))   return "iOS";
-      if (/Linux/.test(ua))         return "Linux";
-      return "Unknown";
-    }
-    const ua = navigator.userAgent;
-    document.getElementById("v-browser").textContent = detectBrowser(ua);
-    document.getElementById("v-os").textContent      = detectOS(ua);
-    document.getElementById("v-lang").textContent    = navigator.language || "—";
-    document.getElementById("v-screen").textContent  = screen.width + " × " + screen.height;
-    document.getElementById("v-ua").textContent      = ua;
-  </script>
+  <script src="/session.js"></script>
 </body>
 </html>
