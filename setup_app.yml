@@ -58,6 +58,14 @@
         group: www-data
         mode: '0644'
 
+    - name: Deploy session script
+      copy:
+        src: templates/session.js
+        dest: /var/www/html/session.js
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
     - name: Deploy HTTPS Nginx configuration
       template:
         src: templates/nginx_ssl.conf.j2
