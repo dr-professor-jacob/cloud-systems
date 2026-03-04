@@ -8,15 +8,61 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Install MariaDB
+    - name: Install MariaDB and security packages
       apt:
-        name: mariadb-server
+        name:
+          - mariadb-server
+          - python3-pymysql
+          - python3-venv
+          - fail2ban
+          - unattended-upgrades
         state: present
 
-    - name: Install python3-pymysql
-      apt:
-        name: python3-pymysql
-        state: present
+    - name: Configure fail2ban SSH jail
+      copy:
+        dest: /etc/fail2ban/jail.d/sshd.conf
+        content: |
+          [sshd]
+          enabled  = true
+          port     = ssh
+          maxretry = 5
+          bantime  = 1h
+          findtime = 10m
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart fail2ban
+
+    - name: Configure unattended security upgrades
+      copy:
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+        content: |
+          Unattended-Upgrade::Allowed-Origins {
+              "${distro_id}:${distro_codename}-security";
+          };
+          Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+          Unattended-Upgrade::MinimalSteps "true";
+          Unattended-Upgrade::Remove-Unused-Dependencies "true";
+          Unattended-Upgrade::Automatic-Reboot "false";
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable automatic update schedule
+      copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Ensure fail2ban is running and enabled
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
 
     - name: Ensure MariaDB is running and enabled
       service:
@@ -61,6 +107,46 @@
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
+    # MCP database server
+    - name: Create MCP virtualenv
+      command: python3 -m venv /opt/mcp-db
+      args:
+        creates: /opt/mcp-db/bin/python
+
+    - name: Install MCP and dependencies in virtualenv
+      pip:
+        name:
+          - mcp
+          - uvicorn
+          - starlette
+          - pymysql
+        virtualenv: /opt/mcp-db
+
+    - name: Deploy MCP DB server script
+      copy:
+        src: templates/mcp_db.py
+        dest: /opt/mcp-db/mcp_db.py
+        owner: root
+        group: root
+        mode: '0755'
+      notify: Restart mcp-db
+
+    - name: Deploy MCP DB systemd service
+      template:
+        src: templates/mcp_db.service.j2
+        dest: /etc/systemd/system/mcp-db.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart mcp-db
+
+    - name: Enable and start MCP DB service
+      systemd:
+        name: mcp-db
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
     # Restrict bind address to DB subnet interface
     - name: Set bind-address to DB subnet IP
       copy:
@@ -78,3 +164,14 @@
       service:
         name: mariadb
         state: restarted
+
+    - name: Restart fail2ban
+      service:
+        name: fail2ban
+        state: restarted
+
+    - name: Restart mcp-db
+      systemd:
+        name: mcp-db
+        state: restarted
+        daemon_reload: yes

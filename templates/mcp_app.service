@@ -1,0 +1,17 @@
+[Unit]
+Description=MCP Infrastructure Server (app-vm)
+After=network.target nginx.service
+Documentation=https://modelcontextprotocol.io
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/mcp-infra
+ExecStart=/opt/mcp-infra/bin/python /opt/mcp-infra/mcp_app.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
