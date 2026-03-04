@@ -545,9 +545,9 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
 - <span class="k">name</span>: Obtain SSL certificate
   <span class="k">command</span>: >
     certbot certonly --webroot -w /var/www/html
-    -d {{ app_domain }} --non-interactive
+    -d {% raw %}{{ app_domain }}{% endraw %} --non-interactive
   args:
-    creates: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+    creates: /etc/letsencrypt/live/{% raw %}{{ app_domain }}{% endraw %}/fullchain.pem
 
 - <span class="k">name</span>: Deploy HTTPS nginx config  <span class="c"># now the cert exists</span>
   <span class="k">template</span>:
@@ -576,7 +576,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
     dest: /etc/mysql/mariadb.conf.d/99-bind.cnf
     content: |
       [mysqld]
-      bind-address = {{ db_bind_address }}</pre>
+      bind-address = {% raw %}{{ db_bind_address }}{% endraw %}</pre>
           </div>
 
         </div>
