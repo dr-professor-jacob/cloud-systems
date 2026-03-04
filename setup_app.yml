@@ -132,6 +132,14 @@
         group: www-data
         mode: '0644'
 
+    - name: Deploy metrics script
+      copy:
+        src: templates/metrics.js
+        dest: /var/www/html/metrics.js
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
     # MCP infrastructure server
     - name: Create MCP virtualenv
       command: python3 -m venv /opt/mcp-infra
