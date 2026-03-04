@@ -1,3 +1,8 @@
+output "key_vault_name" {
+  description = "Azure Key Vault name (stores Ansible Vault password)"
+  value       = azurerm_key_vault.kv.name
+}
+
 output "app_public_ip" {
   description = "Public IP address of the app VM"
   value       = azurerm_public_ip.app_pip.ip_address

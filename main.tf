@@ -223,6 +223,27 @@ resource "azurerm_linux_virtual_machine" "db_vm" {
   boot_diagnostics {}
 }
 
+# ── Azure Key Vault (Ansible Vault password at rest) ────────────────────────
+
+data "azurerm_client_config" "current" {}
+
+resource "azurerm_key_vault" "kv" {
+  name                       = "cloud-v3-kv"
+  location                   = azurerm_resource_group.rg.location
+  resource_group_name        = azurerm_resource_group.rg.name
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  sku_name                   = "standard"
+  soft_delete_retention_days = 7
+  purge_protection_enabled   = false
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = ["Get", "Set", "List", "Delete", "Purge"]
+  }
+}
+
 # ── Azure Monitor ────────────────────────────────────────────────────────────
 
 resource "azurerm_monitor_action_group" "ops" {
