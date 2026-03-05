@@ -20,9 +20,6 @@ provider "azurerm" {
 resource "random_password" "db_password" {
   length  = 32
   special = false
-  lifecycle {
-    ignore_changes = [result]
-  }
 }
 
 resource "azurerm_resource_group" "rg" {
