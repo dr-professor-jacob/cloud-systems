@@ -485,13 +485,21 @@
           <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Both run as systemd services via FastMCP + uvicorn, proxied through nginx. The Ask Claude box on this page calls the same tools.
+          <strong>Where does the AI live?</strong> Claude runs on Anthropic's servers — not on these VMs.
+          When you ask a question, the app VM sends a request to the Claude API with a description of the available tools.
+          Claude decides which tools to call, the app VM runs them locally and returns the results, and Claude writes the final answer.
+          The AI never has direct access to the servers; it only sees what the tools explicitly return.
+        </div>
+        <div class="note" style="margin-top:.6rem;">
+          <strong>Is it safe?</strong> The tools are read-only functions defined in code — <code>system_info</code>, <code>nginx_stats</code>, <code>sentinel_log</code>.
+          Claude can ask for those outputs, but it cannot run arbitrary commands, write files, or reach the DB VM directly.
+          The same XSS sanitization that protects this page applies to Claude's responses too — all output is HTML-escaped before rendering.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / Streamable HTTP</span>
           <span class="tag">FastMCP</span>
-          <span class="tag">uvicorn</span>
-          <span class="tag">nginx proxy</span>
+          <span class="tag">read-only tools</span>
+          <span class="tag">Anthropic API</span>
           <span class="tag">systemd</span>
         </div>
       </div>
