@@ -254,6 +254,43 @@
         group: root
         mode: '0644'
 
+
+    # Sentinel health monitor
+    - name: Deploy sentinel health check script
+      copy:
+        src: templates/sentinel.sh
+        dest: /usr/local/bin/sentinel.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Deploy sentinel systemd service
+      copy:
+        src: templates/sentinel.service
+        dest: /etc/systemd/system/sentinel.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Deploy sentinel systemd timer
+      copy:
+        src: templates/sentinel.timer
+        dest: /etc/systemd/system/sentinel.timer
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable and start sentinel timer
+      systemd:
+        name: sentinel.timer
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    - name: Store nginx config checksum for sentinel
+      shell: sha256sum /etc/nginx/nginx.conf | awk "{print \}" > /etc/nginx/.sentinel_checksum
+      changed_when: false
+
     - name: Ensure options-ssl-nginx.conf exists
       copy:
         dest: /etc/letsencrypt/options-ssl-nginx.conf

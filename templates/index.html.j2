@@ -426,6 +426,7 @@
         <div class="tl-item">
           <div class="tl-badge-col">
             <div class="tl-badge">6</div>
+            <div class="tl-line"></div>
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 6</div>
@@ -437,6 +438,26 @@
               Azure Monitor alerts on CPU above 85% for 5 minutes.
             </div>
             <div class="tags"><span class="tag">MCP / Streamable HTTP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
+          </div>
+        </div>
+
+
+        <div class="tl-item">
+          <div class="tl-badge-col">
+            <div class="tl-badge">7</div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-label">Iteration 7</div>
+            <div class="tl-title">Self-healing: sentinel monitoring + automated remediation</div>
+            <div class="tl-desc">
+              A systemd timer runs a sentinel script every 5 minutes on the app VM. It checks that nginx,
+              ask-app, and mcp-infra are active, verifies the nginx config checksum against the last known-good state,
+              and auto-restarts any failed service. All events are written to <code>/var/log/sentinel.log</code>.
+              A separate <code>repair_web.yml</code> playbook restores the full stack from Ansible templates when deeper
+              remediation is needed. The Cloud Shell MCP hub exposes <code>get_sentinel_log</code> and
+              <code>apply_remediation</code> tools so Claude can monitor and remediate without logging into any VM.
+            </div>
+            <div class="tags"><span class="tag">systemd timer</span><span class="tag">config integrity</span><span class="tag">auto-restart</span><span class="tag">MCP remediation</span></div>
           </div>
         </div>
 
@@ -511,6 +532,52 @@
 
 
 
+    </div>
+
+
+    <!-- Self-Healing -->
+    <div class="card">
+      <div class="card-title">Self-Healing Architecture</div>
+      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
+        A sentinel script runs every 5 minutes via systemd timer on the app VM. It checks service health,
+        verifies the nginx config checksum against the post-deploy baseline, and auto-restarts failed services.
+        If deeper repair is needed, <code>repair_web.yml</code> restores the full stack from the Ansible templates
+        stored in source control. The Cloud Shell MCP hub gives Claude direct access to the sentinel log and
+        the repair playbook without any human logging in.
+      </p>
+      <div class="row">
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Sentinel checks (every 5 min)</div>
+          <ul class="bullets">
+            <li>nginx, ask-app, mcp-infra active via <code>systemctl</code></li>
+            <li>nginx config checksum matches post-deploy baseline</li>
+            <li>nginx_status endpoint responds on localhost</li>
+            <li>Auto-restarts failed services, logs all events</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP hub tools (Cloud Shell)</div>
+          <ul class="bullets">
+            <li><code>get_sentinel_log</code> — read recent health events</li>
+            <li><code>check_health</code> — live service status</li>
+            <li><code>get_nginx_errors</code> — nginx error log</li>
+            <li><code>apply_remediation</code> — run repair_web.yml</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note" style="margin-top:.9rem;">
+        The repair playbook restores nginx config from the Ansible template, fixes SSL cert permissions,
+        restores webroot ownership, and restarts all services. It stores a fresh config checksum so the
+        sentinel knows the new baseline. Cloud Shell is the only access point; no one logs into the VM to fix things.
+      </div>
+      <div class="tags" style="margin-top:.9rem;">
+        <span class="tag">systemd timer</span>
+        <span class="tag">config integrity</span>
+        <span class="tag">auto-restart</span>
+        <span class="tag">Ansible remediation</span>
+        <span class="tag">MCP hub</span>
+        <span class="tag">ZTA</span>
+      </div>
     </div>
 
     <!-- Live metrics -->
