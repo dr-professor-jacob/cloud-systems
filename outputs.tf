@@ -12,3 +12,8 @@ output "db_private_ip" {
   description = "Private IP address of the DB VM"
   value       = azurerm_network_interface.db_nic.private_ip_address
 }
+
+output "dns_nameservers" {
+  description = "Azure DNS nameservers — point your registrar's NS records here, then submit the DS record for DNSSEC"
+  value       = var.domain_name != null ? azurerm_dns_zone.main[0].name_servers : []
+}

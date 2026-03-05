@@ -13,5 +13,11 @@ variable "admin_username" {
 variable "allowed_ssh_ip" {
   description = "CIDR of the host allowed to SSH to the app VM"
   type        = string
-  default     = "75.188.18.74/32"
+  default     = "*"
+}
+
+variable "domain_name" {
+  description = "Your registered domain name (e.g. example.com). Leave null to use nip.io auto-domain from the public IP. Must be delegated to Azure DNS nameservers at your registrar before running Ansible."
+  type        = string
+  default     = null
 }

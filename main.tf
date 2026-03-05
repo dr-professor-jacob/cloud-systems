@@ -61,17 +61,6 @@ resource "azurerm_network_security_group" "app_nsg" {
     destination_address_prefix = "*"
   }
 
-  security_rule {
-    name                       = "AllowSSHCloudShell"
-    priority                   = 101
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "AzureCloud"
-    destination_address_prefix = "*"
-  }
 
   security_rule {
     name                       = "AllowHTTP"
@@ -286,7 +275,44 @@ resource "local_file" "ansible_inventory" {
   filename = "inventory.ini"
 }
 
+locals {
+  app_domain = var.domain_name != null ? var.domain_name : "${azurerm_public_ip.app_pip.ip_address}.nip.io"
+}
+
 resource "local_file" "ansible_vars" {
-  content  = "app_domain: \"${azurerm_public_ip.app_pip.ip_address}.nip.io\"\n"
+  content  = "app_domain: \"${local.app_domain}\"\n"
   filename = "group_vars/all/terraform_outputs.yml"
+}
+
+# ── DNS + DNSSEC (only when domain_name is set) ───────────────────────────────
+
+resource "azurerm_dns_zone" "main" {
+  count               = var.domain_name != null ? 1 : 0
+  name                = var.domain_name
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_dns_a_record" "app" {
+  count               = var.domain_name != null ? 1 : 0
+  name                = "@"
+  zone_name           = azurerm_dns_zone.main[0].name
+  resource_group_name = azurerm_resource_group.rg.name
+  ttl                 = 300
+  records             = [azurerm_public_ip.app_pip.ip_address]
+}
+
+# Enable DNSSEC signing on the zone.
+# After apply, retrieve the DS record and submit it at your registrar:
+#   az network dns dnssec-config show \
+#     --resource-group cloud-v3 --zone-name <domain> \
+#     --query "signingKeys[?keyType=='ZoneSigning'].digestAlgorithmType" -o table
+resource "terraform_data" "dnssec" {
+  count      = var.domain_name != null ? 1 : 0
+  depends_on = [azurerm_dns_zone.main]
+
+  triggers_replace = [azurerm_dns_zone.main[0].id]
+
+  provisioner "local-exec" {
+    command = "az network dns dnssec-config create --resource-group ${azurerm_resource_group.rg.name} --zone-name ${var.domain_name}"
+  }
 }

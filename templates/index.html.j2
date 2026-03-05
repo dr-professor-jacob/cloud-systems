@@ -113,6 +113,7 @@
     .infra-table tr.data:hover td, .vis-table tr:hover td { background: #f4f8fd; }
     .infra-table td, .vis-table td { padding: .52rem .3rem; font-size: .86rem; vertical-align: top; transition: background .12s; }
     .infra-table td:first-child, .vis-table td:first-child { color: #706e6c; width: 44%; }
+    .vis-table td:first-child code { color: #003d7a; font-weight: 600; }
     .infra-table td:last-child, .vis-table td:last-child { color: #1a1a1a; font-weight: 500; }
     .infra-table tr.section-row td {
       font-size: .65rem; font-weight: 700; text-transform: uppercase;
@@ -282,14 +283,15 @@
           <tr class="section-row"><td colspan="2">Host</td></tr>
           <tr class="data"><td>Domain</td><td>{{ app_domain }}</td></tr>
           <tr class="data"><td>Region</td><td>Azure South Central US</td></tr>
-          <tr class="data"><td>Protocol</td><td>HTTP/2 · TLS 1.2 / 1.3</td></tr>
+          <tr class="data"><td>Protocol</td><td>HTTP/2 · TLS 1.3 only</td></tr>
           <tr class="data"><td>Certificate</td><td>Let's Encrypt (auto-renew)</td></tr>
 
           <tr class="section-row"><td colspan="2">Virtual Machines</td></tr>
           <tr class="data"><td>App VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
           <tr class="data"><td>DB VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
           <tr class="data"><td>OS</td><td>Ubuntu 24.04 LTS (arm64)</td></tr>
-          <tr class="data"><td>Auth</td><td>SSH key only, no passwords</td></tr>
+          <tr class="data"><td>Auth</td><td>SSH key only (Ed25519), no passwords</td></tr>
+          <tr class="data"><td>SSH KEx</td><td>sntrup761x25519 (PQ hybrid) + classical fallback</td></tr>
 
           <tr class="section-row"><td colspan="2">Network</td></tr>
           <tr class="data"><td>VNet</td><td>10.0.0.0/16</td></tr>
@@ -305,13 +307,15 @@
           <tr class="data"><td>Vault password</td><td>Azure Key Vault (runtime fetch)</td></tr>
           <tr class="data"><td>OpenTofu state</td><td>Azure Blob Storage (shared, locked)</td></tr>
           <tr class="data"><td>Monitoring</td><td>Azure Monitor + email alerts</td></tr>
-          <tr class="data"><td>AI interface</td><td>MCP over SSE</td></tr>
+          <tr class="data"><td>DNS</td><td>{% if 'nip.io' in app_domain %}nip.io (Azure DNS + DNSSEC configured, pending domain cutover){% else %}Azure DNS · DNSSEC signed{% endif %}</td></tr>
+          <tr class="data"><td>AI interface</td><td>MCP (Streamable HTTP)</td></tr>
         </table>
       </div>
 
       <div class="card">
         <div class="card-title">Security Hardening</div>
         <ul class="bullets">
+          <li><strong>Post-quantum SSH.</strong> Both VMs use <strong>sntrup761x25519-sha512</strong> as the preferred key exchange — a hybrid of the NIST-selected post-quantum lattice algorithm (NTRU) and X25519. Host and client keys are Ed25519 only. MACs are ETM-mode only; ciphers are ChaCha20-Poly1305 and AES-GCM.</li>
           <li><strong>SSH key-only auth.</strong> Password auth is disabled. The DB VM has no public IP, so reaching it requires tunneling through the app VM.</li>
           <li><strong>fail2ban</strong> runs on both VMs. 5 failed SSH attempts in 10 minutes gets the source IP banned for an hour.</li>
           <li><strong>Unattended-upgrades</strong> pulls security patches automatically from the Ubuntu security repo on both machines.</li>
@@ -361,7 +365,7 @@
             <div class="tl-desc">
               Split into two VMs across two subnets. The DB VM gets no public IP; only the app subnet can reach port 3306.
               Ansible now runs two playbooks, one per host group. Terraform's <code>local_file</code> resource
-              writes the live public IP into Ansible's inventory on every apply, so the playbook always targets the right host
+              writes the live public IP and domain into Ansible's inventory on every apply, so the playbook always targets the right host
               without any manual edits.
             </div>
             <div class="tags"><span class="tag">Two-tier</span><span class="tag">NSG</span><span class="tag">MariaDB</span><span class="tag">Inventory automation</span></div>
@@ -381,7 +385,7 @@
               but the final nginx config references a cert that doesn't exist yet. Fixed by deploying an HTTP-only config first
               (<code>when: not cert_stat.stat.exists</code>), running certbot, then swapping in the SSL config.
               Secrets moved into Ansible Vault. Terraform state moved to Azure Blob Storage so it stays off local machines.
-              Used <code>nip.io</code> to get a real domain from the static IP without buying one.
+              Used <code>nip.io</code> to get a real domain from the static IP without buying one (later replaced by Azure DNS with DNSSEC in iteration 7).
             </div>
             <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Ansible Vault</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
           </div>
@@ -426,6 +430,7 @@
         <div class="tl-item">
           <div class="tl-badge-col">
             <div class="tl-badge">6</div>
+            <div class="tl-line"></div>
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 6</div>
@@ -433,11 +438,32 @@
             <div class="tl-desc">
               Added two <strong>Model Context Protocol (MCP)</strong> servers: one on the app VM for infrastructure metrics,
               one on the DB VM for database queries. Both run as systemd services (Python/FastMCP + uvicorn),
-              proxied through nginx over SSE. Claude Code connects to this deployment directly through the
+              proxied through nginx. Claude Code connects to this deployment directly through the
               <em>cloud-infra</em> MCP server and can query live system state.
               Also added Azure Monitor alerts: CPU above 85% for 5 minutes sends an email.
             </div>
-            <div class="tags"><span class="tag">MCP / SSE</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
+            <div class="tags"><span class="tag">MCP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-badge-col">
+            <div class="tl-badge">7</div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-label">Iteration 7</div>
+            <div class="tl-title">Post-quantum hardening: PQ SSH, TLS 1.3-only, DNSSEC</div>
+            <div class="tl-desc">
+              Hardened the transport stack as far as current tooling allows. SSH now negotiates
+              <strong>sntrup761x25519-sha512</strong> (NTRU + X25519 hybrid) as the preferred key exchange
+              on both VMs — resistant to harvest-now/decrypt-later attacks. Host and client keys are
+              Ed25519 only. nginx is restricted to <strong>TLS 1.3 only</strong> (dropping 1.2), with a
+              one-year HSTS preload header. DNS moved from nip.io to
+              <strong>Azure DNS with DNSSEC signing</strong> — responses are cryptographically authenticated,
+              preventing cache poisoning and spoofing. The CA/PKI layer remains classical (Let's Encrypt
+              doesn't issue PQ certificates yet), but all other layers are hardened.
+            </div>
+            <div class="tags"><span class="tag">Post-quantum SSH</span><span class="tag">sntrup761x25519</span><span class="tag">TLS 1.3</span><span class="tag">DNSSEC</span><span class="tag">Azure DNS</span><span class="tag">HSTS preload</span></div>
           </div>
         </div>
 
@@ -453,14 +479,14 @@
           MCP (Model Context Protocol) is an open standard that lets AI assistants call structured tools on a remote server — like an API, but designed for LLMs. This deployment runs two MCP servers:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats. Public SSE endpoint below.</li>
+          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats. Public Streamable HTTP endpoint below.</li>
           <li><strong>mcp-db</strong> (DB VM) — database query tools. Private: only reachable through the app VM since the DB has no public IP.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Both run as systemd services (Python / FastMCP + uvicorn), proxied through nginx over SSE. Claude Code connects directly and calls tools in real time — the metrics on this page are written by Claude via MCP.
+          Both run as systemd services (Python / FastMCP + uvicorn), proxied through nginx (Streamable HTTP). Claude Code connects directly and calls tools in real time — the metrics on this page are written by Claude via MCP.
         </div>
         <div class="tags" style="margin-top:.9rem;">
-          <span class="tag">MCP / SSE</span>
+          <span class="tag">MCP</span>
           <span class="tag">FastMCP</span>
           <span class="tag">uvicorn</span>
           <span class="tag">nginx proxy</span>
@@ -502,7 +528,7 @@
           <pre>{
   <span class="s">"mcpServers"</span>: {
     <span class="s">"cloud-infra"</span>: {
-      <span class="s">"type"</span>: <span class="s">"streamable-http"</span>,
+      <span class="s">"type"</span>: <span class="s">"http"</span>,
       <span class="s">"url"</span>:  <span class="s">"https://{{ app_domain }}/mcp/"</span>
     }
   }
@@ -554,7 +580,7 @@
         <div class="code-block">
           <div class="code-label">1 — Provision infrastructure (OpenTofu)</div>
           <pre><span class="c"># Creates VNet, subnets, NSGs, VMs, Key Vault, Monitor alerts,</span>
-<span class="c"># and writes inventory.ini + group_vars with the live public IP.</span>
+<span class="c"># DNS zone, and writes inventory.ini + group_vars with domain + IP.</span>
 tofu apply -auto-approve</pre>
         </div>
         <div class="code-block">
@@ -602,11 +628,25 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
   <span class="c"># by vault_pass.sh; never touches disk locally.</span>
 }
 
-<span class="c"># Terraform writes the live IP into Ansible's inventory</span>
-<span class="c"># on every apply; no manual IP hunting after redeploy.</span>
+<span class="c"># Terraform writes the domain into Ansible's group vars</span>
+<span class="c"># on every apply; Ansible picks it up automatically.</span>
 <span class="f">resource</span> <span class="s">"local_file"</span> <span class="v">"ansible_vars"</span> {
-  content  = <span class="s">"app_domain: \"</span><span class="n">${azurerm_public_ip.app_pip.ip_address}</span><span class="s">.nip.io\""</span>
+  content  = <span class="s">"app_domain: \"</span><span class="n">${var.domain_name}</span><span class="s">\""</span>
   filename = <span class="s">"group_vars/all/terraform_outputs.yml"</span>
+}
+
+<span class="c"># Azure DNS zone with DNSSEC — responses are cryptographically signed.</span>
+<span class="c"># Point NS records at your registrar, submit DS record for full chain.</span>
+<span class="f">resource</span> <span class="s">"azurerm_dns_zone"</span> <span class="v">"main"</span> {
+  name                = <span class="n">var.domain_name</span>
+  resource_group_name = <span class="n">azurerm_resource_group.rg</span>.name
+}
+
+<span class="f">resource</span> <span class="s">"terraform_data"</span> <span class="v">"dnssec"</span> {
+  <span class="c"># az CLI call enables DNSSEC signing on the zone after creation.</span>
+  <span class="f">provisioner</span> <span class="s">"local-exec"</span> {
+    command = <span class="s">"az network dns dnssec-config create ..."</span>
+  }
 }</pre>
           </div>
 
@@ -643,7 +683,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
 
           <div class="code-block">
             <div class="code-label">MariaDB hardening (scripted secure_installation)</div>
-            <pre"><span class="c"># Equivalent to running mysql_secure_installation,</span>
+            <pre><span class="c"># Equivalent to running mysql_secure_installation,</span>
 <span class="c"># but fully automated and idempotent.</span>
 - <span class="k">name</span>: Remove anonymous users
   <span class="k">mysql_user</span>:
