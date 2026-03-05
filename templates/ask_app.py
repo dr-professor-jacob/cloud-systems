@@ -42,6 +42,11 @@ TOOLS = [
         "description": "Get nginx active connections and request counts from the stub_status endpoint.",
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
+    {
+        "name": "sentinel_log",
+        "description": "Read the last 30 lines of /var/log/sentinel.log — shows service health checks, alerts, auto-restarts, and config integrity results.",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
 ]
 
 
@@ -218,6 +223,13 @@ async def ask(q: Question, request: Request):
                     elif block.name == "nginx_stats":
                         result = _run_nginx_stats()
                         nginx_data = result
+                    elif block.name == "sentinel_log":
+                        try:
+                            result = subprocess.check_output(
+                                ["tail", "-n", "30", "/var/log/sentinel.log"]
+                            ).decode().strip()
+                        except Exception as e:
+                            result = f"sentinel.log unavailable: {e}"
                     else:
                         result = "Unknown tool."
                     tool_results.append({
