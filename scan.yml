@@ -1,30 +1,34 @@
 ---
-# scan.yml — Run nmap against the app VM from Cloud Shell (external perspective)
-# and push results to the webroot so the site can display them.
+# scan.yml — Install nmap on the DB VM and scan the app VM's public IP.
+# Traffic goes through the internet-facing NSG, so it's a genuine external view.
 #
 # Usage (from Cloud Shell):
 #   ansible-playbook -i inventory.ini scan.yml
-#
-# Requires nmap on the control node (Cloud Shell):
-#   sudo apt-get install -y nmap
 
-- name: Run external nmap scan and publish results
-  hosts: localhost
-  gather_facts: false
+- name: Install nmap on DB VM
+  hosts: db_servers
+  become: yes
+  tasks:
+    - name: Install nmap
+      apt:
+        name: nmap
+        state: present
+        update_cache: yes
+
+- name: Scan app VM from DB VM and publish results
+  hosts: db_servers
+  become: yes
   vars:
     target: "{{ hostvars['app_node']['ansible_host'] }}"
     out_file: /tmp/scan_raw.txt
-    web_dest: /var/www/html/scan.json
 
   tasks:
 
-    - name: Run nmap port + service + SSL + header scan
+    - name: Run nmap port + service + SSL scan
       shell: >
         nmap -sV -p 22,80,443,3306,8000,8002,8080
         --script ssl-enum-ciphers,http-security-headers
-        --open
-        -oN {{ out_file }}
-        {{ target }}
+        --open -oN {{ out_file }} {{ target }}
       register: scan_result
       changed_when: false
 
@@ -33,20 +37,12 @@
       register: open_ports
       changed_when: false
 
-    - name: Push results to app VM webroot
+    - name: Write scan.json to app VM webroot
       delegate_to: app_node
       become: yes
       copy:
-        content: |
-          {{
-            {
-              "scanned_at": lookup('pipe', 'date -u +\"%Y-%m-%dT%H:%M:%SZ\"'),
-              "target": target,
-              "open_ports": open_ports.stdout_lines,
-              "full_output": scan_result.stdout
-            } | to_nice_json
-          }}
-        dest: "{{ web_dest }}"
+        content: "{{ {'scanned_at': lookup('pipe', 'date -u +\"%Y-%m-%dT%H:%M:%SZ\"'), 'target': target, 'scanned_from': 'DB VM (external NSG perspective)', 'open_ports': open_ports.stdout_lines, 'full_output': scan_result.stdout} | to_nice_json }}"
+        dest: /var/www/html/scan.json
         owner: www-data
         group: www-data
         mode: '0644'
