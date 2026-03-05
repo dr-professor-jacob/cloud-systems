@@ -4,11 +4,11 @@ function loadMetrics() {
     .then(function(d) {
       document.getElementById('m-load').textContent     = d.load ? d.load.split(' ')[0] : '—';
       document.getElementById('m-mem').textContent      = d.mem_used || '—';
-      document.getElementById('m-disk').textContent     = d.disk_pct ? d.disk_pct + '%' : '—';
+      document.getElementById('m-disk').textContent     = d.disk_pct ? d.disk_pct.replace(/%/g,'') + '%' : '—';
       document.getElementById('m-uptime').textContent   = d.uptime || '—';
       document.getElementById('m-loadfull').textContent = d.load || '—';
       document.getElementById('m-memfull').textContent  = (d.mem_used && d.mem_total) ? d.mem_used + ' / ' + d.mem_total : '—';
-      document.getElementById('m-diskfull').textContent = (d.disk_used && d.disk_total) ? d.disk_used + ' / ' + d.disk_total + ' (' + d.disk_pct + '%)' : '—';
+      document.getElementById('m-diskfull').textContent = (d.disk_used && d.disk_total) ? d.disk_used + ' / ' + d.disk_total + ' (' + d.disk_pct.replace(/%/g,'') + '%)' : '—';
       document.getElementById('m-nginx').textContent    = d.nginx_connections || '—';
       if (d.updated) {
         var dt = new Date(d.updated);
