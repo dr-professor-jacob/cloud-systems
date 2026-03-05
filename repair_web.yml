@@ -1,0 +1,102 @@
+---
+# repair_web.yml — Restore app VM to known-good state from Ansible templates.
+# Run manually from Cloud Shell or triggered via the MCP hub.
+# Idempotent: safe to run at any time.
+
+- name: Restore web server to known-good state
+  hosts: app_servers
+  become: yes
+  tasks:
+
+    - name: Ensure SSL options file exists
+      copy:
+        dest: /etc/letsencrypt/options-ssl-nginx.conf
+        content: |
+          ssl_session_cache shared:le_nginx_SSL:10m;
+          ssl_session_timeout 1440m;
+          ssl_session_tickets off;
+          ssl_protocols TLSv1.2 TLSv1.3;
+          ssl_prefer_server_ciphers off;
+          ssl_ciphers "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384";
+        force: no
+
+    - name: Ensure DH params exist
+      command: openssl dhparam -out /etc/letsencrypt/ssl-dhparams.pem 2048
+      args:
+        creates: /etc/letsencrypt/ssl-dhparams.pem
+
+    - name: Fix SSL cert directory permissions
+      file:
+        path: "{{ item }}"
+        mode: '0755'
+      loop:
+        - /etc/letsencrypt/live
+        - /etc/letsencrypt/archive
+
+    - name: Restore nginx config from canonical template
+      template:
+        src: templates/nginx_ssl.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Validate and reload nginx
+
+    - name: Store nginx config checksum for sentinel
+      shell: sha256sum /etc/nginx/nginx.conf | awk '{print $1}' > /etc/nginx/.sentinel_checksum
+      changed_when: false
+
+    - name: Restore webroot ownership
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+        recurse: yes
+
+    - name: Ensure nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Ensure ask-app is running
+      systemd:
+        name: ask-app
+        state: started
+        enabled: yes
+
+    - name: Ensure mcp-infra is running
+      systemd:
+        name: mcp-infra
+        state: started
+        enabled: yes
+
+    - name: Ensure sentinel timer is running
+      systemd:
+        name: sentinel.timer
+        state: started
+        enabled: yes
+
+    - name: Verify nginx responds
+      uri:
+        url: "http://localhost/nginx_status"
+        status_code: 200
+      register: nginx_check
+      ignore_errors: yes
+
+    - name: Log repair completion
+      shell: >
+        echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") REPAIRED repair_web.yml completed" >> /var/log/sentinel.log
+      changed_when: false
+
+  handlers:
+    - name: Validate and reload nginx
+      command: nginx -t
+      notify: Reload nginx
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded
