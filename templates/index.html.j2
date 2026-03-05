@@ -227,7 +227,7 @@
     <div class="hd-left">
       <div>
         <div class="hd-title">Cloud Systems — Azure IaC Deployment</div>
-        <div class="hd-sub">Jacob Rickey &nbsp;·&nbsp; <a href="mailto:jr521816@ohio.edu" style="color:inherit;opacity:.85;">jr521816@ohio.edu</a> &nbsp;·&nbsp; ITS 5760 &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; {{ app_domain }}  ·  <a href="https://github.com/dr-professor-jacob/cloud-systems" target="_blank" style="color:inherit;opacity:.85;">GitHub</a></div>
+        <div class="hd-sub">Jacob Rickey &nbsp;·&nbsp; <a href="mailto:jr521816@ohio.edu" style="color:inherit;opacity:.85;">jr521816@ohio.edu</a> &nbsp;·&nbsp; ITS 5760 &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; {{ app_domain }}</div>
       </div>
       <div class="status-pill"><span class="status-dot"></span>Operational</div>
     </div>
@@ -272,6 +272,12 @@
       <div id="ask-error" style="display:none;margin-top:.6rem;font-size:.85rem;color:#c0392b;"></div>
       <div id="ask-remaining" style="display:none;margin-top:.5rem;font-size:.72rem;color:#888;"></div>
     </div>
+    <!-- Claude Activity -->
+    <div class="card">
+      <div class="card-title">Claude Activity</div>
+      <div id="activity-feed"><p style="font-size:.82rem;color:#888;font-style:italic;">Loading...</p></div>
+    </div>
+
 
     <!-- Infra table + Security -->
     <div class="row">
@@ -503,18 +509,7 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Claude Activity</span>
-          <span id="activity-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
-        </div>
-        <table class="vis-table" style="margin-bottom:.9rem;">
-          <tr><td>When</td><td id="a-updated">—</td></tr>
-          <tr><td>Tools used</td><td id="a-calls">—</td></tr>
-        </table>
-        <p id="a-summary" style="font-size:.875rem;color:#333;line-height:1.6;font-style:italic;">—</p>
-        <div class="note" id="activity-note" style="display:none;"></div>
-      </div>
+
 
     </div>
 
