@@ -19,7 +19,7 @@ RATE_FILE  = Path("/opt/ask-app/rate.json")
 MAX_PER_IP = 10
 MAX_GLOBAL = 500
 MAX_INPUT  = 300
-MAX_TOKENS = 600
+MAX_TOKENS = 1024
 
 SYSTEM_PROMPT = (
     "You are an AI assistant embedded in a live cloud infrastructure portfolio site. "
