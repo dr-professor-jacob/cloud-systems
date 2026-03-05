@@ -288,7 +288,7 @@
         daemon_reload: yes
 
     - name: Store nginx config checksum for sentinel
-      shell: sha256sum /etc/nginx/nginx.conf | awk "{print \}" > /etc/nginx/.sentinel_checksum
+      shell: sha256sum /etc/nginx/nginx.conf | awk '{print $1}' > /etc/nginx/.sentinel_checksum
       changed_when: false
 
     - name: Ensure options-ssl-nginx.conf exists
