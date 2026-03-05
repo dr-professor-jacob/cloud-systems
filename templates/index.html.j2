@@ -392,7 +392,7 @@
               Fix: deploy an HTTP-only config first (<code>when: not cert_stat.stat.exists</code>), run certbot, swap in the SSL config.
               State moved to Azure Blob Storage. <code>nip.io</code> for a real domain without buying one.
             </div>
-            <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Ansible Vault</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
+            <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
           </div>
         </div>
 
@@ -480,7 +480,7 @@
           MCP (Model Context Protocol) lets AI assistants call structured tools on a remote server. This deployment runs two:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats. Public SSE endpoint below.</li>
+          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats.</li>
           <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
