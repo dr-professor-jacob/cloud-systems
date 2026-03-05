@@ -17,6 +17,13 @@
     });
   });
 
+  var wildcard = document.getElementById("chip-wildcard");
+  if (wildcard) {
+    wildcard.addEventListener("click", function () {
+      window.open("https://youtu.be/dQw4w9WgXcQ", "_blank");
+    });
+  }
+
   input.addEventListener("input", function () {
     var left = MAX - input.value.length;
     counter.textContent = left + " characters remaining";
