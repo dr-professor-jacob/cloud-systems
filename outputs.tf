@@ -1,3 +1,8 @@
+output "app_domain" {
+  description = "Active domain for the app (real domain or nip.io fallback)"
+  value       = local.app_domain
+}
+
 output "key_vault_name" {
   description = "Azure Key Vault name (stores Ansible Vault password)"
   value       = azurerm_key_vault.kv.name
