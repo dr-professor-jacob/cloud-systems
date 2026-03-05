@@ -19,7 +19,7 @@ RATE_FILE  = Path("/opt/ask-app/rate.json")
 MAX_PER_IP = 10
 MAX_GLOBAL = 500
 MAX_INPUT  = 300
-MAX_TOKENS = 1024
+MAX_TOKENS = 600
 
 SYSTEM_PROMPT = (
     "You are an AI assistant embedded in a live cloud infrastructure portfolio site. "
@@ -119,12 +119,11 @@ def _update_activity(question: str, answer: str, tools_used: list) -> None:
                 history = []
         except Exception:
             history = []
-        synopsis = answer[:120] + ("..." if len(answer) > 120 else "")
         history.insert(0, {
             "time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "question": question[:100] + ("..." if len(question) > 100 else ""),
             "tools": tools_used if tools_used else [],
-            "synopsis": synopsis,
+            "answer": answer,
         })
         path.write_text(json.dumps({"calls": history[:5]}))
     except Exception:

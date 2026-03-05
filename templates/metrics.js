@@ -53,7 +53,7 @@ function loadActivity() {
           '<span style="font-size:.68rem;color:#aaa;white-space:nowrap;">' + timeAgo(c.time) + '</span>' +
           '</div>' +
           '<div style="font-size:.72rem;color:#706e6c;margin-bottom:.2rem;">tools: <code>' + escHtml(tools) + '</code></div>' +
-          '<div style="font-size:.8rem;color:#444;line-height:1.5;">' + escHtml(c.synopsis) + '</div>' +
+          '<div style="font-size:.8rem;color:#444;line-height:1.5;">' + renderAnswer(c.answer || c.synopsis || '') + '</div>' +
           '</div>';
       });
       feed.innerHTML = html.replace(/<div style="border-bottom[^>]+>/, '<div style="padding-bottom:.65rem;">').replace(/style="border-bottom[^"]*"/, 'style="padding:.65rem 0;"');
@@ -66,6 +66,15 @@ function loadActivity() {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderAnswer(s) {
+  return escHtml(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
 }
 
 loadActivity();
