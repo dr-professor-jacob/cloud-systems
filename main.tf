@@ -5,10 +5,21 @@
     container_name       = "tfstate"
     key                  = "cloud-systems.tfstate"
   }
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
 }
 
 provider "azurerm" {
   features {}
+}
+
+resource "random_password" "db_password" {
+  length  = 32
+  special = false
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -231,6 +242,12 @@ resource "azurerm_key_vault" "kv" {
 
     secret_permissions = ["Get", "Set", "List", "Delete", "Purge"]
   }
+}
+
+resource "azurerm_key_vault_secret" "db_password" {
+  name         = "db-password"
+  value        = random_password.db_password.result
+  key_vault_id = azurerm_key_vault.kv.id
 }
 
 # ── Azure Monitor ────────────────────────────────────────────────────────────

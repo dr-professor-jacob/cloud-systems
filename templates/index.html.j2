@@ -228,7 +228,7 @@
     <div class="hd-left">
       <div>
         <div class="hd-title">Cloud Systems — Azure IaC Deployment</div>
-        <div class="hd-sub">Jacob Rickey &nbsp;·&nbsp; <a href="mailto:jr521816@ohio.edu" style="color:inherit;opacity:.85;">jr521816@ohio.edu</a> &nbsp;·&nbsp; ITS 5760 &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; {{ app_domain }}</div>
+        <div class="hd-sub">Jacob Rickey &nbsp;·&nbsp; <a href="mailto:jr521816@ohio.edu" style="color:inherit;opacity:.85;">jr521816@ohio.edu</a> &nbsp;·&nbsp; ITS 5900-120 &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; {{ app_domain }} &nbsp;·&nbsp; <a href="https://github.com/dr-professor-jacob/cloud-systems" style="color:inherit;opacity:.85;">GitHub</a></div>
       </div>
       <div class="status-pill"><span class="status-dot"></span>Operational</div>
     </div>
@@ -244,22 +244,30 @@
     <div class="card">
       <div class="card-title">Project Overview</div>
       <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        Two-VM deployment on Azure, built entirely with <strong>OpenTofu</strong> and <strong>Ansible</strong>.
+        Two VMs on Azure, provisioned with <strong>OpenTofu</strong> and configured with <strong>Ansible</strong>.
         <code>tofu apply</code> provisions the network, VMs, Key Vault, and monitoring.
-        <code>ansible-playbook</code> installs and configures everything on both machines.
-        No manual steps at any point.
+        <code>ansible-playbook</code> installs and hardens both machines.
+        Nothing is done manually.
       </p>
     </div>
 
     <!-- Ask Claude -->
     <div class="card">
-      <div class="card-title">Ask Claude About This Project</div>
+      <div class="card-title">Ask Claude</div>
       <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
-        This is a live Claude API integration — type a question and get a real answer from <strong>claude-haiku</strong> running on the server.
+        Claude runs on this server with access to live system tools. Ask about the architecture, the security design, or what the server is doing right now.
       </p>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
+        <button type="button" class="chip" data-q="What is the current server load and memory usage?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">server load</button>
+        <button type="button" class="chip" data-q="How does the zero-trust secret management work?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">zero-trust secrets</button>
+        <button type="button" class="chip" data-q="How does the self-healing system work? What does it monitor?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">self-healing</button>
+        <button type="button" class="chip" data-q="How is the database protected from the internet?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">DB isolation</button>
+        <button type="button" class="chip" data-q="Check the sentinel log for any alerts or surprises" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">sentinel log</button>
+        <button type="button" id="chip-wildcard" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">?</button>
+      </div>
       <form id="ask-form">
         <textarea id="ask-input" maxlength="300" rows="3"
-          placeholder="Ask anything about this project…"
+          placeholder="Ask anything about this project..."
           style="width:100%;box-sizing:border-box;font-family:inherit;font-size:.9rem;border:1px solid #d4d0cb;border-radius:4px;padding:.6rem .75rem;resize:vertical;color:#222;background:#faf9f7;"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;gap:.5rem;flex-wrap:wrap;">
           <span id="ask-counter" style="font-size:.72rem;color:#888;">300 characters remaining</span>
@@ -273,6 +281,12 @@
       <div id="ask-error" style="display:none;margin-top:.6rem;font-size:.85rem;color:#c0392b;"></div>
       <div id="ask-remaining" style="display:none;margin-top:.5rem;font-size:.72rem;color:#888;"></div>
     </div>
+    <!-- Claude Activity -->
+    <div class="card">
+      <div class="card-title">Claude Activity</div>
+      <div id="activity-feed"><p style="font-size:.82rem;color:#888;font-style:italic;">Loading...</p></div>
+    </div>
+
 
     <!-- Infra table + Security -->
     <div class="row">
@@ -303,12 +317,12 @@
           <tr class="section-row"><td colspan="2">Automation Stack</td></tr>
           <tr class="data"><td>Provisioning</td><td>OpenTofu</td></tr>
           <tr class="data"><td>Configuration</td><td>Ansible</td></tr>
-          <tr class="data"><td>Secret encryption</td><td>Ansible Vault</td></tr>
-          <tr class="data"><td>Vault password</td><td>Azure Key Vault (runtime fetch)</td></tr>
+          
+          <tr class="data"><td>Secrets</td><td>Azure Key Vault (auto-generated, runtime fetch)</td></tr>
           <tr class="data"><td>OpenTofu state</td><td>Azure Blob Storage (shared, locked)</td></tr>
           <tr class="data"><td>Monitoring</td><td>Azure Monitor + email alerts</td></tr>
           <tr class="data"><td>DNS</td><td>{% if 'nip.io' in app_domain %}nip.io (Azure DNS + DNSSEC configured, pending domain cutover){% else %}Azure DNS · DNSSEC signed{% endif %}</td></tr>
-          <tr class="data"><td>AI interface</td><td>MCP (Streamable HTTP)</td></tr>
+          <tr class="data"><td>AI interface</td><td>MCP over Streamable HTTP</td></tr>
         </table>
       </div>
 
@@ -316,17 +330,17 @@
         <div class="card-title">Security Hardening</div>
         <ul class="bullets">
           <li><strong>Post-quantum SSH.</strong> Both VMs use <strong>sntrup761x25519-sha512</strong> as the preferred key exchange — a hybrid of the NIST-selected post-quantum lattice algorithm (NTRU) and X25519. Host and client keys are Ed25519 only. MACs are ETM-mode only; ciphers are ChaCha20-Poly1305 and AES-GCM.</li>
-          <li><strong>SSH key-only auth.</strong> Password auth is disabled. The DB VM has no public IP, so reaching it requires tunneling through the app VM.</li>
-          <li><strong>fail2ban</strong> runs on both VMs. 5 failed SSH attempts in 10 minutes gets the source IP banned for an hour.</li>
-          <li><strong>Unattended-upgrades</strong> pulls security patches automatically from the Ubuntu security repo on both machines.</li>
-          <li><strong>MariaDB hardened at deploy time:</strong> anonymous users removed, test database dropped, remote root disabled. Same steps as <code>mysql_secure_installation</code>, scripted through Ansible.</li>
-          <li><strong>MariaDB bound to the DB subnet interface</strong>, so it does not accept connections on the app-facing NIC even within the VNet.</li>
-          <li><strong>DB NSG allows port 3306 from <code>10.0.1.0/24</code> only.</strong> Combined with no public IP on the DB VM, there is no network path from the internet to the database.</li>
-          <li><strong>Ansible Vault</strong> encrypts secrets at rest. The decryption password lives in Azure Key Vault and is fetched at runtime by <code>vault_pass.sh</code>, so it never sits on disk locally.</li>
-          <li><strong>Azure Monitor</strong> sends an email alert if CPU stays above 85% for 5 minutes.</li>
+          <li><strong>SSH key-only</strong> on both VMs. Password auth is disabled. The DB has no public IP; reaching it requires tunneling through the app VM.</li>
+          <li><strong>fail2ban</strong> on both VMs. 5 failed SSH attempts in 10 minutes triggers a 1-hour IP ban.</li>
+          <li><strong>Unattended-upgrades</strong> applies security patches automatically from Ubuntu's security repo.</li>
+          <li><strong>MariaDB hardened at deploy time</strong> via Ansible: anonymous users removed, test DB dropped, remote root disabled. Equivalent to <code>mysql_secure_installation</code>, fully scripted.</li>
+          <li><strong>MariaDB bound to the DB subnet interface</strong> only. It will not accept connections on any other NIC, even within the VNet.</li>
+          <li><strong>NSG: port 3306 open from <code>10.0.1.0/24</code> only.</strong> No public IP on the DB VM. Two independent enforcement layers, no path from the internet to the database.</li>
+          <li><strong>Zero-trust secrets.</strong> OpenTofu generates the DB password via <code>random_password</code>, stores it in Azure Key Vault. Ansible fetches it at runtime. Nothing is typed or stored in code.</li>
+          <li><strong>Azure Monitor</strong> alerts on CPU above 85% sustained for 5 minutes.</li>
         </ul>
         <div class="note">
-          The DB is blocked at two independent layers: the NSG drops anything that isn't from the app subnet, and MariaDB's bind-address means it isn't even listening on other interfaces. Either one alone would be sufficient; both together means there's no single point of misconfiguration that exposes the database.
+          The NSG drops anything not from the app subnet. MariaDB's bind-address means it isn't listening on other interfaces anyway. Either one is sufficient; both eliminate any single point of misconfiguration.
         </div>
       </div>
 
@@ -334,7 +348,7 @@
 
     <!-- Development iterations -->
     <div class="card">
-      <div class="card-title">Development — How It Evolved</div>
+      <div class="card-title">How It Evolved</div>
       <div class="timeline">
 
         <div class="tl-item">
@@ -344,11 +358,10 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 1</div>
-            <div class="tl-title">Terraform + Ansible scaffolding: single VM, HTTP only</div>
+            <div class="tl-title">Scaffolding: single VM, HTTP only</div>
             <div class="tl-desc">
-              One VM, one subnet, no TLS. Terraform provisions the VM and public IP; Ansible installs nginx and drops a static page.
-              The goal was getting the IaC pipeline working end-to-end before adding anything else.
-              Manually SSHing in to make changes was the baseline to beat.
+              One VM, one subnet, no TLS. OpenTofu provisions the VM and public IP; Ansible installs nginx and serves a static page.
+              Goal: get the full IaC pipeline working end-to-end. Manual SSH was the baseline to beat.
             </div>
             <div class="tags"><span class="tag">Terraform</span><span class="tag">Ansible</span><span class="tag">nginx</span></div>
           </div>
@@ -361,12 +374,11 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 2</div>
-            <div class="tl-title">Two-tier network: app and DB on separate subnets, MariaDB</div>
+            <div class="tl-title">Two-tier network: app and DB on separate subnets</div>
             <div class="tl-desc">
-              Split into two VMs across two subnets. The DB VM gets no public IP; only the app subnet can reach port 3306.
-              Ansible now runs two playbooks, one per host group. Terraform's <code>local_file</code> resource
-              writes the live public IP and domain into Ansible's inventory on every apply, so the playbook always targets the right host
-              without any manual edits.
+              Split into two VMs. The DB gets no public IP; only the app subnet can reach port 3306.
+              Ansible now runs two playbooks, one per host group. OpenTofu's <code>local_file</code> resource
+              writes the live IP into Ansible's inventory on every apply.
             </div>
             <div class="tags"><span class="tag">Two-tier</span><span class="tag">NSG</span><span class="tag">MariaDB</span><span class="tag">Inventory automation</span></div>
           </div>
@@ -379,15 +391,13 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 3</div>
-            <div class="tl-title">TLS + secrets: Let's Encrypt, Ansible Vault, remote state</div>
+            <div class="tl-title">TLS, secrets, remote state</div>
             <div class="tl-desc">
-              certbot has a chicken-and-egg issue: nginx needs to serve port 80 to complete the ACME challenge,
-              but the final nginx config references a cert that doesn't exist yet. Fixed by deploying an HTTP-only config first
-              (<code>when: not cert_stat.stat.exists</code>), running certbot, then swapping in the SSL config.
-              Secrets moved into Ansible Vault. Terraform state moved to Azure Blob Storage so it stays off local machines.
-              Used <code>nip.io</code> to get a real domain from the static IP without buying one (later replaced by Azure DNS with DNSSEC in iteration 7).
+              certbot needs port 80 for the ACME challenge, but the final nginx config references a cert that doesn't exist yet.
+              Fix: deploy an HTTP-only config first (<code>when: not cert_stat.stat.exists</code>), run certbot, swap in the SSL config.
+              State moved to Azure Blob Storage. <code>nip.io</code> for a real domain without buying one.
             </div>
-            <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Ansible Vault</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
+            <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
           </div>
         </div>
 
@@ -398,12 +408,11 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 4</div>
-            <div class="tl-title">Hardening: fail2ban, unattended-upgrades, MariaDB lockdown, ARM64</div>
+            <div class="tl-title">Hardening + ARM64</div>
             <div class="tl-desc">
-              Added fail2ban for SSH brute-force protection, unattended-upgrades for automated patching, and MariaDB hardening
-              through Ansible's <code>mysql_user</code> / <code>mysql_db</code> modules. Also switched from Standard_B2s (x86) to
-              <strong>Standard_B2pts_v2</strong> (Ampere ARM64): same performance tier, cheaper, and Ubuntu 24.04 supports ARM64 well.
-              All tasks are idempotent, so re-running on an already-configured server changes nothing.
+              fail2ban, unattended-upgrades, and MariaDB hardening via Ansible's <code>mysql_user</code> / <code>mysql_db</code> modules.
+              Switched to <strong>Standard_B2pts_v2</strong> (Ampere ARM64): same tier, cheaper, fully supported on Ubuntu 24.04.
+              All tasks are idempotent.
             </div>
             <div class="tags"><span class="tag">fail2ban</span><span class="tag">Unattended-upgrades</span><span class="tag">ARM64</span><span class="tag">MariaDB hardening</span></div>
           </div>
@@ -416,12 +425,11 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 5</div>
-            <div class="tl-title">Azure Key Vault: no local vault password needed</div>
+            <div class="tl-title">Zero-trust secrets via Azure Key Vault</div>
             <div class="tl-desc">
-              Before this, decrypting Ansible Vault meant either typing the password or storing it in a file.
-              Replaced with <code>vault_pass.sh</code>, a script that calls <code>az keyvault secret show</code> and prints the password to stdout.
-              Ansible's <code>--vault-password-file</code> accepts any executable, so it just calls the script at runtime.
-              The password only ever lives in Azure Key Vault. Terraform provisions the vault as part of the same apply.
+              OpenTofu generates the DB password via <code>random_password</code> and stores it in Key Vault as part of <code>tofu apply</code>.
+              Ansible fetches it at runtime with <code>az keyvault secret show</code>.
+              Nothing is typed, nothing is stored locally.
             </div>
             <div class="tags"><span class="tag">Azure Key Vault</span><span class="tag">RBAC</span><span class="tag">Passwordless</span></div>
           </div>
@@ -434,24 +442,44 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 6</div>
-            <div class="tl-title">MCP servers + Azure Monitor: live infrastructure access and alerting</div>
+            <div class="tl-title">MCP servers + Azure Monitor</div>
             <div class="tl-desc">
-              Added two <strong>Model Context Protocol (MCP)</strong> servers: one on the app VM for infrastructure metrics,
-              one on the DB VM for database queries. Both run as systemd services (Python/FastMCP + uvicorn),
-              proxied through nginx. Claude Code connects to this deployment directly through the
-              <em>cloud-infra</em> MCP server and can query live system state.
-              Also added Azure Monitor alerts: CPU above 85% for 5 minutes sends an email.
+              Two <strong>Model Context Protocol</strong> servers: mcp-infra on the app VM for system metrics,
+              mcp-db on the DB VM for database queries. Both run as systemd services via FastMCP + uvicorn,
+              proxied through nginx. The Ask Claude box on this page uses the same tools.
+              Azure Monitor alerts on CPU above 85% for 5 minutes.
             </div>
-            <div class="tags"><span class="tag">MCP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
+            <div class="tags"><span class="tag">MCP / Streamable HTTP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
+          </div>
+        </div>
+
+
+        <div class="tl-item">
+          <div class="tl-badge-col">
+            <div class="tl-badge">7</div>
+            <div class="tl-line"></div>
+          </div>
+          <div class="tl-body">
+            <div class="tl-label">Iteration 7</div>
+            <div class="tl-title">Self-healing: sentinel monitoring + automated remediation</div>
+            <div class="tl-desc">
+              A systemd timer runs a sentinel script every 5 minutes on the app VM. It checks that nginx,
+              ask-app, and mcp-infra are active, verifies the nginx config checksum against the last known-good state,
+              and auto-restarts any failed service. All events are written to <code>/var/log/sentinel.log</code>.
+              A separate <code>repair_web.yml</code> playbook restores the full stack from Ansible templates when deeper
+              remediation is needed. The Cloud Shell MCP hub exposes <code>get_sentinel_log</code> and
+              <code>apply_remediation</code> tools so Claude can monitor and remediate without logging into any VM.
+            </div>
+            <div class="tags"><span class="tag">systemd timer</span><span class="tag">config integrity</span><span class="tag">auto-restart</span><span class="tag">MCP remediation</span></div>
           </div>
         </div>
 
         <div class="tl-item">
           <div class="tl-badge-col">
-            <div class="tl-badge">7</div>
+            <div class="tl-badge">8</div>
           </div>
           <div class="tl-body">
-            <div class="tl-label">Iteration 7</div>
+            <div class="tl-label">Iteration 8</div>
             <div class="tl-title">Post-quantum hardening: PQ SSH, TLS 1.3-only, DNSSEC</div>
             <div class="tl-desc">
               Hardened the transport stack as far as current tooling allows. SSH now negotiates
@@ -476,20 +504,28 @@
       <div class="card">
         <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) is an open standard that lets AI assistants call structured tools on a remote server — like an API, but designed for LLMs. This deployment runs two MCP servers:
+          MCP (Model Context Protocol) lets AI assistants call structured tools on a remote server. This deployment runs two:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats. Public Streamable HTTP endpoint below.</li>
-          <li><strong>mcp-db</strong> (DB VM) — database query tools. Private: only reachable through the app VM since the DB has no public IP.</li>
+          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats.</li>
+          <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Both run as systemd services (Python / FastMCP + uvicorn), proxied through nginx (Streamable HTTP). Claude Code connects directly and calls tools in real time — the metrics on this page are written by Claude via MCP.
+          <strong>Where does the AI live?</strong> Claude runs on Anthropic's servers — not on these VMs.
+          When you ask a question, the app VM sends a request to the Claude API with a description of the available tools.
+          Claude decides which tools to call, the app VM runs them locally and returns the results, and Claude writes the final answer.
+          The AI never has direct access to the servers; it only sees what the tools explicitly return.
+        </div>
+        <div class="note" style="margin-top:.6rem;">
+          <strong>Is it safe?</strong> The tools are read-only functions defined in code — <code>system_info</code>, <code>nginx_stats</code>, <code>sentinel_log</code>.
+          Claude can ask for those outputs, but it cannot run arbitrary commands, write files, or reach the DB VM directly.
+          The same XSS sanitization that protects this page applies to Claude's responses too — all output is HTML-escaped before rendering.
         </div>
         <div class="tags" style="margin-top:.9rem;">
-          <span class="tag">MCP</span>
+          <span class="tag">MCP / Streamable HTTP</span>
           <span class="tag">FastMCP</span>
-          <span class="tag">uvicorn</span>
-          <span class="tag">nginx proxy</span>
+          <span class="tag">read-only tools</span>
+          <span class="tag">Anthropic API</span>
           <span class="tag">systemd</span>
         </div>
       </div>
@@ -518,10 +554,10 @@
         <table class="vis-table">
           <tr><td><code>system_info</code></td><td>Uptime, load averages (1m/5m/15m), memory, and disk usage</td></tr>
           <tr><td><code>nginx_stats</code></td><td>Active connections and request counts from nginx stub_status</td></tr>
-          <tr><td><code>write_activity</code></td><td>Claude logs a summary of each session — displayed in the card to the right</td></tr>
+          <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
         </table>
         <div class="note" style="margin-top:.9rem;">
-          Want to try it? Add this to your <code>~/.claude/mcp.json</code> (or <code>.mcp.json</code> in any project):
+          Connect Claude Code by adding this to <code>~/.claude/mcp.json</code>:
         </div>
         <div class="code-block" style="margin-top:.75rem;">
           <div class="code-label">Connect with Claude Code</div>
@@ -536,25 +572,67 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Last Claude Session</span>
-          <span id="activity-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
-        </div>
-        <table class="vis-table" style="margin-bottom:.9rem;">
-          <tr><td>When</td><td id="a-updated">—</td></tr>
-          <tr><td>Tools used</td><td id="a-calls">—</td></tr>
-        </table>
-        <p id="a-summary" style="font-size:.875rem;color:#333;line-height:1.6;font-style:italic;">—</p>
-        <div class="note" id="activity-note" style="display:none;"></div>
-      </div>
 
+
+    </div>
+
+
+    <!-- Self-Healing -->
+    <div class="card">
+      <div class="card-title">Self-Healing Architecture</div>
+      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
+        A sentinel script runs every 5 minutes via systemd timer on the app VM. It checks service health,
+        verifies the nginx config checksum against the post-deploy baseline, and auto-restarts failed services.
+        If deeper repair is needed, <code>repair_web.yml</code> restores the full stack from the Ansible templates
+        stored in source control. The Cloud Shell MCP hub gives Claude direct access to the sentinel log and
+        the repair playbook without any human logging in.
+      </p>
+      <div class="row">
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Sentinel checks (every 5 min)</div>
+          <ul class="bullets">
+            <li>nginx, ask-app, mcp-infra active via <code>systemctl</code></li>
+            <li>nginx config checksum matches post-deploy baseline</li>
+            <li>nginx_status endpoint responds on localhost</li>
+            <li>Auto-restarts failed services, logs all events</li>
+          </ul>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP hub tools (Cloud Shell)</div>
+          <ul class="bullets">
+            <li><code>get_sentinel_log</code> — read recent health events</li>
+            <li><code>check_health</code> — live service status</li>
+            <li><code>get_nginx_errors</code> — nginx error log</li>
+            <li><code>apply_remediation</code> — run repair_web.yml</li>
+          </ul>
+        </div>
+      </div>
+      <div class="note" style="margin-top:.9rem;">
+        <strong>How config integrity works:</strong> After every deploy, Ansible runs <code>sha256sum</code> on the nginx config
+        and saves the result — a 64-character fingerprint unique to that exact file. Every 5 minutes the sentinel
+        recomputes the fingerprint and compares it to the saved one. If even a single character changed, the hashes
+        won't match and sentinel raises an alert. SHA-256 is a one-way cryptographic hash: you can't reverse it or
+        fake a match without controlling the file. This is the same mechanism used to verify software downloads.
+      </div>
+      <div class="note" style="margin-top:.6rem;">
+        The repair playbook restores nginx config from the Ansible template, fixes SSL cert permissions,
+        restores webroot ownership, and restarts all services. It stores a fresh config checksum so the
+        sentinel knows the new baseline. Cloud Shell is the only access point; no one logs into the VM to fix things.
+      </div>
+      <div class="tags" style="margin-top:.9rem;">
+        <span class="tag">systemd timer</span>
+        <span class="tag">config integrity</span>
+        <span class="tag">auto-restart</span>
+        <span class="tag">Ansible remediation</span>
+        <span class="tag">MCP hub</span>
+        <span class="tag">ZTA</span>
+      </div>
     </div>
 
     <!-- Live metrics -->
     <div class="card" id="metrics-card">
       <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Live Server Metrics</span>
+        <span>Server Metrics</span>
         <span id="metrics-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
       </div>
       <div class="row thirds" id="metrics-stats">
@@ -575,19 +653,19 @@
 
     <!-- Commands -->
     <div class="card">
-      <div class="card-title">Deployment — Two Commands</div>
+      <div class="card-title">Deploy</div>
       <div class="code-section">
         <div class="code-block">
-          <div class="code-label">1 — Provision infrastructure (OpenTofu)</div>
+          <div class="code-label">1. Provision</div>
           <pre><span class="c"># Creates VNet, subnets, NSGs, VMs, Key Vault, Monitor alerts,</span>
-<span class="c"># DNS zone, and writes inventory.ini + group_vars with domain + IP.</span>
+<span class="c"># and writes inventory.ini + group_vars with the live public IP.</span>
 tofu apply -auto-approve</pre>
         </div>
         <div class="code-block">
-          <div class="code-label">2 — Configure everything (Ansible)</div>
+          <div class="code-label">2. Configure</div>
           <pre><span class="c"># Installs and hardens both VMs: nginx, TLS, fail2ban,</span>
-<span class="c"># unattended-upgrades, MariaDB, MCP servers — all idempotent.</span>
-<span class="c"># Vault password fetched from Azure Key Vault at runtime (vault_pass.sh).</span>
+<span class="c"># unattended-upgrades, MariaDB, MCP servers. All tasks are idempotent.</span>
+<span class="c"># DB password fetched from Azure Key Vault at runtime (az keyvault secret show).</span>
 ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
         </div>
       </div>
@@ -597,7 +675,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
     <div class="row">
 
       <div class="card">
-        <div class="card-title">OpenTofu — Key Blocks</div>
+        <div class="card-title">OpenTofu</div>
         <div class="code-section">
 
           <div class="code-block">
@@ -619,34 +697,20 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
           </div>
 
           <div class="code-block">
-            <div class="code-label">Key Vault — Ansible Vault password at rest</div>
+            <div class="code-label">Key Vault: auto-generated DB password</div>
             <pre><span class="f">resource</span> <span class="s">"azurerm_key_vault"</span> <span class="v">"kv"</span> {
   name      = <span class="s">"cloud-v3-kv"</span>
   tenant_id = <span class="f">data.azurerm_client_config.current</span>.tenant_id
   sku_name  = <span class="s">"standard"</span>
-  <span class="c"># Vault password stored here; fetched at runtime</span>
-  <span class="c"># by vault_pass.sh; never touches disk locally.</span>
+  <span class="c"># DB password auto-generated by random_password resource,</span>
+  <span class="c"># stored here by tofu apply; never typed or on disk.</span>
 }
 
-<span class="c"># Terraform writes the domain into Ansible's group vars</span>
-<span class="c"># on every apply; Ansible picks it up automatically.</span>
+<span class="c"># Terraform writes the live IP into Ansible's inventory</span>
+<span class="c"># on every apply; no manual IP hunting after redeploy.</span>
 <span class="f">resource</span> <span class="s">"local_file"</span> <span class="v">"ansible_vars"</span> {
-  content  = <span class="s">"app_domain: \"</span><span class="n">${var.domain_name}</span><span class="s">\""</span>
+  content  = <span class="s">"app_domain: \"</span><span class="n">${azurerm_public_ip.app_pip.ip_address}</span><span class="s">.nip.io\""</span>
   filename = <span class="s">"group_vars/all/terraform_outputs.yml"</span>
-}
-
-<span class="c"># Azure DNS zone with DNSSEC — responses are cryptographically signed.</span>
-<span class="c"># Point NS records at your registrar, submit DS record for full chain.</span>
-<span class="f">resource</span> <span class="s">"azurerm_dns_zone"</span> <span class="v">"main"</span> {
-  name                = <span class="n">var.domain_name</span>
-  resource_group_name = <span class="n">azurerm_resource_group.rg</span>.name
-}
-
-<span class="f">resource</span> <span class="s">"terraform_data"</span> <span class="v">"dnssec"</span> {
-  <span class="c"># az CLI call enables DNSSEC signing on the zone after creation.</span>
-  <span class="f">provisioner</span> <span class="s">"local-exec"</span> {
-    command = <span class="s">"az network dns dnssec-config create ..."</span>
-  }
 }</pre>
           </div>
 
@@ -654,11 +718,11 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
       </div>
 
       <div class="card">
-        <div class="card-title">Ansible — Key Tasks</div>
+        <div class="card-title">Ansible</div>
         <div class="code-section">
 
           <div class="code-block">
-            <div class="code-label">Certbot — HTTP config first, then TLS</div>
+            <div class="code-label">Certbot: HTTP-first fix</div>
             <pre><span class="c"># Chicken-and-egg: certbot needs port 80 open to</span>
 <span class="c"># validate the domain, but the final nginx config</span>
 <span class="c"># references the cert that doesn't exist yet.</span>
@@ -682,7 +746,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
           </div>
 
           <div class="code-block">
-            <div class="code-label">MariaDB hardening (scripted secure_installation)</div>
+            <div class="code-label">MariaDB: scripted hardening</div>
             <pre><span class="c"># Equivalent to running mysql_secure_installation,</span>
 <span class="c"># but fully automated and idempotent.</span>
 - <span class="k">name</span>: Remove anonymous users
@@ -708,6 +772,31 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
         </div>
       </div>
 
+    </div>
+
+    <!-- Security Scan -->
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>External Security Scan</span>
+        <span id="scan-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
+      </div>
+      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
+        nmap scanned from Azure Cloud Shell — same view an attacker on the internet would have.
+        Only ports 80 and 443 should be reachable. Port 3306 (MariaDB), 8000/8002 (MCP servers),
+        and 22 (SSH) are blocked by the NSG and should not appear as open.
+      </p>
+      <div id="scan-ports" style="margin-bottom:.9rem;"></div>
+      <div class="code-block">
+        <div class="code-label">nmap output</div>
+        <pre id="scan-output" style="white-space:pre-wrap;word-break:break-word;">Loading scan results...</pre>
+      </div>
+      <div class="note" style="margin-top:.9rem;" id="scan-note" style="display:none;"></div>
+      <div class="tags" style="margin-top:.9rem;">
+        <span class="tag">nmap</span>
+        <span class="tag">external perspective</span>
+        <span class="tag">NSG validation</span>
+        <span class="tag">SSL audit</span>
+      </div>
     </div>
 
   </main>
