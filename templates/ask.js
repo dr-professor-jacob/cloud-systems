@@ -10,6 +10,20 @@
 
   var MAX = 300;
 
+  document.querySelectorAll("button.chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      input.value = chip.dataset.q;
+      form.dispatchEvent(new Event("submit"));
+    });
+  });
+
+  var wildcard = document.getElementById("chip-wildcard");
+  if (wildcard) {
+    wildcard.addEventListener("click", function () {
+      window.open("https://youtu.be/dQw4w9WgXcQ", "_blank");
+    });
+  }
+
   input.addEventListener("input", function () {
     var left = MAX - input.value.length;
     counter.textContent = left + " characters remaining";
@@ -41,7 +55,13 @@
           errorBox.textContent    = res.data.detail || "Something went wrong.";
           errorBox.style.display  = "";
         } else {
-          answerTxt.textContent   = res.data.answer;
+          answerTxt.innerHTML = res.data.answer
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\n{2,}/g, "</p><p>")
+            .replace(/\n/g, "<br>")
+            .replace(/^/, "<p>").replace(/$/, "</p>");
           answerBox.style.display = "";
           if (res.data.remaining !== undefined) {
             remaining.textContent = res.data.remaining + " question" + (res.data.remaining === 1 ? "" : "s") + " remaining today";
