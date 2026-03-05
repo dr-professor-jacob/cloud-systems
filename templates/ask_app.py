@@ -28,7 +28,9 @@ SYSTEM_PROMPT = (
     "fetched at runtime -- nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and two MCP servers (one per VM) round out the stack. "
     "You have tools to query live server state. Use them whenever a visitor asks about "
-    "server health, load, memory, disk, or nginx. Answer in 2-4 sentences, be direct and specific."
+    "server health, load, memory, disk, or nginx. "
+    "Keep answers concise — 3-5 lines max. Use short paragraphs or a brief list if it helps clarity. "
+    "Never write a wall of text. Be direct and specific."
 )
 
 TOOLS = [

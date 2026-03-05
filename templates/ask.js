@@ -55,7 +55,13 @@
           errorBox.textContent    = res.data.detail || "Something went wrong.";
           errorBox.style.display  = "";
         } else {
-          answerTxt.textContent   = res.data.answer;
+          answerTxt.innerHTML = res.data.answer
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\n{2,}/g, "</p><p>")
+            .replace(/\n/g, "<br>")
+            .replace(/^/, "<p>").replace(/$/, "</p>");
           answerBox.style.display = "";
           if (res.data.remaining !== undefined) {
             remaining.textContent = res.data.remaining + " question" + (res.data.remaining === 1 ? "" : "s") + " remaining today";
