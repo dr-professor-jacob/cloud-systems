@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Visitor question endpoint — rate-limited Claude demo with live tool use."""
+"""Visitor question endpoint -- rate-limited Claude demo with live tool use."""
 import json
 import os
 import subprocess
@@ -25,7 +25,7 @@ SYSTEM_PROMPT = (
     "You are an AI assistant embedded in a live cloud infrastructure portfolio site. "
     "The site runs on Azure: two Ubuntu 24.04 ARM64 VMs (app + DB) provisioned with OpenTofu, "
     "configured with Ansible. Secrets (DB password, API key) are stored in Azure Key Vault and "
-    "fetched at runtime — nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
+    "fetched at runtime -- nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and two MCP servers (one per VM) round out the stack. "
     "You have tools to query live server state. Use them whenever a visitor asks about "
     "server health, load, memory, disk, or nginx. Answer in 2-4 sentences, be direct and specific."
@@ -104,14 +104,22 @@ def _update_metrics(system_data: str, nginx_data: str) -> None:
 
 def _update_activity(question: str, answer: str, tools_used: list) -> None:
     try:
-        short_q = question[:80] + ("..." if len(question) > 80 else "")
-        short_a = answer[:150] + ("..." if len(answer) > 150 else "")
-        data = {
-            "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "summary": f'Visitor asked: "{short_q}" — {short_a}',
-            "calls": tools_used if tools_used else ["(none)"],
-        }
-        Path("/var/www/html/activity.json").write_text(json.dumps(data))
+        path = Path("/var/www/html/activity.json")
+        try:
+            existing = json.loads(path.read_text()) if path.exists() else {}
+            history = existing.get("calls", [])
+            if not isinstance(history, list) or not history or not isinstance(history[0], dict):
+                history = []
+        except Exception:
+            history = []
+        synopsis = answer[:120] + ("..." if len(answer) > 120 else "")
+        history.insert(0, {
+            "time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "question": question[:100] + ("..." if len(question) > 100 else ""),
+            "tools": tools_used if tools_used else [],
+            "synopsis": synopsis,
+        })
+        path.write_text(json.dumps({"calls": history[:5]}))
     except Exception:
         pass
 
@@ -138,7 +146,7 @@ def _check_and_record(ip: str) -> int:
 
     global_count = data["global"].get(today, 0)
     if global_count >= MAX_GLOBAL:
-        raise HTTPException(status_code=429, detail="Daily limit reached — try again tomorrow.")
+        raise HTTPException(status_code=429, detail="Daily limit reached -- try again tomorrow.")
 
     hits = [t for t in data["ips"].get(ip, []) if t > window]
     if len(hits) >= MAX_PER_IP:
@@ -155,16 +163,16 @@ def _check_and_record(ip: str) -> int:
     return MAX_PER_IP - len(hits)
 
 
-@app.on_event('startup')
+class Question(BaseModel):
+    question: str
+
+
+@app.on_event("startup")
 async def startup():
     try:
         _update_metrics(_run_system_info(), _run_nginx_stats())
     except Exception:
         pass
-
-
-class Question(BaseModel):
-    question: str
 
 
 @app.post("/ask")
@@ -186,7 +194,7 @@ async def ask(q: Question, request: Request):
     nginx_data  = ""
     answer      = ""
 
-    for _ in range(5):  # max tool-use rounds
+    for _ in range(5):
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=MAX_TOKENS,
