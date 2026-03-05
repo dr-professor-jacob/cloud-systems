@@ -573,6 +573,13 @@
         </div>
       </div>
       <div class="note" style="margin-top:.9rem;">
+        <strong>How config integrity works:</strong> After every deploy, Ansible runs <code>sha256sum</code> on the nginx config
+        and saves the result — a 64-character fingerprint unique to that exact file. Every 5 minutes the sentinel
+        recomputes the fingerprint and compares it to the saved one. If even a single character changed, the hashes
+        won't match and sentinel raises an alert. SHA-256 is a one-way cryptographic hash: you can't reverse it or
+        fake a match without controlling the file. This is the same mechanism used to verify software downloads.
+      </div>
+      <div class="note" style="margin-top:.6rem;">
         The repair playbook restores nginx config from the Ansible template, fixes SSL cert permissions,
         restores webroot ownership, and restarts all services. It stores a fresh config checksum so the
         sentinel knows the new baseline. Cloud Shell is the only access point; no one logs into the VM to fix things.
