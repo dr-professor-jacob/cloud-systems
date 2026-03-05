@@ -155,6 +155,14 @@ def _check_and_record(ip: str) -> int:
     return MAX_PER_IP - len(hits)
 
 
+@app.on_event('startup')
+async def startup():
+    try:
+        _update_metrics(_run_system_info(), _run_nginx_stats())
+    except Exception:
+        pass
+
+
 class Question(BaseModel):
     question: str
 
