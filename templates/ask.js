@@ -10,6 +10,13 @@
 
   var MAX = 300;
 
+  document.querySelectorAll("button.chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      input.value = chip.dataset.q;
+      form.dispatchEvent(new Event("submit"));
+    });
+  });
+
   input.addEventListener("input", function () {
     var left = MAX - input.value.length;
     counter.textContent = left + " characters remaining";
