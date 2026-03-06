@@ -460,11 +460,9 @@
             <div class="tl-title">Self-healing: sentinel monitoring + automated remediation</div>
             <div class="tl-desc">
               A systemd timer runs a sentinel script every 5 minutes on the app VM. It checks that nginx,
-              ask-app, and mcp-infra are active, verifies the nginx config checksum against the last known-good state,
-              and auto-restarts any failed service. All events are written to <code>/var/log/sentinel.log</code>.
-              A separate <code>repair_web.yml</code> playbook restores the full stack from Ansible templates when deeper
-              remediation is needed. The Cloud Shell MCP hub exposes <code>get_sentinel_log</code> and
-              <code>apply_remediation</code> tools so Claude can monitor and remediate without logging into any VM.
+              ask-app, and mcp-infra are active, verifies the nginx config checksum against the post-deploy
+              baseline, and auto-restarts any failed service. All events are written to <code>/var/log/sentinel.log</code>.
+              If deeper repair is needed, re-running the Ansible playbook restores the full stack from source control.
             </div>
             <div class="tags"><span class="tag">systemd timer</span><span class="tag">config integrity</span><span class="tag">auto-restart</span><span class="tag">MCP remediation</span></div>
           </div>
@@ -570,10 +568,8 @@
       <div class="card-title">Self-Healing Architecture</div>
       <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
         A sentinel script runs every 5 minutes via systemd timer on the app VM. It checks service health,
-        verifies the nginx config checksum against the post-deploy baseline, and auto-restarts failed services.
-        If deeper repair is needed, <code>repair_web.yml</code> restores the full stack from the Ansible templates
-        stored in source control. The Cloud Shell MCP hub gives Claude direct access to the sentinel log and
-        the repair playbook without any human logging in.
+        verifies the nginx config checksum against the post-deploy baseline, and auto-restarts any failed service.
+        All events are written to <code>/var/log/sentinel.log</code>.
       </p>
       <div class="row">
         <div>
@@ -586,17 +582,16 @@
           </ul>
         </div>
         <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP hub tools (Cloud Shell)</div>
+          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP tools (app VM)</div>
           <ul class="bullets">
-            <li><code>get_sentinel_log</code> — read recent health events</li>
-            <li><code>check_health</code> — live service status</li>
-            <li><code>get_nginx_errors</code> — nginx error log</li>
-            <li><code>apply_remediation</code> — run repair_web.yml</li>
+            <li><code>system_info</code> — uptime, load, memory, disk</li>
+            <li><code>nginx_stats</code> — active connections and requests</li>
+            <li><code>write_activity</code> — logs Claude sessions to the activity feed</li>
           </ul>
         </div>
       </div>
       <div class="note" style="margin-top:.9rem;">
-        After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes; any change raises an alert. The repair playbook restores config from the Ansible template, fixes permissions, and restarts all services. Cloud Shell is the only access point; no one logs into the VM to fix things.
+        After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes; any change raises an alert and logs it. If a service needs manual repair, re-running the Ansible playbook restores it from source control.
       </div>
       <div class="tags" style="margin-top:.9rem;">
         <span class="tag">systemd timer</span>
