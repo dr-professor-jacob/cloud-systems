@@ -80,31 +80,3 @@ function renderAnswer(s) {
 loadActivity();
 setInterval(loadActivity, 30000);
 
-function loadScan() {
-  fetch('/scan.json?t=' + Date.now())
-    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
-    .then(function(d) {
-      var age = document.getElementById('scan-age');
-      if (age && d.scanned_at) age.textContent = 'scanned ' + timeAgo(d.scanned_at);
-
-      var ports = document.getElementById('scan-ports');
-      if (ports && d.open_ports && d.open_ports.length) {
-        var rows = d.open_ports.map(function(p) {
-          var safe = p.indexOf('80/tcp') !== -1 || p.indexOf('443/tcp') !== -1;
-          var color = safe ? '#1a7a1a' : '#c0392b';
-          return '<div style="font-family:monospace;font-size:.82rem;padding:.2rem 0;color:' + color + ';">' + escHtml(p) + '</div>';
-        });
-        ports.innerHTML = rows.join('');
-      }
-
-      var out = document.getElementById('scan-output');
-      if (out) out.textContent = d.full_output || 'No output.';
-    })
-    .catch(function() {
-      var out = document.getElementById('scan-output');
-      if (out) out.textContent = 'Scan not yet run. See below for instructions.';
-      var note = document.getElementById('scan-note');
-      if (note) { note.style.display = ''; note.textContent = 'To generate: run ansible-playbook -i inventory.ini scan.yml from Cloud Shell.'; }
-    });
-}
-loadScan();
