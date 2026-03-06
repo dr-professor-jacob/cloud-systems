@@ -1,71 +1,46 @@
 #!/usr/bin/env python3
-"""MCP server — app-server tools (system metrics + nginx stats)."""
-import json
-import subprocess
+"""MCP server — app-VM tools (sentinel health log + session activity)."""
+from pathlib import Path
 from datetime import datetime, timezone
+import json
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("cloud-systems-app")
 
 
 @mcp.tool()
-def system_info() -> str:
-    """Return live uptime, load averages, memory, and disk usage for the app server."""
-    uptime = subprocess.check_output(["uptime"]).decode().strip()
-    load   = " / ".join(open("/proc/loadavg").read().split()[:3])
-    mem    = subprocess.check_output(["free", "-h"]).decode().strip()
-    disk   = subprocess.check_output(["df", "-h", "/"]).decode().strip()
-    return f"Uptime : {uptime}\nLoad   : {load}  (1m/5m/15m)\n\nMemory:\n{mem}\n\nDisk:\n{disk}"
+def sentinel_log() -> str:
+    """Return the last 30 lines of /var/log/sentinel.log — service health checks, alerts, and auto-restarts."""
+    log = Path("/var/log/sentinel.log")
+    if not log.exists():
+        return "sentinel.log not found"
+    lines = log.read_text().splitlines()
+    return "\n".join(lines[-30:])
 
 
 @mcp.tool()
-def nginx_stats() -> str:
-    """Return nginx active connections from stub_status."""
-    try:
-        return subprocess.check_output(
-            ["curl", "-sf", "http://127.0.0.1/nginx_status"]
-        ).decode().strip()
-    except Exception as e:
-        return f"stub_status unavailable: {e}"
-
-
-@mcp.tool()
-def write_site_metrics(uptime: str, load: str, mem_used: str, mem_total: str,
-                       disk_used: str, disk_total: str, disk_pct: str,
-                       nginx_connections: str) -> str:
-    """Write live system metrics to /var/www/html/metrics.json for the site to display."""
-    data = {
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "uptime": uptime,
-        "load": load,
-        "mem_used": mem_used,
-        "mem_total": mem_total,
-        "disk_used": disk_used,
-        "disk_total": disk_total,
-        "disk_pct": disk_pct,
-        "nginx_connections": nginx_connections,
-    }
-    path = "/var/www/html/metrics.json"
-    with open(path, "w") as f:
-        json.dump(data, f)
-    return f"Written to {path}"
-
-
-@mcp.tool()
-def write_activity(summary: str, calls: str) -> str:
-    """Write a summary of this Claude session to /var/www/html/activity.json for the site to display.
-    summary: one or two sentences describing what was done.
-    calls: comma-separated list of tool names used, e.g. 'system_info, nginx_stats, write_site_metrics'
+def write_activity(question: str, answer: str, tools: list[str]) -> str:
+    """Log a summary of this Claude session to /var/www/html/activity.json for the site activity feed.
+    question: the user's question.
+    answer: Claude's response (full or summary).
+    tools: list of MCP tool names used in this session.
     """
-    data = {
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "summary": summary,
-        "calls": [c.strip() for c in calls.split(",")],
-    }
-    path = "/var/www/html/activity.json"
-    with open(path, "w") as f:
-        json.dump(data, f)
-    return f"Written to {path}"
+    path = Path("/var/www/html/activity.json")
+    try:
+        data = json.loads(path.read_text()) if path.exists() else {"calls": []}
+    except Exception:
+        data = {"calls": []}
+
+    data["calls"].insert(0, {
+        "time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "question": question,
+        "answer": answer,
+        "tools": tools,
+    })
+    data["calls"] = data["calls"][:20]  # keep last 20
+
+    path.write_text(json.dumps(data, indent=2))
+    return f"Activity logged ({len(data['calls'])} entries)"
 
 
 mcp.run(transport="streamable-http")

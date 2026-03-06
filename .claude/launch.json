@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mcp-hub",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["mcp_hub.py"],
+      "port": 8001
+    }
+  ]
+}

@@ -131,46 +131,6 @@
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    # MCP database server
-    - name: Create MCP virtualenv
-      command: python3 -m venv /opt/mcp-db
-      args:
-        creates: /opt/mcp-db/bin/python
-
-    - name: Install MCP and dependencies in virtualenv
-      pip:
-        name:
-          - mcp
-          - uvicorn
-          - starlette
-          - pymysql
-        virtualenv: /opt/mcp-db
-
-    - name: Deploy MCP DB server script
-      copy:
-        src: templates/mcp_db.py
-        dest: /opt/mcp-db/mcp_db.py
-        owner: root
-        group: root
-        mode: '0755'
-      notify: Restart mcp-db
-
-    - name: Deploy MCP DB systemd service
-      template:
-        src: templates/mcp_db.service.j2
-        dest: /etc/systemd/system/mcp-db.service
-        owner: root
-        group: root
-        mode: '0644'
-      notify: Restart mcp-db
-
-    - name: Enable and start MCP DB service
-      systemd:
-        name: mcp-db
-        state: started
-        enabled: yes
-        daemon_reload: yes
-
     # Restrict bind address to DB subnet interface
     - name: Set bind-address to DB subnet IP
       copy:
@@ -199,8 +159,3 @@
         name: ssh
         state: restarted
 
-    - name: Restart mcp-db
-      systemd:
-        name: mcp-db
-        state: restarted
-        daemon_reload: yes
