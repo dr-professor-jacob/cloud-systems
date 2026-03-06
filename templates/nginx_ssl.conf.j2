@@ -66,11 +66,9 @@ http {
 
         ssl_certificate /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem;
         ssl_certificate_key /etc/letsencrypt/live/{{ app_domain }}/privkey.pem;
-        include /etc/letsencrypt/options-ssl-nginx.conf;
-        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-        # TLS 1.3 only — overrides certbot's TLS 1.2+1.3 default
         ssl_protocols TLSv1.3;
         ssl_prefer_server_ciphers off;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
         # Security headers
         add_header Strict-Transport-Security  "max-age=31536000; includeSubDomains; preload" always;
