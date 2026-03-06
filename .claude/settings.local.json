@@ -28,7 +28,8 @@
       "mcp__cloud-infra__nginx_stats",
       "Bash(scp:*)",
       "Bash(az account:*)",
-      "mcp__cloud-infra__write_site_metrics"
+      "mcp__cloud-infra__write_site_metrics",
+      "Bash(nslookup:*)"
     ]
   },
   "enabledMcpjsonServers": [

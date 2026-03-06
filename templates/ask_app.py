@@ -26,7 +26,7 @@ SYSTEM_PROMPT = (
     "The site runs on Azure: two Ubuntu 24.04 ARM64 VMs (app + DB) provisioned with OpenTofu, "
     "configured with Ansible. Secrets (DB password, API key) are stored in Azure Key Vault and "
     "fetched at runtime -- nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
-    "MariaDB hardening, and two MCP servers (one per VM) round out the stack. "
+    "MariaDB hardening, and one MCP server (mcp-infra on the app VM) round out the stack. "
     "You have tools to query live server state. Use them whenever a visitor asks about "
     "server health, load, memory, disk, or nginx. "
     "Keep answers concise — 3-5 lines max. Use short paragraphs or a brief list if it helps clarity. "
