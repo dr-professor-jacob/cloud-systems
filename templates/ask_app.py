@@ -71,40 +71,40 @@ def _run_nginx_stats() -> str:
 
 def _update_metrics(system_data: str, nginx_data: str) -> None:
     try:
-        lines = system_data.split("\n")
-        uptime_val = next((l.replace("Uptime :", "").strip() for l in lines if "Uptime" in l), "")
-        load_val   = next((l.replace("Load   :", "").strip() for l in lines if "Load" in l), "")
-        load_1m    = load_val.split()[0].rstrip(",") if load_val else ""
+        path = Path("/var/www/html/metrics.json")
+        try:
+            data = json.loads(path.read_text()) if path.exists() else {}
+        except Exception:
+            data = {}
 
-        mem_line  = next((l for l in lines if "Mem:" in l), "")
-        mem_parts = mem_line.split()
-        mem_total = mem_parts[1] if len(mem_parts) > 1 else ""
-        mem_used  = mem_parts[2] if len(mem_parts) > 2 else ""
+        data["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        disk_lines = [l for l in lines if "/" in l and "Filesystem" not in l and "tmpfs" not in l]
-        disk_parts = disk_lines[-1].split() if disk_lines else []
-        disk_total = disk_parts[1] if len(disk_parts) > 1 else ""
-        disk_used  = disk_parts[2] if len(disk_parts) > 2 else ""
-        disk_pct   = disk_parts[4] if len(disk_parts) > 4 else ""
+        if system_data:
+            lines = system_data.split("\n")
+            uptime_val = next((l.replace("Uptime :", "").strip() for l in lines if "Uptime" in l), "")
+            load_val   = next((l.replace("Load   :", "").strip() for l in lines if "Load" in l), "")
+            load_1m    = load_val.split()[0].rstrip(",") if load_val else ""
+            mem_line   = next((l for l in lines if "Mem:" in l), "")
+            mem_parts  = mem_line.split()
+            disk_lines = [l for l in lines if "/" in l and "Filesystem" not in l and "tmpfs" not in l]
+            disk_parts = disk_lines[-1].split() if disk_lines else []
+            if uptime_val: data["uptime"]     = uptime_val
+            if load_1m:    data["load"]       = load_1m
+            if len(mem_parts) > 2:
+                data["mem_total"] = mem_parts[1]
+                data["mem_used"]  = mem_parts[2]
+            if len(disk_parts) > 4:
+                data["disk_total"] = disk_parts[1]
+                data["disk_used"]  = disk_parts[2]
+                data["disk_pct"]   = disk_parts[4]
 
-        nginx_conns = ""
-        for l in nginx_data.split("\n"):
-            if "Active connections" in l:
-                nginx_conns = l.split(":")[1].strip()
-                break
+        if nginx_data:
+            for l in nginx_data.split("\n"):
+                if "Active connections" in l:
+                    data["nginx_connections"] = l.split(":")[1].strip()
+                    break
 
-        data = {
-            "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "uptime": uptime_val,
-            "load": load_1m,
-            "mem_used": mem_used,
-            "mem_total": mem_total,
-            "disk_used": disk_used,
-            "disk_total": disk_total,
-            "disk_pct": disk_pct,
-            "nginx_connections": nginx_conns,
-        }
-        Path("/var/www/html/metrics.json").write_text(json.dumps(data))
+        path.write_text(json.dumps(data))
     except Exception:
         pass
 
