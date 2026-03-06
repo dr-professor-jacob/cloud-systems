@@ -250,6 +250,17 @@ resource "azurerm_key_vault_secret" "db_password" {
   key_vault_id = azurerm_key_vault.kv.id
 }
 
+resource "random_password" "mcp_api_key" {
+  length  = 64
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "mcp_api_key" {
+  name         = "mcp-api-key"
+  value        = random_password.mcp_api_key.result
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
 # ── Azure Monitor ────────────────────────────────────────────────────────────
 
 resource "azurerm_monitor_action_group" "ops" {
