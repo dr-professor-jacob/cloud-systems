@@ -27,86 +27,19 @@ SYSTEM_PROMPT = (
     "configured with Ansible. Secrets (DB password, API key) are stored in Azure Key Vault and "
     "fetched at runtime -- nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and one MCP server (mcp-infra on the app VM) round out the stack. "
-    "You have tools to query live server state. Use them whenever a visitor asks about "
-    "server health, load, memory, disk, or nginx. "
+    "You have a tool to read the sentinel health log. Use it when a visitor asks about service health, "
+    "recent alerts, or what the self-healing system has been doing. "
     "Keep answers concise — 3-5 lines max. Use short paragraphs or a brief list if it helps clarity. "
     "Never write a wall of text. Be direct and specific."
 )
 
 TOOLS = [
     {
-        "name": "system_info",
-        "description": "Get live uptime, load averages (1m/5m/15m), memory, and disk usage for this server.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
-        "name": "nginx_stats",
-        "description": "Get nginx active connections and request counts from the stub_status endpoint.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-    {
         "name": "sentinel_log",
         "description": "Read the last 30 lines of /var/log/sentinel.log — shows service health checks, alerts, auto-restarts, and config integrity results.",
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
 ]
-
-
-def _run_system_info() -> str:
-    uptime = subprocess.check_output(["uptime"]).decode().strip()
-    load   = " / ".join(open("/proc/loadavg").read().split()[:3])
-    mem    = subprocess.check_output(["free", "-h"]).decode().strip()
-    disk   = subprocess.check_output(["df", "-h", "/"]).decode().strip()
-    return f"Uptime : {uptime}\nLoad   : {load}  (1m/5m/15m)\n\nMemory:\n{mem}\n\nDisk:\n{disk}"
-
-
-def _run_nginx_stats() -> str:
-    try:
-        return subprocess.check_output(
-            ["curl", "-sf", "http://127.0.0.1/nginx_status"]
-        ).decode().strip()
-    except Exception as e:
-        return f"stub_status unavailable: {e}"
-
-
-def _update_metrics(system_data: str, nginx_data: str) -> None:
-    try:
-        path = Path("/var/www/html/metrics.json")
-        try:
-            data = json.loads(path.read_text()) if path.exists() else {}
-        except Exception:
-            data = {}
-
-        data["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        if system_data:
-            lines = system_data.split("\n")
-            uptime_val = next((l.replace("Uptime :", "").strip() for l in lines if "Uptime" in l), "")
-            load_val   = next((l.replace("Load   :", "").strip() for l in lines if "Load" in l), "")
-            load_1m    = load_val.split()[0].rstrip(",") if load_val else ""
-            mem_line   = next((l for l in lines if "Mem:" in l), "")
-            mem_parts  = mem_line.split()
-            disk_lines = [l for l in lines if "/" in l and "Filesystem" not in l and "tmpfs" not in l]
-            disk_parts = disk_lines[-1].split() if disk_lines else []
-            if uptime_val: data["uptime"]     = uptime_val
-            if load_1m:    data["load"]       = load_1m
-            if len(mem_parts) > 2:
-                data["mem_total"] = mem_parts[1]
-                data["mem_used"]  = mem_parts[2]
-            if len(disk_parts) > 4:
-                data["disk_total"] = disk_parts[1]
-                data["disk_used"]  = disk_parts[2]
-                data["disk_pct"]   = disk_parts[4]
-
-        if nginx_data:
-            for l in nginx_data.split("\n"):
-                if "Active connections" in l:
-                    data["nginx_connections"] = l.split(":")[1].strip()
-                    break
-
-        path.write_text(json.dumps(data))
-    except Exception:
-        pass
 
 
 def _update_activity(question: str, answer: str, tools_used: list) -> None:
@@ -173,14 +106,6 @@ class Question(BaseModel):
     question: str
 
 
-@app.on_event("startup")
-async def startup():
-    try:
-        _update_metrics(_run_system_info(), _run_nginx_stats())
-    except Exception:
-        pass
-
-
 @app.post("/ask")
 async def ask(q: Question, request: Request):
     ip = request.headers.get("X-Real-IP") or request.client.host
@@ -195,10 +120,8 @@ async def ask(q: Question, request: Request):
 
     client   = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     messages = [{"role": "user", "content": text}]
-    tools_used  = []
-    system_data = ""
-    nginx_data  = ""
-    answer      = ""
+    tools_used = []
+    answer     = ""
 
     for _ in range(5):
         response = client.messages.create(
@@ -218,13 +141,7 @@ async def ask(q: Question, request: Request):
             for block in response.content:
                 if block.type == "tool_use":
                     tools_used.append(block.name)
-                    if block.name == "system_info":
-                        result = _run_system_info()
-                        system_data = result
-                    elif block.name == "nginx_stats":
-                        result = _run_nginx_stats()
-                        nginx_data = result
-                    elif block.name == "sentinel_log":
+                    if block.name == "sentinel_log":
                         try:
                             result = subprocess.check_output(
                                 ["tail", "-n", "30", "/var/log/sentinel.log"]
@@ -243,8 +160,6 @@ async def ask(q: Question, request: Request):
         else:
             break
 
-    if system_data or nginx_data:
-        _update_metrics(system_data, nginx_data)
     _update_activity(text, answer, list(dict.fromkeys(tools_used)))
 
     return {"answer": answer, "remaining": remaining}

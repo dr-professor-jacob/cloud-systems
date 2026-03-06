@@ -257,7 +257,6 @@
         Claude has access to live tools on this server. Ask about the architecture, the security design, or what the server is doing right now.
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
-        <button type="button" class="chip" data-q="What is the current server load and memory usage?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">server load</button>
         <button type="button" class="chip" data-q="How does the zero-trust secret management work?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">zero-trust secrets</button>
         <button type="button" class="chip" data-q="How does the self-healing system work? What does it monitor?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">self-healing</button>
         <button type="button" class="chip" data-q="How is the database protected from the internet?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">DB isolation</button>
@@ -460,10 +459,10 @@
           MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs one:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM): live system metrics and nginx stats.</li>
+          <li><strong>mcp-infra</strong> (this VM): sentinel health log and session activity.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return. Tools are read-only; Claude can't run arbitrary commands or write files.
+          Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / Streamable HTTP</span>
@@ -497,8 +496,7 @@
         <div class="card-title">Available MCP Tools</div>
         <table class="vis-table">
           <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding-bottom:.3rem;">App VM (mcp-infra)</td></tr>
-          <tr><td><code>system_info</code></td><td>Uptime, load averages (1m/5m/15m), memory, and disk usage</td></tr>
-          <tr><td><code>nginx_stats</code></td><td>Active connections and request counts from nginx stub_status</td></tr>
+          <tr><td><code>sentinel_log</code></td><td>Last 30 lines of /var/log/sentinel.log — service health checks, alerts, auto-restarts</td></tr>
           <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
         </table>
         <div class="note" style="margin-top:.9rem;">
@@ -543,8 +541,7 @@
         <div>
           <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP tools (app VM)</div>
           <ul class="bullets">
-            <li><code>system_info</code> — uptime, load, memory, disk</li>
-            <li><code>nginx_stats</code> — active connections and requests</li>
+            <li><code>sentinel_log</code> — reads service health check log</li>
             <li><code>write_activity</code> — logs Claude sessions to the activity feed</li>
           </ul>
         </div>
@@ -558,28 +555,6 @@
         <span class="tag">auto-restart</span>
         <span class="tag">Ansible remediation</span>
       </div>
-    </div>
-
-    <!-- Live metrics -->
-    <div class="card" id="metrics-card">
-      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>Server Metrics</span>
-        <span id="metrics-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
-      </div>
-      <div class="row thirds" id="metrics-stats">
-        <div class="stat"><div class="stat-num" id="m-load">—</div><div class="stat-label">Load (1m)</div></div>
-        <div class="stat"><div class="stat-num" id="m-mem">—</div><div class="stat-label">Memory Used</div></div>
-        <div class="stat"><div class="stat-num" id="m-disk">—</div><div class="stat-label">Disk Used</div></div>
-      </div>
-      <table class="vis-table" style="margin-top:1rem;">
-        <tr><td>Uptime</td><td id="m-uptime">—</td></tr>
-        <tr><td>Load avg (1m / 5m / 15m)</td><td id="m-loadfull">—</td></tr>
-        <tr><td>Memory</td><td id="m-memfull">—</td></tr>
-        <tr><td>Disk</td><td id="m-diskfull">—</td></tr>
-        <tr><td>Nginx connections</td><td id="m-nginx">—</td></tr>
-        <tr><td>Last updated by Claude</td><td id="m-updated">—</td></tr>
-      </table>
-      <div class="note" id="metrics-note" style="display:none;"></div>
     </div>
 
     <!-- Commands -->
