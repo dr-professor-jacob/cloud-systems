@@ -480,12 +480,11 @@
             <div class="tl-desc">
               Hardened the transport stack as far as current tooling allows. SSH now negotiates
               <strong>sntrup761x25519-sha512</strong> (NTRU + X25519 hybrid) as the preferred key exchange
-              on both VMs. Resistant to harvest-now/decrypt-later attacks. Host and client keys are
-              Ed25519 only. nginx is restricted to <strong>TLS 1.3 only</strong> (dropped 1.2), with a
-              one-year HSTS preload header. DNS moved from nip.io to
-              <strong>Azure DNS with DNSSEC signing</strong>; responses are cryptographically signed,
-              preventing cache poisoning. The CA/PKI layer is still classical (Let's Encrypt
-              doesn't issue PQ certs yet), but every other layer is hardened.
+              on both VMs. This protects against "harvest now, decrypt later" — where an attacker
+              records encrypted traffic today and decrypts it once quantum computers exist.
+              Web traffic is TLS 1.3 only with a one-year HSTS header. DNS is signed with DNSSEC
+              so responses can't be forged. The only remaining gap is the HTTPS certificate itself
+              (Let's Encrypt doesn't issue post-quantum certs yet).
             </div>
             <div class="tags"><span class="tag">Post-quantum SSH</span><span class="tag">sntrup761x25519</span><span class="tag">TLS 1.3</span><span class="tag">DNSSEC</span><span class="tag">Azure DNS</span><span class="tag">HSTS preload</span></div>
           </div>
