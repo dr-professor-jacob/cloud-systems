@@ -457,11 +457,10 @@
       <div class="card">
         <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs two:
+          MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs one:
         </p>
         <ul class="bullets">
           <li><strong>mcp-infra</strong> (this VM): live system metrics and nginx stats.</li>
-          <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
           Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return. Tools are read-only; Claude can't run arbitrary commands or write files.
@@ -501,9 +500,6 @@
           <tr><td><code>system_info</code></td><td>Uptime, load averages (1m/5m/15m), memory, and disk usage</td></tr>
           <tr><td><code>nginx_stats</code></td><td>Active connections and request counts from nginx stub_status</td></tr>
           <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
-          <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding:.6rem 0 .3rem;">DB VM (mcp-db)</td></tr>
-          <tr><td><code>db_status</code></td><td>Active connections and per-table row/size stats</td></tr>
-          <tr><td><code>db_version</code></td><td>MariaDB version and server uptime</td></tr>
         </table>
         <div class="note" style="margin-top:.9rem;">
           Connect Claude Code by adding this to <code>~/.claude/mcp.json</code>:
