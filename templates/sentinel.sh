@@ -51,10 +51,6 @@ if [ "$ALERTS" -eq 0 ]; then
     log "OK all checks passed"
 fi
 
-# Easter egg on first run
-if [ ! -f /etc/nginx/.sentinel_checksum ]; then
-    log "INFO https://youtu.be/dQw4w9WgXcQ"
-fi
 
 # Rotate log — keep last 500 lines
 LINES=$(wc -l < "$LOG" 2>/dev/null || echo 0)
