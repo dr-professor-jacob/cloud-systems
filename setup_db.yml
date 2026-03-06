@@ -73,7 +73,6 @@
           MaxAuthTries 3
           MaxSessions 5
           AllowAgentForwarding no
-          AllowTcpForwarding no
           X11Forwarding no
         owner: root
         group: root
