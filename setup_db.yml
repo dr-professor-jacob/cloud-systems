@@ -64,20 +64,10 @@
         state: started
         enabled: yes
 
-    - name: Harden SSH — post-quantum algorithms and access controls
+    - name: Harden SSH — access controls
       copy:
         dest: /etc/ssh/sshd_config.d/99-hardening.conf
         content: |
-          # Post-quantum hybrid key exchange (sntrup761 + X25519, then classical fallback)
-          KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org
-          # Ed25519 only for host keys and client public keys
-          HostKeyAlgorithms ssh-ed25519
-          PubkeyAcceptedAlgorithms ssh-ed25519
-          # ETM (encrypt-then-MAC) MACs only
-          MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
-          # AEAD ciphers only
-          Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
-          # General hardening
           PermitRootLogin no
           LoginGraceTime 30
           MaxAuthTries 3
