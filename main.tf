@@ -323,7 +323,7 @@ resource "local_file" "ansible_vars" {
 resource "cloudflare_record" "app" {
   zone_id = var.cloudflare_zone_id
   name    = "@"
-  value   = azurerm_public_ip.app_pip.ip_address
+  content = azurerm_public_ip.app_pip.ip_address
   type    = "A"
   ttl     = 60
   proxied = false
