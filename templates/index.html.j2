@@ -330,7 +330,7 @@
         <div class="card-title">Security Hardening</div>
         <ul class="bullets">
           <li><strong>Post-quantum SSH.</strong> <strong>sntrup761x25519-sha512</strong> hybrid KEx (NTRU + X25519) on both VMs. Ed25519-only keys, ETM MACs, AEAD ciphers.</li>
-          <li><strong>SSH key-only.</strong> Password auth disabled. DB has no public IP — access requires tunneling through the app VM.</li>
+          <li><strong>SSH key-only.</strong> Password auth disabled. DB has no public IP; access requires tunneling through the app VM.</li>
           <li><strong>fail2ban:</strong> 5 failed SSH attempts in 10 minutes → 1-hour IP ban.</li>
           <li><strong>Unattended-upgrades</strong> applies security patches automatically.</li>
           <li><strong>MariaDB hardened via Ansible:</strong> anonymous users removed, test DB dropped, remote root disabled, bound to DB subnet interface only.</li>
@@ -480,12 +480,12 @@
             <div class="tl-desc">
               Hardened the transport stack as far as current tooling allows. SSH now negotiates
               <strong>sntrup761x25519-sha512</strong> (NTRU + X25519 hybrid) as the preferred key exchange
-              on both VMs — resistant to harvest-now/decrypt-later attacks. Host and client keys are
-              Ed25519 only. nginx is restricted to <strong>TLS 1.3 only</strong> (dropping 1.2), with a
+              on both VMs. Resistant to harvest-now/decrypt-later attacks. Host and client keys are
+              Ed25519 only. nginx is restricted to <strong>TLS 1.3 only</strong> (dropped 1.2), with a
               one-year HSTS preload header. DNS moved from nip.io to
-              <strong>Azure DNS with DNSSEC signing</strong> — responses are cryptographically authenticated,
-              preventing cache poisoning and spoofing. The CA/PKI layer remains classical (Let's Encrypt
-              doesn't issue PQ certificates yet), but all other layers are hardened.
+              <strong>Azure DNS with DNSSEC signing</strong>; responses are cryptographically signed,
+              preventing cache poisoning. The CA/PKI layer is still classical (Let's Encrypt
+              doesn't issue PQ certs yet), but every other layer is hardened.
             </div>
             <div class="tags"><span class="tag">Post-quantum SSH</span><span class="tag">sntrup761x25519</span><span class="tag">TLS 1.3</span><span class="tag">DNSSEC</span><span class="tag">Azure DNS</span><span class="tag">HSTS preload</span></div>
           </div>
@@ -503,12 +503,12 @@
           MCP (Model Context Protocol) lets AI assistants call structured tools on a remote server. This deployment runs two:
         </p>
         <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM) — read-only tools: live system metrics and nginx stats.</li>
+          <li><strong>mcp-infra</strong> (this VM): live system metrics and nginx stats.</li>
           <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Claude runs on Anthropic's servers. The app VM calls the Claude API with available tool definitions; Claude decides which to call, the VM runs them and returns results. The AI never has direct access — only what the tools explicitly return.
-          Tools are read-only (<code>system_info</code>, <code>nginx_stats</code>, <code>sentinel_log</code>) — Claude cannot run arbitrary commands or write files.
+          Claude runs on Anthropic's servers. The app VM calls the Claude API with the available tool definitions; Claude decides which to call, the VM runs them and returns results. Claude only sees what the tools return.
+          Tools are read-only (<code>system_info</code>, <code>nginx_stats</code>, <code>sentinel_log</code>). Claude cannot run arbitrary commands or write files.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / Streamable HTTP</span>
@@ -597,7 +597,7 @@
         </div>
       </div>
       <div class="note" style="margin-top:.9rem;">
-        After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes — any change raises an alert. The repair playbook restores config from the Ansible template, fixes permissions, and restarts all services. Cloud Shell is the only access point; no one logs into the VM to fix things.
+        After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes; any change raises an alert. The repair playbook restores config from the Ansible template, fixes permissions, and restarts all services. Cloud Shell is the only access point; no one logs into the VM to fix things.
       </div>
       <div class="tags" style="margin-top:.9rem;">
         <span class="tag">systemd timer</span>
@@ -761,7 +761,7 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
         <span id="scan-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
       </div>
       <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        nmap scanned from Azure Cloud Shell — same view an attacker on the internet would have.
+        nmap scanned from Azure Cloud Shell, same view an attacker on the internet would have.
         Only ports 80 and 443 should be reachable. Port 3306 (MariaDB), 8000/8002 (MCP servers),
         and 22 (SSH) are blocked by the NSG and should not appear as open.
       </p>
