@@ -255,7 +255,7 @@
     <div class="card">
       <div class="card-title">Ask Claude</div>
       <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
-        Claude runs on this server with access to live system tools. Ask about the architecture, the security design, or what the server is doing right now.
+        Claude has access to live tools on this server. Ask about the architecture, the security design, or what the server is doing right now.
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
         <button type="button" class="chip" data-q="What is the current server load and memory usage?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">server load</button>
@@ -458,14 +458,14 @@
       <div class="card">
         <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) lets AI assistants call structured tools on a remote server. This deployment runs two:
+          MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs two:
         </p>
         <ul class="bullets">
           <li><strong>mcp-infra</strong> (this VM): live system metrics and nginx stats.</li>
           <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Claude runs on Anthropic's servers, not on these VMs. The VM calls the API, Claude decides which tools to run, and only sees what they return. Tools are read-only — Claude can't run arbitrary commands or write files.
+          Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return. Tools are read-only; Claude can't run arbitrary commands or write files.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / Streamable HTTP</span>
@@ -562,8 +562,6 @@
         <span class="tag">config integrity</span>
         <span class="tag">auto-restart</span>
         <span class="tag">Ansible remediation</span>
-        <span class="tag">MCP hub</span>
-        <span class="tag">ZTA</span>
       </div>
     </div>
 
