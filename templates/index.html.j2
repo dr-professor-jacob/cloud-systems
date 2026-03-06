@@ -679,10 +679,14 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
   <span class="c"># stored here by tofu apply; never typed or on disk.</span>
 }
 
-<span class="c"># Terraform writes the live IP into Ansible's inventory</span>
-<span class="c"># on every apply; no manual IP hunting after redeploy.</span>
+<span class="c"># Writes the active domain into Ansible's group_vars on every apply.</span>
+<span class="c"># Falls back to nip.io if no domain_name variable is set.</span>
+<span class="f">locals</span> {
+  app_domain = <span class="n">var.domain_name</span> != <span class="k">null</span> ? <span class="n">var.domain_name</span> : <span class="s">"${azurerm_public_ip.app_pip.ip_address}.nip.io"</span>
+}
+
 <span class="f">resource</span> <span class="s">"local_file"</span> <span class="v">"ansible_vars"</span> {
-  content  = <span class="s">"app_domain: \"</span><span class="n">${azurerm_public_ip.app_pip.ip_address}</span><span class="s">.nip.io\""</span>
+  content  = <span class="s">"app_domain: \"</span><span class="n">${local.app_domain}</span><span class="s">\""</span>
   filename = <span class="s">"group_vars/all/terraform_outputs.yml"</span>
 }</pre>
           </div>
