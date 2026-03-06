@@ -353,10 +353,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 1</div>
             <div class="tl-title">Scaffolding: single VM, HTTP only</div>
-            <div class="tl-desc">
-              One VM, one subnet, no TLS. OpenTofu provisions the VM and public IP; Ansible installs nginx and serves a static page.
-              Goal: get the full IaC pipeline working end-to-end. Manual SSH was the baseline to beat.
-            </div>
+            <div class="tl-desc">One VM, one subnet, no TLS. Goal: get the full IaC pipeline working end-to-end.</div>
             <div class="tags"><span class="tag">Terraform</span><span class="tag">Ansible</span><span class="tag">nginx</span></div>
           </div>
         </div>
@@ -369,11 +366,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 2</div>
             <div class="tl-title">Two-tier network: app and DB on separate subnets</div>
-            <div class="tl-desc">
-              Split into two VMs. The DB gets no public IP; only the app subnet can reach port 3306.
-              Ansible now runs two playbooks, one per host group. OpenTofu's <code>local_file</code> resource
-              writes the live IP into Ansible's inventory on every apply.
-            </div>
+            <div class="tl-desc">Added a DB VM with no public IP. Only the app subnet can reach it on port 3306.</div>
             <div class="tags"><span class="tag">Two-tier</span><span class="tag">NSG</span><span class="tag">MariaDB</span><span class="tag">Inventory automation</span></div>
           </div>
         </div>
@@ -386,11 +379,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 3</div>
             <div class="tl-title">TLS, secrets, remote state</div>
-            <div class="tl-desc">
-              certbot needs port 80 for the ACME challenge, but the final nginx config references a cert that doesn't exist yet.
-              Fix: deploy an HTTP-only config first (<code>when: not cert_stat.stat.exists</code>), run certbot, swap in the SSL config.
-              State moved to Azure Blob Storage. <code>nip.io</code> for a real domain without buying one.
-            </div>
+            <div class="tl-desc">Added HTTPS via Let's Encrypt, Terraform state in Azure Blob Storage, and nip.io for a free domain.</div>
             <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
           </div>
         </div>
@@ -403,11 +392,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 4</div>
             <div class="tl-title">Hardening + ARM64</div>
-            <div class="tl-desc">
-              fail2ban, unattended-upgrades, and MariaDB hardening via Ansible's <code>mysql_user</code> / <code>mysql_db</code> modules.
-              Switched to <strong>Standard_B2pts_v2</strong> (Ampere ARM64): same tier, cheaper, fully supported on Ubuntu 24.04.
-              All tasks are idempotent.
-            </div>
+            <div class="tl-desc">Added fail2ban, auto security updates, MariaDB hardening, and switched to ARM64 VMs (cheaper, same tier).</div>
             <div class="tags"><span class="tag">fail2ban</span><span class="tag">Unattended-upgrades</span><span class="tag">ARM64</span><span class="tag">MariaDB hardening</span></div>
           </div>
         </div>
@@ -420,11 +405,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 5</div>
             <div class="tl-title">Zero-trust secrets via Azure Key Vault</div>
-            <div class="tl-desc">
-              OpenTofu generates the DB password via <code>random_password</code> and stores it in Key Vault as part of <code>tofu apply</code>.
-              Ansible fetches it at runtime with <code>az keyvault secret show</code>.
-              Nothing is typed, nothing is stored locally.
-            </div>
+            <div class="tl-desc">OpenTofu generates the DB password and stores it in Azure Key Vault. Ansible fetches it at runtime. Nothing is ever typed or stored in code.</div>
             <div class="tags"><span class="tag">Azure Key Vault</span><span class="tag">RBAC</span><span class="tag">Passwordless</span></div>
           </div>
         </div>
@@ -437,12 +418,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 6</div>
             <div class="tl-title">MCP servers + Azure Monitor</div>
-            <div class="tl-desc">
-              Two <strong>Model Context Protocol</strong> servers: mcp-infra on the app VM for system metrics,
-              mcp-db on the DB VM for database queries. Both run as systemd services via FastMCP + uvicorn,
-              proxied through nginx. The Ask Claude box on this page uses the same tools.
-              Azure Monitor alerts on CPU above 85% for 5 minutes.
-            </div>
+            <div class="tl-desc">Two MCP servers let Claude query live system metrics and the database. The Ask Claude box on this page uses them. Added Azure Monitor CPU alerts.</div>
             <div class="tags"><span class="tag">MCP / Streamable HTTP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
           </div>
         </div>
@@ -456,12 +432,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 7</div>
             <div class="tl-title">Self-healing: sentinel monitoring + automated remediation</div>
-            <div class="tl-desc">
-              A systemd timer runs a sentinel script every 5 minutes on the app VM. It checks that nginx,
-              ask-app, and mcp-infra are active, verifies the nginx config checksum against the post-deploy
-              baseline, and auto-restarts any failed service. All events are written to <code>/var/log/sentinel.log</code>.
-              If deeper repair is needed, re-running the Ansible playbook restores the full stack from source control.
-            </div>
+            <div class="tl-desc">A script runs every 5 minutes, checks that all services are up and the nginx config hasn't changed, and restarts anything that's down.</div>
             <div class="tags"><span class="tag">systemd timer</span><span class="tag">config integrity</span><span class="tag">auto-restart</span><span class="tag">MCP remediation</span></div>
           </div>
         </div>
@@ -473,12 +444,7 @@
           <div class="tl-body">
             <div class="tl-label">Iteration 8</div>
             <div class="tl-title">Transport hardening: TLS 1.3-only, HSTS, real domain</div>
-            <div class="tl-desc">
-              nginx restricted to TLS 1.3 only (dropped 1.2) with a one-year HSTS preload header.
-              Domain moved from nip.io to jrickey.cc via Cloudflare DNS; an Azure DNS zone is
-              provisioned via OpenTofu for future DNSSEC. SSH hardening tightened: root login
-              disabled, max 3 auth attempts, agent and X11 forwarding off.
-            </div>
+            <div class="tl-desc">Moved to a real domain, TLS 1.3 only, one-year HSTS, and tighter SSH config on both VMs.</div>
             <div class="tags"><span class="tag">TLS 1.3</span><span class="tag">HSTS preload</span><span class="tag">Cloudflare DNS</span><span class="tag">Azure DNS</span><span class="tag">SSH hardening</span></div>
           </div>
         </div>
@@ -499,8 +465,7 @@
           <li><strong>mcp-db</strong> (DB VM): database query tools. Private, only reachable through the app VM.</li>
         </ul>
         <div class="note" style="margin-top:.9rem;">
-          Claude runs on Anthropic's servers. The app VM calls the Claude API with the available tool definitions; Claude decides which to call, the VM runs them and returns results. Claude only sees what the tools return.
-          Tools are read-only (<code>system_info</code>, <code>nginx_stats</code>, <code>sentinel_log</code>). Claude cannot run arbitrary commands or write files.
+          Claude runs on Anthropic's servers, not on these VMs. The VM calls the API, Claude decides which tools to run, and only sees what they return. Tools are read-only — Claude can't run arbitrary commands or write files.
         </div>
         <div class="tags" style="margin-top:.9rem;">
           <span class="tag">MCP / Streamable HTTP</span>
