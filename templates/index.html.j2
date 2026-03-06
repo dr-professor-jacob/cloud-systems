@@ -759,8 +759,8 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
       </div>
       <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
         nmap scanned from Azure Cloud Shell, same view an attacker on the internet would have.
-        Only ports 80 and 443 should be reachable. Port 3306 (MariaDB), 8000/8002 (MCP servers),
-        and 22 (SSH) are blocked by the NSG and should not appear as open.
+        Ports 80 and 443 are intentionally open. Port 22 (SSH) is open but key-only auth and
+        fail2ban are the controls. Ports 3306 (MariaDB) and 8000/8002 (MCP servers) should not appear.
       </p>
       <div id="scan-ports" style="margin-bottom:.9rem;"></div>
       <div class="code-block">
