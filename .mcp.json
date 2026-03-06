@@ -2,7 +2,10 @@
   "mcpServers": {
     "cloud-infra": {
       "type": "http",
-      "url": "https://jrickey.cc/mcp"
+      "url": "https://jrickey.cc/mcp",
+      "headers": {
+        "Authorization": "Bearer REPLACE_WITH_MCP_API_KEY"
+      }
     }
   }
 }
