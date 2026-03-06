@@ -716,30 +716,6 @@ ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
 
     </div>
 
-    <!-- Security Scan -->
-    <div class="card">
-      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>External Security Scan</span>
-        <span id="scan-age" style="font-size:.68rem;font-weight:400;text-transform:none;letter-spacing:0;color:#706e6c;"></span>
-      </div>
-      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        nmap scanned from Azure Cloud Shell, same view an attacker on the internet would have.
-        Ports 80 and 443 are intentionally open. Port 22 (SSH) is open but key-only auth and
-        fail2ban are the controls. Ports 3306 (MariaDB) and 8000/8002 (MCP servers) should not appear.
-      </p>
-      <div id="scan-ports" style="margin-bottom:.9rem;"></div>
-      <div class="code-block">
-        <div class="code-label">nmap output</div>
-        <pre id="scan-output" style="white-space:pre-wrap;word-break:break-word;">Loading scan results...</pre>
-      </div>
-      <div class="note" style="margin-top:.9rem;" id="scan-note" style="display:none;"></div>
-      <div class="tags" style="margin-top:.9rem;">
-        <span class="tag">nmap</span>
-        <span class="tag">external perspective</span>
-        <span class="tag">NSG validation</span>
-        <span class="tag">SSL audit</span>
-      </div>
-    </div>
 
   </main>
 
