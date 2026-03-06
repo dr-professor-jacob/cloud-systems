@@ -5,5 +5,3 @@ mits_key
 inventory.ini
 hosts.yml
 group_vars/all/terraform_outputs.yml
-deploy.sh
-terraform.tfvars

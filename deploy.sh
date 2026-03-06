@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -e
+START=$(date +%s)
+cd ~/cloud-systems
+
+echo "==> git pull"
+git pull
+
+# ── Cloudflare API token ──────────────────────────────────────────────────────
+if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+  echo "==> CLOUDFLARE_API_TOKEN not set"
+  read -rs -p "    Enter Cloudflare API token: " CLOUDFLARE_API_TOKEN
+  echo
+  export CLOUDFLARE_API_TOKEN
+fi
+
+echo "==> tofu apply"
+tofu apply -auto-approve
+
+IP=$(tofu output -raw app_public_ip)
+DOMAIN=$(tofu output -raw app_domain)
+KV=$(tofu output -raw key_vault_name)
+echo "==> App IP: $IP  Domain: $DOMAIN"
+
+# ── Anthropic API key ─────────────────────────────────────────────────────────
+if ! az keyvault secret show \
+    --vault-name "$KV" \
+    --name anthropic-api-key \
+    --query value -o tsv &>/dev/null; then
+  echo "==> anthropic-api-key not in Key Vault"
+  read -rs -p "    Enter Anthropic API key: " ANTHROPIC_KEY
+  echo
+  az keyvault secret set \
+    --vault-name "$KV" \
+    --name anthropic-api-key \
+    --value "$ANTHROPIC_KEY" \
+    --output none
+  echo "==> anthropic-api-key stored"
+fi
+
+echo "==> Waiting for SSH on $IP..."
+until ssh -i mits_key \
+    -o StrictHostKeyChecking=no \
+    -o ConnectTimeout=5 \
+    jrick@"$IP" true 2>/dev/null; do
+  echo "    not ready, retrying in 5s..."
+  sleep 5
+done
+echo "==> SSH ready"
+
+echo "==> Running app playbook"
+ansible-playbook setup_app.yml -i inventory.ini
+echo "==> Running db playbook"
+ansible-playbook setup_db.yml -i inventory.ini
+
+ELAPSED=$(( $(date +%s) - START ))
+MINS=$(( ELAPSED / 60 ))
+SECS=$(( ELAPSED % 60 ))
+echo "==> Done: https://${DOMAIN}  (${MINS}m ${SECS}s)"

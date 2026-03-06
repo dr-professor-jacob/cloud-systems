@@ -17,7 +17,11 @@ variable "allowed_ssh_ip" {
 }
 
 variable "domain_name" {
-  description = "Your registered domain name (e.g. example.com). Leave null to use nip.io auto-domain from the public IP. Must be delegated to Azure DNS nameservers at your registrar before running Ansible."
+  description = "Your registered domain name (e.g. example.com)."
   type        = string
-  default     = null
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID for the domain (found on the domain overview page in Cloudflare dashboard)."
+  type        = string
 }
