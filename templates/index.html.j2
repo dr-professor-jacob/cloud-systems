@@ -305,7 +305,6 @@
           <tr class="data"><td>DB VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
           <tr class="data"><td>OS</td><td>Ubuntu 24.04 LTS (arm64)</td></tr>
           <tr class="data"><td>Auth</td><td>SSH key only (Ed25519), no passwords</td></tr>
-          <tr class="data"><td>SSH KEx</td><td>sntrup761x25519 (PQ hybrid) + classical fallback</td></tr>
 
           <tr class="section-row"><td colspan="2">Network</td></tr>
           <tr class="data"><td>VNet</td><td>10.0.0.0/16</td></tr>
@@ -321,7 +320,7 @@
           <tr class="data"><td>Secrets</td><td>Azure Key Vault (auto-generated, runtime fetch)</td></tr>
           <tr class="data"><td>OpenTofu state</td><td>Azure Blob Storage (shared, locked)</td></tr>
           <tr class="data"><td>Monitoring</td><td>Azure Monitor + email alerts</td></tr>
-          <tr class="data"><td>DNS</td><td>{% if 'nip.io' in app_domain %}nip.io (Azure DNS + DNSSEC configured, pending domain cutover){% else %}Azure DNS · DNSSEC signed{% endif %}</td></tr>
+          <tr class="data"><td>DNS</td><td>{% if 'nip.io' in app_domain %}nip.io{% else %}Cloudflare DNS · Azure DNS zone provisioned via OpenTofu{% endif %}</td></tr>
           <tr class="data"><td>AI interface</td><td>MCP over Streamable HTTP</td></tr>
         </table>
       </div>
@@ -329,8 +328,7 @@
       <div class="card">
         <div class="card-title">Security Hardening</div>
         <ul class="bullets">
-          <li><strong>Post-quantum SSH.</strong> <strong>sntrup761x25519-sha512</strong> hybrid KEx (NTRU + X25519) on both VMs. Ed25519-only keys, ETM MACs, AEAD ciphers.</li>
-          <li><strong>SSH key-only.</strong> Password auth disabled. DB has no public IP; access requires tunneling through the app VM.</li>
+          <li><strong>SSH hardened on both VMs:</strong> key-only auth (Ed25519), no passwords, root login disabled, max 3 auth attempts. DB has no public IP; access requires tunneling through the app VM.</li>
           <li><strong>fail2ban:</strong> 5 failed SSH attempts in 10 minutes → 1-hour IP ban.</li>
           <li><strong>Unattended-upgrades</strong> applies security patches automatically.</li>
           <li><strong>MariaDB hardened via Ansible:</strong> anonymous users removed, test DB dropped, remote root disabled, bound to DB subnet interface only.</li>
@@ -474,17 +472,14 @@
           </div>
           <div class="tl-body">
             <div class="tl-label">Iteration 8</div>
-            <div class="tl-title">Post-quantum hardening: PQ SSH, TLS 1.3-only, DNSSEC</div>
+            <div class="tl-title">Transport hardening: TLS 1.3-only, HSTS, real domain</div>
             <div class="tl-desc">
-              Hardened the transport stack as far as current tooling allows. SSH now negotiates
-              <strong>sntrup761x25519-sha512</strong> (NTRU + X25519 hybrid) as the preferred key exchange
-              on both VMs. This protects against "harvest now, decrypt later" — where an attacker
-              records encrypted traffic today and decrypts it once quantum computers exist.
-              Web traffic is TLS 1.3 only with a one-year HSTS header. DNS is signed with DNSSEC
-              so responses can't be forged. The only remaining gap is the HTTPS certificate itself
-              (Let's Encrypt doesn't issue post-quantum certs yet).
+              nginx restricted to TLS 1.3 only (dropped 1.2) with a one-year HSTS preload header.
+              Domain moved from nip.io to jrickey.cc via Cloudflare DNS; an Azure DNS zone is
+              provisioned via OpenTofu for future DNSSEC. SSH hardening tightened: root login
+              disabled, max 3 auth attempts, agent and X11 forwarding off.
             </div>
-            <div class="tags"><span class="tag">Post-quantum SSH</span><span class="tag">sntrup761x25519</span><span class="tag">TLS 1.3</span><span class="tag">DNSSEC</span><span class="tag">Azure DNS</span><span class="tag">HSTS preload</span></div>
+            <div class="tags"><span class="tag">TLS 1.3</span><span class="tag">HSTS preload</span><span class="tag">Cloudflare DNS</span><span class="tag">Azure DNS</span><span class="tag">SSH hardening</span></div>
           </div>
         </div>
 
@@ -538,9 +533,13 @@
       <div class="card">
         <div class="card-title">Available MCP Tools</div>
         <table class="vis-table">
+          <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding-bottom:.3rem;">App VM (mcp-infra)</td></tr>
           <tr><td><code>system_info</code></td><td>Uptime, load averages (1m/5m/15m), memory, and disk usage</td></tr>
           <tr><td><code>nginx_stats</code></td><td>Active connections and request counts from nginx stub_status</td></tr>
           <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
+          <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding:.6rem 0 .3rem;">DB VM (mcp-db)</td></tr>
+          <tr><td><code>db_status</code></td><td>Active connections and per-table row/size stats</td></tr>
+          <tr><td><code>db_version</code></td><td>MariaDB version and server uptime</td></tr>
         </table>
         <div class="note" style="margin-top:.9rem;">
           Connect Claude Code by adding this to <code>~/.claude/mcp.json</code>:
