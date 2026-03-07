@@ -13,11 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["POST"])
+app.add_middleware(CORSMiddleware, allow_origins=["https://jrickey.cc"], allow_methods=["POST"])
 
 RATE_FILE  = Path("/opt/ask-app/rate.json")
-MAX_PER_IP = 30
-MAX_GLOBAL = 1000
+MAX_PER_IP = 10
+MAX_GLOBAL = 150
 MAX_INPUT  = 300
 MAX_TOKENS = 600
 

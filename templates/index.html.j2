@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cloud Systems — Azure IaC Project</title>
+  <title>Jacob Rickey</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,49 +14,29 @@
       min-height: 100vh;
     }
 
-    /* ── Header ── */
     header {
       background: linear-gradient(135deg, #005ea2 0%, #0078d4 100%);
       color: #fff;
-      padding: 1.1rem 2rem;
+      padding: 1.25rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
+      flex-wrap: wrap;
     }
-    .hd-left { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
-    .hd-title { font-size: 1.05rem; font-weight: 600; letter-spacing: .04em; }
-    .hd-sub { font-size: .72rem; opacity: .75; margin-top: .1rem; }
+    .hd-title { font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; }
+    .hd-sub   { font-size: .75rem; opacity: .75; margin-top: .2rem; }
+    .hd-links { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .hd-link  {
+      font-size: .75rem; font-weight: 600;
+      color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.3);
+      border-radius: 5px; padding: .25rem .65rem;
+      text-decoration: none; transition: background .12s;
+    }
+    .hd-link:hover { background: rgba(255,255,255,.15); }
 
-    .status-pill {
-      display: flex; align-items: center; gap: .4rem;
-      font-size: .68rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.25);
-      border-radius: 99px;
-      padding: .22rem .75rem;
-    }
-    .status-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #57ff57;
-      box-shadow: 0 0 7px #57ff57;
-      animation: blink 2.5s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    .hd-clocks {
-      text-align: right;
-      font-size: .8rem;
-      display: flex; flex-direction: column; gap: .1rem;
-      font-variant-numeric: tabular-nums;
-      opacity: .9;
-      white-space: nowrap;
-    }
-    #clock-local { opacity: .65; font-size: .72rem; }
-
-    /* ── Layout ── */
     main {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 2rem auto;
       padding: 0 1.5rem 3rem;
       display: flex;
@@ -70,14 +50,10 @@
       gap: 1.25rem;
       align-items: start;
     }
-    .row.thirds {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
     @media (max-width: 760px) {
-      .row, .row.thirds { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
     }
 
-    /* ── Cards ── */
     .card {
       background: #fff;
       border-radius: 10px;
@@ -87,566 +63,203 @@
     .card-title {
       font-size: .68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .1em; color: #0078d4;
-      margin-bottom: .9rem;
-      padding-bottom: .6rem;
+      margin-bottom: .9rem; padding-bottom: .6rem;
       border-bottom: 1px solid #f0f0f0;
     }
 
-    /* ── Tables ── */
-    .infra-table, .vis-table { width: 100%; border-collapse: collapse; }
-    .infra-table tr.data, .vis-table tr { border-bottom: 1px solid #f2f2f2; }
-    .infra-table tr.data:last-child, .vis-table tr:last-child { border-bottom: none; }
-    .infra-table tr.data:hover td, .vis-table tr:hover td { background: #f4f8fd; }
-    .infra-table td, .vis-table td { padding: .52rem .3rem; font-size: .86rem; vertical-align: top; transition: background .12s; }
-    .infra-table td:first-child, .vis-table td:first-child { color: #706e6c; width: 44%; }
-    .vis-table td:first-child code { color: #003d7a; font-weight: 600; }
-    .infra-table td:last-child, .vis-table td:last-child { color: #1a1a1a; font-weight: 500; }
-    .infra-table tr.section-row td {
-      font-size: .65rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .1em; color: #0078d4;
-      padding-top: 1.1rem; padding-bottom: .3rem;
-    }
-    .infra-table tr.section-row:first-child td { padding-top: .1rem; }
-
-    /* ── Bullet lists ── */
-    .bullets { list-style: none; display: flex; flex-direction: column; gap: .7rem; }
-    .bullets li {
-      font-size: .865rem; color: #333; line-height: 1.55;
-      padding-left: 1.15rem; position: relative;
-    }
-    .bullets li::before { content: "→"; position: absolute; left: 0; color: #0078d4; font-weight: 700; }
-    .bullets li strong { color: #1a1a1a; }
-
-    /* ── Timeline ── */
-    .timeline { display: flex; flex-direction: column; gap: 0; }
-    .tl-item {
-      display: grid;
-      grid-template-columns: 3.5rem 1fr;
-      gap: 0 1rem;
-      position: relative;
-    }
-    .tl-item:not(:last-child) .tl-line { display: block; }
-    .tl-badge-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .tl-badge {
-      width: 2rem; height: 2rem;
-      border-radius: 50%;
-      background: #0078d4;
-      color: #fff;
-      font-size: .7rem;
-      font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      z-index: 1;
-    }
-    .tl-line {
-      width: 2px;
-      flex: 1;
-      background: #dde8f5;
-      margin: .25rem 0;
-      min-height: .75rem;
-    }
-    .tl-body { padding-bottom: 1.1rem; }
-    .tl-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #0078d4; }
-    .tl-title { font-size: .9rem; font-weight: 600; color: #1a1a1a; margin: .15rem 0 .3rem; }
-    .tl-desc { font-size: .82rem; color: #444; line-height: 1.5; }
-    .tl-item:last-child .tl-body { padding-bottom: 0; }
-
-    /* ── Tag chips ── */
-    .tags { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .75rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: .4rem; }
     .tag {
       font-size: .68rem; font-weight: 600; letter-spacing: .04em;
       background: #e8f1fb; color: #005ea2;
-      border-radius: 99px;
-      padding: .2rem .6rem;
+      border-radius: 99px; padding: .2rem .6rem;
     }
 
-    /* ── Mono ── */
-    .mono { font-family: "Cascadia Code", "Fira Code", "Courier New", monospace; font-size: .77rem; word-break: break-all; }
-    code {
-      font-family: "Cascadia Code", "Fira Code", "Courier New", monospace;
-      font-size: .82em;
-      background: #f0f4fa;
-      padding: .1em .35em;
-      border-radius: 4px;
-      color: #005ea2;
+    .link-btn {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .78rem; font-weight: 600;
+      color: #0078d4; border: 1px solid #c7d9f8;
+      background: #f0f6ff; border-radius: 6px;
+      padding: .3rem .8rem; text-decoration: none;
+      transition: background .12s; white-space: nowrap;
     }
+    .link-btn:hover { background: #ddeeff; }
 
-    /* ── Code blocks ── */
-    .code-section { display: flex; flex-direction: column; gap: 1.1rem; }
-    .code-block { background: #0d1117; border-radius: 8px; overflow: hidden; }
-    .code-label {
-      font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
-      color: #7d8590; background: #161b22; padding: .4rem .9rem;
-      border-bottom: 1px solid #21262d;
+    .proj-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
     }
-    .code-block pre {
-      margin: 0; padding: .9rem 1rem;
-      font-family: "Cascadia Code", "Fira Code", "Courier New", monospace;
-      font-size: .78rem; line-height: 1.6;
-      color: #e6edf3; overflow-x: auto;
+    .proj-card {
+      border: 1px solid #e6edf5; border-radius: 8px;
+      padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; gap: .45rem;
     }
-    .c  { color: #8b949e; }  /* comment */
-    .k  { color: #ff7b72; }  /* keyword */
-    .s  { color: #a5d6ff; }  /* string */
-    .v  { color: #79c0ff; }  /* variable/resource name */
-    .f  { color: #d2a8ff; }  /* function/block */
-    .n  { color: #ffa657; }  /* number/value */
+    .proj-card-title { font-size: .9rem; font-weight: 600; color: #1a1a1a; }
+    .proj-card-desc  { font-size: .82rem; color: #555; line-height: 1.5; flex: 1; }
+    .status-badge {
+      font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: .15rem .55rem; border-radius: 99px; white-space: nowrap; flex-shrink: 0;
+    }
+    .status-active { background: #e6f9ee; color: #1a7a3a; }
+    .status-done   { background: #f0f4fa; color: #5a6a80; }
 
-    /* ── Note box ── */
-    .note {
-      background: #f4f8fd;
-      border-left: 3px solid #0078d4;
-      border-radius: 0 6px 6px 0;
-      padding: .6rem .9rem;
-      font-size: .82rem;
-      color: #444;
-      line-height: 1.5;
-      margin-top: .9rem;
+    .course-list { display: flex; flex-direction: column; gap: .55rem; }
+    .course-item {
+      display: flex; align-items: baseline;
+      justify-content: space-between; gap: .5rem;
     }
+    .course-name { font-size: .85rem; font-weight: 500; color: #1a1a1a; }
+    .course-sub  { font-size: .75rem; color: #888; white-space: nowrap; }
   </style>
 </head>
 <body>
   <header>
-    <div class="hd-left">
-      <div>
-        <div class="hd-title">Cloud Systems — Azure IaC Deployment</div>
-        <div class="hd-sub">Jacob Rickey &nbsp;·&nbsp; <a href="mailto:jr521816@ohio.edu" style="color:inherit;opacity:.85;">jr521816@ohio.edu</a> &nbsp;·&nbsp; ITS 5900-120 &nbsp;·&nbsp; Spring 2026 &nbsp;·&nbsp; {{ app_domain }} &nbsp;·&nbsp; <a href="https://github.com/dr-professor-jacob/cloud-systems" style="color:inherit;opacity:.85;">GitHub</a></div>
-      </div>
+    <div>
+      <div class="hd-title">Jacob Rickey</div>
+      <div class="hd-sub">MITS candidate &nbsp;·&nbsp; Ohio University &nbsp;·&nbsp; graduating December 2026</div>
     </div>
-    <div class="hd-clocks">
-      <span id="clock-utc">UTC —:—:—</span>
-      <span id="clock-local"></span>
+    <div class="hd-links">
+      <a class="hd-link" href="https://github.com/dr-professor-jacob">GitHub</a>
+      <a class="hd-link" href="mailto:jr521816@ohio.edu">Email</a>
+      <a class="hd-link" href="https://www.linkedin.com/in/jacob-rickey/">LinkedIn</a>
+      <a class="hd-link" href="/resume.pdf" target="_blank">Resume</a>
     </div>
   </header>
 
   <main>
 
-    <!-- Overview -->
+    <!-- About -->
     <div class="card">
-      <div class="card-title">Project Overview</div>
-      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        Two VMs on Azure, provisioned with <strong>OpenTofu</strong> and configured with <strong>Ansible</strong>.
-        <code>tofu apply</code> provisions the network, VMs, Key Vault, and monitoring.
-        <code>ansible-playbook</code> installs and hardens both machines.
-        Nothing is done manually.
+      <p style="font-size:.95rem;color:#333;line-height:1.7;margin-bottom:1.1rem;">
+        Master of Information and Telecommunication Systems student with expertise in cybersecurity,
+        5G/LTE architecture, and telecommunications strategy and policy.
       </p>
-    </div>
-
-    <!-- Ask Claude -->
-    <div class="card">
-      <div class="card-title">Ask Claude</div>
-      <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
-        Claude has access to live tools on this server. Ask about the architecture, the security design, or what the server is doing right now.
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
-        <button type="button" class="chip" data-q="How does the zero-trust secret management work?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">zero-trust secrets</button>
-        <button type="button" class="chip" data-q="How does the self-healing system work? What does it monitor?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">self-healing</button>
-        <button type="button" class="chip" data-q="How is the database protected from the internet?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">DB isolation</button>
-        <button type="button" class="chip" data-q="Check the sentinel log for any alerts or surprises" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">sentinel log</button>
-        <button type="button" id="chip-wildcard" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">?</button>
-      </div>
-      <form id="ask-form">
-        <textarea id="ask-input" maxlength="300" rows="3"
-          placeholder="Ask anything about this project..."
-          style="width:100%;box-sizing:border-box;font-family:inherit;font-size:.9rem;border:1px solid #d4d0cb;border-radius:4px;padding:.6rem .75rem;resize:vertical;color:#222;background:#faf9f7;"></textarea>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;gap:.5rem;flex-wrap:wrap;">
-          <span id="ask-counter" style="font-size:.72rem;color:#888;">300 characters remaining</span>
-          <button id="ask-btn" type="submit"
-            style="font-size:.875rem;padding:.45rem 1.2rem;background:#1a56db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:500;white-space:nowrap;">Ask Claude</button>
+      <div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Network &amp; Wireless</div>
+        <div class="tags" style="margin-bottom:.75rem;">
+          <span class="tag">IP/TCP</span><span class="tag">IPsec/VPN</span>
+          <span class="tag">OSPF</span><span class="tag">BGP</span>
+          <span class="tag">5G/LTE</span><span class="tag">GNS3</span><span class="tag">Linux</span>
         </div>
-      </form>
-      <div id="ask-answer" style="display:none;margin-top:1rem;background:#f0f4ff;border-left:3px solid #1a56db;padding:.75rem 1rem;border-radius:0 4px 4px 0;">
-        <p id="ask-answer-text" style="margin:0;font-size:.9rem;color:#1a1a2e;line-height:1.7;"></p>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Programming &amp; Data</div>
+        <div class="tags" style="margin-bottom:.75rem;">
+          <span class="tag">Python</span><span class="tag">Pandas</span><span class="tag">SciPy</span>
+          <span class="tag">Matplotlib</span><span class="tag">Java</span><span class="tag">C++</span><span class="tag">R</span>
+        </div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Cloud &amp; Infrastructure</div>
+        <div class="tags">
+          <span class="tag">Azure</span><span class="tag">OpenTofu</span><span class="tag">Ansible</span>
+          <span class="tag">TLS/PKI</span><span class="tag">MCP</span>
+        </div>
       </div>
-      <div id="ask-error" style="display:none;margin-top:.6rem;font-size:.85rem;color:#c0392b;"></div>
-      <div id="ask-remaining" style="display:none;margin-top:.5rem;font-size:.72rem;color:#888;"></div>
     </div>
-    <!-- Claude Activity -->
+
+    <!-- Projects -->
     <div class="card">
-      <div class="card-title">Claude Activity</div>
-      <div id="activity-feed"><p style="font-size:.82rem;color:#888;font-style:italic;">Loading...</p></div>
+      <div class="card-title">Projects</div>
+      <div class="proj-grid">
+
+        <div class="proj-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div class="proj-card-title">Azure IaC Deployment</div>
+            <span class="status-badge status-active">Active</span>
+          </div>
+          <div class="proj-card-desc">Two-VM Azure stack provisioned with OpenTofu, hardened with Ansible. Zero-trust secrets via Key Vault, self-healing sentinel, live MCP interface.</div>
+          <div class="tags" style="margin-top:auto;padding-top:.4rem;">
+            <span class="tag">Azure</span><span class="tag">OpenTofu</span><span class="tag">Ansible</span><span class="tag">MCP</span>
+          </div>
+          <a href="/projects/cloud/" class="link-btn" style="margin-top:.5rem;align-self:flex-start;">View project →</a>
+        </div>
+
+        <div class="proj-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div class="proj-card-title">Automated Security Lab Framework</div>
+            <span class="status-badge status-done">ITS 4900 · 2025</span>
+          </div>
+          <div class="proj-card-desc">Python tool for automated adversarial simulation lab environments — service fingerprinting, vulnerability assessment, and structured reporting against controlled targets.</div>
+          <div class="tags" style="margin-top:auto;padding-top:.4rem;">
+            <span class="tag">Python</span><span class="tag">Cybersecurity</span><span class="tag">Automation</span>
+          </div>
+        </div>
+
+        <div class="proj-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div class="proj-card-title">NL Network Automation via MCP</div>
+            <span class="status-badge status-done">ITS 6250 · Fall 2025</span>
+          </div>
+          <div class="proj-card-desc">Conversational CLI using Claude API + MCP to translate natural language into executable network commands. Python MCP server bridges Claude with the GNS3 API for automated topology management.</div>
+          <div class="tags" style="margin-top:auto;padding-top:.4rem;">
+            <span class="tag">MCP</span><span class="tag">GNS3</span><span class="tag">Python</span><span class="tag">Claude API</span>
+          </div>
+        </div>
+
+        <div class="proj-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div class="proj-card-title">Post-Quantum Metadata Leakage</div>
+            <span class="status-badge status-done">Fall 2025</span>
+          </div>
+          <div class="proj-card-desc">Simulated post-quantum encrypted VPN tunnels (StrongSwan, GNS3). Python scripts captured side-channel metadata — showed traffic type can be inferred from packet size and inter-arrival time despite PQC encryption.</div>
+          <div class="tags" style="margin-top:auto;padding-top:.4rem;">
+            <span class="tag">Python</span><span class="tag">StrongSwan</span><span class="tag">GNS3</span><span class="tag">Cryptography</span>
+          </div>
+        </div>
+
+      </div>
     </div>
 
-
-    <!-- Infra table + Security -->
+    <!-- Education + Experience -->
     <div class="row">
 
       <div class="card">
-        <div class="card-title">Infrastructure</div>
-        <table class="infra-table">
-          <tr class="section-row"><td colspan="2">Host</td></tr>
-          <tr class="data"><td>Domain</td><td>{{ app_domain }}</td></tr>
-          <tr class="data"><td>Region</td><td>Azure South Central US</td></tr>
-          <tr class="data"><td>Protocol</td><td>HTTP/2 · TLS 1.3 only</td></tr>
-          <tr class="data"><td>Certificate</td><td>Let's Encrypt (auto-renew)</td></tr>
-
-          <tr class="section-row"><td colspan="2">Virtual Machines</td></tr>
-          <tr class="data"><td>App VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
-          <tr class="data"><td>DB VM</td><td>Standard_B2pts_v2 · ARM64</td></tr>
-          <tr class="data"><td>OS</td><td>Ubuntu LTS (arm64)</td></tr>
-          <tr class="data"><td>Auth</td><td>SSH key only (Ed25519), no passwords</td></tr>
-
-          <tr class="section-row"><td colspan="2">Network</td></tr>
-          <tr class="data"><td>App VM</td><td>Public IP, internet-facing</td></tr>
-          <tr class="data"><td>DB VM</td><td>No public IP, internal only</td></tr>
-          <tr class="data"><td>DB access</td><td>App subnet only (NSG rule)</td></tr>
-          <tr class="data"><td>DB SSH</td><td>Via app VM only (bastion pattern)</td></tr>
-
-          <tr class="section-row"><td colspan="2">Automation Stack</td></tr>
-          <tr class="data"><td>Provisioning</td><td>OpenTofu</td></tr>
-          <tr class="data"><td>Configuration</td><td>Ansible</td></tr>
-          
-          <tr class="data"><td>Secrets</td><td>Azure Key Vault (auto-generated, runtime fetch)</td></tr>
-          <tr class="data"><td>OpenTofu state</td><td>Azure Blob Storage (shared, locked)</td></tr>
-          <tr class="data"><td>Monitoring</td><td>Azure Monitor + email alerts</td></tr>
-          <tr class="data"><td>DNS</td><td>{% if 'nip.io' in app_domain %}nip.io{% else %}Cloudflare DNS · Azure DNS zone provisioned via OpenTofu{% endif %}</td></tr>
-          <tr class="data"><td>AI interface</td><td>MCP over Streamable HTTP</td></tr>
-        </table>
+        <div class="card-title">Education</div>
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:.95rem;font-weight:700;color:#1a1a1a;">Master of Information and Telecommunication Systems</div>
+          <div style="font-size:.82rem;color:#666;margin-top:.2rem;">Ohio University &nbsp;·&nbsp; expected December 2026</div>
+        </div>
+        <div style="margin-bottom:1.1rem;">
+          <div style="font-size:.95rem;font-weight:700;color:#1a1a1a;">B.S. Information and Telecommunication Systems</div>
+          <div style="font-size:.82rem;color:#666;margin-top:.2rem;">Ohio University &nbsp;·&nbsp; May 2025</div>
+        </div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.55rem;">Relevant Coursework</div>
+        <div class="course-list">
+          <div class="course-item"><span class="course-name">Cloud Systems</span><span class="course-sub">ITS 5900 · Sp 2026</span></div>
+          <div class="course-item"><span class="course-name">Adversarial Simulation</span><span class="course-sub">ITS 4900 · 2025</span></div>
+          <div class="course-item"><span class="course-name">Information Networks</span><span class="course-sub">ITS 6250 · Fa 2025</span></div>
+          <div class="course-item"><span class="course-name">Internet Engineering</span><span class="course-sub">routing, VyOS, subnetting</span></div>
+          <div class="course-item"><span class="course-name">Encrypted Communication</span><span class="course-sub">TLS, VPN, cryptography</span></div>
+          <div class="course-item"><span class="course-name">IT Compliance &amp; Planning</span><span class="course-sub">governance frameworks</span></div>
+        </div>
       </div>
 
       <div class="card">
-        <div class="card-title">Security Hardening</div>
-        <ul class="bullets">
-          <li><strong>SSH hardened on both VMs:</strong> key-only auth (Ed25519), no passwords, root login disabled, max 3 auth attempts. DB has no public IP; access requires tunneling through the app VM.</li>
-          <li><strong>fail2ban:</strong> repeated failed SSH attempts trigger automatic IP bans.</li>
-          <li><strong>Unattended-upgrades</strong> applies security patches automatically.</li>
-          <li><strong>MariaDB hardened via Ansible:</strong> anonymous users removed, test DB dropped, remote root disabled, bound to DB subnet interface only.</li>
-          <li><strong>NSG + no public IP on DB:</strong> database port locked to internal subnet only. Two independent enforcement layers, no path from internet to database.</li>
-          <li><strong>Zero-trust secrets:</strong> DB password auto-generated by OpenTofu, stored in Azure Key Vault, fetched at runtime. Never typed or stored in code.</li>
-          <li><strong>Azure Monitor</strong> alerts on CPU above 85% for 5 minutes.</li>
+        <div class="card-title">Experience</div>
+        <div style="margin-bottom:.3rem;">
+          <div style="font-size:.95rem;font-weight:700;color:#1a1a1a;">Support Engineering Intern</div>
+          <div style="font-size:.82rem;color:#0078d4;font-weight:600;margin-top:.15rem;">JBT Corporation – Automated Systems Division</div>
+          <div style="font-size:.78rem;color:#888;margin-top:.1rem;">Summer 2025</div>
+        </div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:.6rem;margin-top:.85rem;">
+          <li style="font-size:.85rem;color:#333;line-height:1.55;padding-left:1.1rem;position:relative;">
+            <span style="position:absolute;left:0;color:#0078d4;font-weight:700;">→</span>
+            Configured radio modules and initialized hardware for next-generation Self-Guided Vehicles (SGVs), facilitating deployment of new fleet units.
+          </li>
+          <li style="font-size:.85rem;color:#333;line-height:1.55;padding-left:1.1rem;position:relative;">
+            <span style="position:absolute;left:0;color:#0078d4;font-weight:700;">→</span>
+            Executed preventative maintenance regimens and troubleshot hardware/software faults for autonomous systems.
+          </li>
+          <li style="font-size:.85rem;color:#333;line-height:1.55;padding-left:1.1rem;position:relative;">
+            <span style="position:absolute;left:0;color:#0078d4;font-weight:700;">→</span>
+            Validated communication hardware upgrades throughout installation and testing for new radio modules.
+          </li>
         </ul>
-      </div>
-
-    </div>
-
-    <!-- Development iterations -->
-    <div class="card">
-      <div class="card-title">How It Evolved</div>
-      <div class="timeline">
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">1</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 1</div>
-            <div class="tl-title">Scaffolding: single VM, HTTP only</div>
-            <div class="tl-desc">One VM, one subnet, no TLS. Goal: get the full IaC pipeline working end-to-end.</div>
-            <div class="tags"><span class="tag">Terraform</span><span class="tag">Ansible</span><span class="tag">nginx</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">2</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 2</div>
-            <div class="tl-title">Two-tier network: app and DB on separate subnets</div>
-            <div class="tl-desc">Added a DB VM with no public IP. Only the app subnet can reach it, enforced at both the NSG and network layer.</div>
-            <div class="tags"><span class="tag">Two-tier</span><span class="tag">NSG</span><span class="tag">MariaDB</span><span class="tag">Inventory automation</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">3</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 3</div>
-            <div class="tl-title">TLS, secrets, remote state</div>
-            <div class="tl-desc">Added HTTPS via Let's Encrypt, Terraform state in Azure Blob Storage, and nip.io for a free domain.</div>
-            <div class="tags"><span class="tag">Let's Encrypt</span><span class="tag">Azure Blob</span><span class="tag">nip.io</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">4</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 4</div>
-            <div class="tl-title">Hardening + ARM64</div>
-            <div class="tl-desc">Added fail2ban, auto security updates, MariaDB hardening, and switched to ARM64 VMs (cheaper, same tier).</div>
-            <div class="tags"><span class="tag">fail2ban</span><span class="tag">Unattended-upgrades</span><span class="tag">ARM64</span><span class="tag">MariaDB hardening</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">5</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 5</div>
-            <div class="tl-title">Zero-trust secrets via Azure Key Vault</div>
-            <div class="tl-desc">OpenTofu generates the DB password and stores it in Azure Key Vault. Ansible fetches it at runtime. Nothing is ever typed or stored in code.</div>
-            <div class="tags"><span class="tag">Azure Key Vault</span><span class="tag">RBAC</span><span class="tag">Passwordless</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">6</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 6</div>
-            <div class="tl-title">MCP servers + Azure Monitor</div>
-            <div class="tl-desc">Two MCP servers let Claude query live system metrics and the database. The Ask Claude box on this page uses them. Added Azure Monitor CPU alerts.</div>
-            <div class="tags"><span class="tag">MCP / Streamable HTTP</span><span class="tag">FastMCP</span><span class="tag">systemd</span><span class="tag">Azure Monitor</span><span class="tag">Action Groups</span></div>
-          </div>
-        </div>
-
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">7</div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 7</div>
-            <div class="tl-title">Self-healing: sentinel monitoring + automated remediation</div>
-            <div class="tl-desc">A script runs every 5 minutes, checks that all services are up and the nginx config hasn't changed, and restarts anything that's down.</div>
-            <div class="tags"><span class="tag">systemd timer</span><span class="tag">config integrity</span><span class="tag">auto-restart</span><span class="tag">MCP remediation</span></div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-badge-col">
-            <div class="tl-badge">8</div>
-          </div>
-          <div class="tl-body">
-            <div class="tl-label">Iteration 8</div>
-            <div class="tl-title">Transport hardening: TLS 1.3-only, HSTS, real domain</div>
-            <div class="tl-desc">Moved to a real domain, TLS 1.3 only, one-year HSTS, and tighter SSH config on both VMs.</div>
-            <div class="tags"><span class="tag">TLS 1.3</span><span class="tag">HSTS preload</span><span class="tag">Cloudflare DNS</span><span class="tag">Azure DNS</span><span class="tag">SSH hardening</span></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- MCP + Visitor -->
-    <div class="row">
-
-      <div class="card">
-        <div class="card-title">MCP Interface</div>
-        <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs one:
-        </p>
-        <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM): sentinel health log and session activity.</li>
-        </ul>
-        <div class="note" style="margin-top:.9rem;">
-          Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return.
-        </div>
-        <div class="tags" style="margin-top:.9rem;">
-          <span class="tag">MCP / Streamable HTTP</span>
-          <span class="tag">FastMCP</span>
-          <span class="tag">read-only tools</span>
-          <span class="tag">Anthropic API</span>
-          <span class="tag">systemd</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Your Connection</div>
-        <table class="vis-table">
-          <tr><td>Browser</td><td id="v-browser"></td></tr>
-          <tr><td>OS</td><td id="v-os"></td></tr>
-          <tr><td>Language</td><td id="v-lang"></td></tr>
-          <tr><td>Screen</td><td id="v-screen"></td></tr>
-          <tr><td>CPU threads</td><td id="v-cpu"></td></tr>
-          <tr><td>Cookies</td><td id="v-cookies"></td></tr>
-          <tr><td>Page load</td><td id="v-load"></td></tr>
-          <tr><td>User agent</td><td id="v-ua" class="mono"></td></tr>
-        </table>
-      </div>
-
-    </div>
-
-    <!-- MCP tools + activity -->
-    <div class="row">
-
-      <div class="card">
-        <div class="card-title">Available MCP Tools</div>
-        <table class="vis-table">
-          <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding-bottom:.3rem;">App VM (mcp-infra)</td></tr>
-          <tr><td><code>sentinel_log</code></td><td>Last 30 lines of /var/log/sentinel.log — service health checks, alerts, auto-restarts</td></tr>
-          <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
-        </table>
-        <div class="note" style="margin-top:.9rem;">
-          Connect Claude Code by adding this to <code>~/.claude/mcp.json</code>:
-        </div>
-        <div class="code-block" style="margin-top:.75rem;">
-          <div class="code-label">Connect with Claude Code</div>
-          <pre>{
-  <span class="s">"mcpServers"</span>: {
-    <span class="s">"cloud-infra"</span>: {
-      <span class="s">"type"</span>: <span class="s">"http"</span>,
-      <span class="s">"url"</span>:  <span class="s">"https://{{ app_domain }}/mcp/"</span>
-    }
-  }
-}</pre>
-        </div>
-      </div>
-
-
-
-    </div>
-
-
-    <!-- Self-Healing -->
-    <div class="card">
-      <div class="card-title">Self-Healing Architecture</div>
-      <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-        A sentinel script runs every 5 minutes via systemd timer on the app VM. It checks service health,
-        verifies the nginx config checksum against the post-deploy baseline, and auto-restarts any failed service.
-        All events are written to <code>/var/log/sentinel.log</code>.
-      </p>
-      <div class="row">
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Sentinel checks (every 5 min)</div>
-          <ul class="bullets">
-            <li>nginx, ask-app, mcp-infra active via <code>systemctl</code></li>
-            <li>nginx config checksum matches post-deploy baseline</li>
-            <li>nginx_status endpoint responds on localhost</li>
-            <li>Auto-restarts failed services, logs all events</li>
-          </ul>
-        </div>
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP tools (app VM)</div>
-          <ul class="bullets">
-            <li><code>sentinel_log</code> — reads service health check log</li>
-            <li><code>write_activity</code> — logs Claude sessions to the activity feed</li>
-          </ul>
-        </div>
-      </div>
-      <div class="note" style="margin-top:.9rem;">
-        After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes; any change raises an alert and logs it. If a service needs manual repair, re-running the Ansible playbook restores it from source control.
-      </div>
-      <div class="tags" style="margin-top:.9rem;">
-        <span class="tag">systemd timer</span>
-        <span class="tag">config integrity</span>
-        <span class="tag">auto-restart</span>
-        <span class="tag">Ansible remediation</span>
-      </div>
-    </div>
-
-    <!-- Commands -->
-    <div class="card">
-      <div class="card-title">Deploy</div>
-      <div class="code-section">
-        <div class="code-block">
-          <div class="code-label">1. Provision</div>
-          <pre><span class="c"># Creates VNet, subnets, NSGs, VMs, Key Vault, Monitor alerts,</span>
-<span class="c"># and writes inventory.ini + group_vars with the live public IP.</span>
-tofu apply -auto-approve</pre>
-        </div>
-        <div class="code-block">
-          <div class="code-label">2. Configure</div>
-          <pre><span class="c"># Installs and hardens both VMs: nginx, TLS, fail2ban,</span>
-<span class="c"># unattended-upgrades, MariaDB, MCP servers. All tasks are idempotent.</span>
-<span class="c"># DB password fetched from Azure Key Vault at runtime (az keyvault secret show).</span>
-ansible-playbook setup_app.yml setup_db.yml -i inventory.ini</pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- Config highlights -->
-    <div class="row">
-
-      <div class="card">
-        <div class="card-title">OpenTofu</div>
-        <div class="code-section">
-
-          <div class="code-block">
-            <div class="code-label">Key Vault: auto-generated DB password</div>
-            <pre><span class="f">resource</span> <span class="s">"azurerm_key_vault"</span> <span class="v">"kv"</span> {
-  name      = <span class="s">"cloud-v3-kv"</span>
-  tenant_id = <span class="f">data.azurerm_client_config.current</span>.tenant_id
-  sku_name  = <span class="s">"standard"</span>
-  <span class="c"># DB password auto-generated by random_password resource,</span>
-  <span class="c"># stored here by tofu apply; never typed or on disk.</span>
-}
-
-</pre>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Ansible</div>
-        <div class="code-section">
-
-          <div class="code-block">
-            <div class="code-label">Certbot: HTTP-first fix</div>
-            <pre><span class="c"># Chicken-and-egg: certbot needs port 80 open to</span>
-<span class="c"># validate the domain, but the final nginx config</span>
-<span class="c"># references the cert that doesn't exist yet.</span>
-- <span class="k">name</span>: Deploy HTTP-only nginx config
-  <span class="k">template</span>:
-    src: nginx.conf.j2
-    dest: /etc/nginx/nginx.conf
-  <span class="k">when</span>: not cert_stat.stat.exists  <span class="c"># skip if cert already exists</span>
-
-- <span class="k">name</span>: Obtain SSL certificate
-  <span class="k">command</span>: >
-    certbot certonly --webroot -w /var/www/html
-    -d {% raw %}{{ app_domain }}{% endraw %} --non-interactive
-  args:
-    creates: /etc/letsencrypt/live/{% raw %}{{ app_domain }}{% endraw %}/fullchain.pem
-
-- <span class="k">name</span>: Deploy HTTPS nginx config  <span class="c"># now the cert exists</span>
-  <span class="k">template</span>:
-    src: nginx_ssl.conf.j2
-    dest: /etc/nginx/nginx.conf</pre>
-          </div>
-
-          <div class="code-block">
-            <div class="code-label">MariaDB: scripted hardening</div>
-            <pre><span class="c"># Equivalent to running mysql_secure_installation,</span>
-<span class="c"># but fully automated and idempotent.</span>
-- <span class="k">name</span>: Remove anonymous users
-  <span class="k">mysql_user</span>:
-    name: <span class="s">''</span>
-    host_all: yes
-    state: absent
-
-- <span class="k">name</span>: Disallow remote root login
-  <span class="k">mysql_user</span>:
-    name: root
-    host: <span class="s">'%'</span>
-    state: absent
-
-- <span class="k">name</span>: Bind MariaDB to internal subnet only
-  <span class="k">copy</span>:
-    dest: /etc/mysql/mariadb.conf.d/99-bind.cnf
-    content: |
-      [mysqld]
-      bind-address = {% raw %}{{ db_bind_address }}{% endraw %}</pre>
-          </div>
-
+        <div style="margin-top:1.1rem;padding-top:.9rem;border-top:1px solid #f0f0f0;display:flex;gap:.5rem;flex-wrap:wrap;">
+          <a class="link-btn" href="/projects/cloud/">Azure project →</a>
+          <a class="link-btn" href="/about/">About this site →</a>
         </div>
       </div>
 
     </div>
-
 
   </main>
-
-  <script src="/session.js"></script>
-  <script src="/metrics.js"></script>
-  <script src="/ask.js"></script>
 </body>
 </html>

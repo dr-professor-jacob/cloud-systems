@@ -7,3 +7,9 @@ hosts.yml
 group_vars/all/terraform_outputs.yml
 deploy.sh
 terraform.tfvars
+venv/
+*.log
+mcp_cloud_server.py
+sentinel_api.py
+sentinel_monitor.py
+myfile.py
