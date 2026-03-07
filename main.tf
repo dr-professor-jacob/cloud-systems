@@ -10,8 +10,14 @@
       source  = "hashicorp/random"
       version = "~> 3.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 }
+
+provider "cloudflare" {}
 
 provider "azurerm" {
   features {}
@@ -250,6 +256,17 @@ resource "azurerm_key_vault_secret" "db_password" {
   key_vault_id = azurerm_key_vault.kv.id
 }
 
+resource "random_password" "mcp_api_key" {
+  length  = 64
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "mcp_api_key" {
+  name         = "mcp-api-key"
+  value        = random_password.mcp_api_key.result
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
 # ── Azure Monitor ────────────────────────────────────────────────────────────
 
 resource "azurerm_monitor_action_group" "ops" {
@@ -293,7 +310,7 @@ resource "local_file" "ansible_inventory" {
 }
 
 locals {
-  app_domain = var.domain_name != null ? var.domain_name : "${azurerm_public_ip.app_pip.ip_address}.nip.io"
+  app_domain = var.domain_name
 }
 
 resource "local_file" "ansible_vars" {
@@ -301,35 +318,13 @@ resource "local_file" "ansible_vars" {
   filename = "group_vars/all/terraform_outputs.yml"
 }
 
-# ── DNS + DNSSEC (only when domain_name is set) ───────────────────────────────
+# ── Cloudflare DNS ────────────────────────────────────────────────────────────
 
-resource "azurerm_dns_zone" "main" {
-  count               = var.domain_name != null ? 1 : 0
-  name                = var.domain_name
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-resource "azurerm_dns_a_record" "app" {
-  count               = var.domain_name != null ? 1 : 0
-  name                = "@"
-  zone_name           = azurerm_dns_zone.main[0].name
-  resource_group_name = azurerm_resource_group.rg.name
-  ttl                 = 300
-  records             = [azurerm_public_ip.app_pip.ip_address]
-}
-
-# Enable DNSSEC signing on the zone.
-# After apply, retrieve the DS record and submit it at your registrar:
-#   az network dns dnssec-config show \
-#     --resource-group cloud-v3 --zone-name <domain> \
-#     --query "signingKeys[?keyType=='ZoneSigning'].digestAlgorithmType" -o table
-resource "terraform_data" "dnssec" {
-  count      = var.domain_name != null ? 1 : 0
-  depends_on = [azurerm_dns_zone.main]
-
-  triggers_replace = [azurerm_dns_zone.main[0].id]
-
-  provisioner "local-exec" {
-    command = "az network dns dnssec-config create --resource-group ${azurerm_resource_group.rg.name} --zone-name ${var.domain_name}"
-  }
+resource "cloudflare_record" "app" {
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  content = azurerm_public_ip.app_pip.ip_address
+  type    = "A"
+  ttl     = 60
+  proxied = false
 }
