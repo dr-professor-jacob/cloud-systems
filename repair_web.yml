@@ -1,5 +1,5 @@
 ---
-# repair_web.yml — Restore app VM to known-good state from Ansible templates.
+# repair_web.yml - Restore app VM to known-good state from Ansible templates.
 # Run manually from Cloud Shell or triggered via the MCP hub.
 # Idempotent: safe to run at any time.
 

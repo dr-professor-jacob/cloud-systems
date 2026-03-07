@@ -15,7 +15,7 @@
 *.html     text eol=lf
 *.js       text eol=lf
 
-# Binary — never touch line endings
+# Binary files - never touch line endings
 *.png      binary
 *.jpg      binary
 *.ico      binary

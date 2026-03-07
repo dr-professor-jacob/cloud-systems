@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sentinel health monitor — runs every 5 minutes via systemd timer.
+# Sentinel health monitor - runs every 5 minutes via systemd timer.
 # Checks services and config integrity. Auto-restarts what it can.
 # Logs all events to /var/log/sentinel.log for MCP/AI visibility.
 
@@ -12,7 +12,7 @@ log() { echo "$TS $1" >> "$LOG"; }
 # --- Service checks ---
 for SVC in nginx ask-app mcp-infra; do
     if ! systemctl is-active --quiet "$SVC"; then
-        log "ALERT $SVC is down — attempting restart"
+        log "ALERT $SVC is down - attempting restart"
         if systemctl restart "$SVC" 2>/dev/null; then
             log "RESTORED $SVC restarted successfully"
         else
@@ -52,7 +52,7 @@ if [ "$ALERTS" -eq 0 ]; then
 fi
 
 
-# Rotate log — keep last 500 lines
+# Rotate log - keep last 500 lines
 LINES=$(wc -l < "$LOG" 2>/dev/null || echo 0)
 if [ "$LINES" -gt 500 ]; then
     tail -n 400 "$LOG" > "${LOG}.tmp" && mv "${LOG}.tmp" "$LOG"

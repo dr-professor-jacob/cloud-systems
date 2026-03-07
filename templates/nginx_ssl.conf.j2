@@ -53,7 +53,7 @@ http {
         listen 80 default_server;
         server_name {{ app_domain }} _;
 
-        # nginx metrics — localhost only (used by MCP server)
+        # nginx metrics - localhost only (used by MCP server)
         location /nginx_status {
             stub_status on;
             access_log  off;
@@ -98,7 +98,7 @@ http {
             try_files $uri $uri/ =404;
         }
 
-        # nginx metrics — localhost only (used by MCP server)
+        # nginx metrics - localhost only (used by MCP server)
         location /nginx_status {
             stub_status on;
             access_log  off;
@@ -106,13 +106,13 @@ http {
             deny        all;
         }
 
-        # MCP OAuth discovery — return JSON 404 so clients skip OAuth gracefully
+        # MCP OAuth discovery - return JSON 404 so clients skip OAuth gracefully
         location = /.well-known/oauth-authorization-server {
             default_type application/json;
             return 404 '{"error":"not_found"}';
         }
 
-        # MCP infrastructure server — Streamable HTTP proxy
+        # MCP infrastructure server - Streamable HTTP proxy
         location /mcp {
             if ($mcp_auth_ok = 0) { return 401; }
             proxy_pass         http://127.0.0.1:8000/mcp;
@@ -124,7 +124,7 @@ http {
             proxy_read_timeout 3600s;
         }
 
-        # Visitor question demo — rate-limited Claude endpoint
+        # Visitor question demo - rate-limited Claude endpoint
         location = /ask {
             proxy_pass         http://127.0.0.1:8002/ask;
             proxy_http_version 1.1;
