@@ -1,0 +1,24 @@
+---
+- name: Self-Healing Mitigation
+  hosts: localhost
+  connection: local
+  become: true
+  tasks:
+    - name: Log Security Incident
+      shell: "echo 'LATERAL MOVEMENT DETECTED: $(date)' >> /home/jrick/security_incidents.log"
+
+    - name: Emergency Lockdown
+      ufw:
+        direction: outgoing
+        policy: deny
+        state: enabled
+
+    - name: Restore Known Good State
+      ufw:
+        rule: allow
+        direction: out
+        to_port: "{{ item }}"
+        proto: tcp
+      loop:
+        - 53
+        - 3306

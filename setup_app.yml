@@ -148,6 +148,46 @@
         group: www-data
         mode: '0644'
 
+    - name: Create projects/cloud directory
+      file:
+        path: /var/www/html/projects/cloud
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy Azure IaC project page
+      template:
+        src: templates/projects/cloud/index.html.j2
+        dest: /var/www/html/projects/cloud/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Create about directory
+      file:
+        path: /var/www/html/about
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy about page
+      template:
+        src: templates/about/index.html.j2
+        dest: /var/www/html/about/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Deploy resume PDF
+      copy:
+        src: templates/resume.pdf
+        dest: /var/www/html/resume.pdf
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
     - name: Deploy session script
       copy:
         src: templates/session.js
