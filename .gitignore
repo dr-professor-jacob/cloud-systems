@@ -5,6 +5,7 @@ mits_key
 inventory.ini
 hosts.yml
 group_vars/all/terraform_outputs.yml
+.mcp.json
 deploy.sh
 terraform.tfvars
 venv/
