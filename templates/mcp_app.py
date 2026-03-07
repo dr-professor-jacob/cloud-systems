@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MCP server — app-VM tools (sentinel health log + session activity)."""
+"""MCP server: app-VM tools (sentinel health log + session activity)."""
 from pathlib import Path
 from datetime import datetime, timezone
 import json
@@ -10,7 +10,7 @@ mcp = FastMCP("cloud-systems-app")
 
 @mcp.tool()
 def sentinel_log() -> str:
-    """Return the last 30 lines of /var/log/sentinel.log — service health checks, alerts, and auto-restarts."""
+    """Return the last 30 lines of /var/log/sentinel.log. Shows service health checks, alerts, and auto-restarts."""
     log = Path("/var/log/sentinel.log")
     if not log.exists():
         return "sentinel.log not found"

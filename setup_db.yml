@@ -64,7 +64,7 @@
         state: started
         enabled: yes
 
-    - name: Harden SSH — access controls
+    - name: Harden SSH access controls
       copy:
         dest: /etc/ssh/sshd_config.d/99-hardening.conf
         content: |

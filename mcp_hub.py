@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cloud Shell MCP hub — ops tools for monitoring and remediating the deployment.
+"""Cloud Shell MCP hub: ops tools for monitoring and remediating the deployment.
 
 Run from Cloud Shell:
     python3 mcp_hub.py
