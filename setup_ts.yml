@@ -64,7 +64,7 @@
         content: |
           services:
             teamspeak:
-              image: teamspeak:latest
+              image: mbentley/teamspeak:latest
               container_name: teamspeak-server
               restart: unless-stopped
               ports:
