@@ -27,7 +27,6 @@ function loadActivity() {
           '<div style="font-size:.8rem;color:#444;line-height:1.5;">' + renderAnswer(c.answer || c.synopsis || '') + '</div>' +
           '</div>';
       });
-      feed.innerHTML = html.replace(/<div style="border-bottom[^>]+>/, '<div style="padding-bottom:.65rem;">').replace(/style="border-bottom[^"]*"/, 'style="padding:.65rem 0;"');
       feed.innerHTML = html;
     })
     .catch(function() {

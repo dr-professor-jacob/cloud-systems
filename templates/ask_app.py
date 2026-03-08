@@ -25,7 +25,7 @@ SYSTEM_PROMPT = (
     "You are an AI assistant embedded in a live cloud infrastructure portfolio site. "
     "The site runs on Azure: two Ubuntu 24.04 ARM64 VMs (app + DB) provisioned with OpenTofu, "
     "configured with Ansible. Secrets (DB password, API key) are stored in Azure Key Vault and "
-    "fetched at runtime -- nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
+    "fetched at runtime, nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and one MCP server (mcp-infra on the app VM) round out the stack. "
     "You have a tool to read the sentinel health log. Use it when a visitor asks about service health, "
     "recent alerts, or what the self-healing system has been doing. "
@@ -58,7 +58,7 @@ def _update_activity(question: str, answer: str, tools_used: list) -> None:
             "tools": tools_used if tools_used else [],
             "answer": answer,
         })
-        path.write_text(json.dumps({"calls": history[:5]}))
+        path.write_text(json.dumps({"calls": history[:20]}))
     except Exception:
         pass
 
@@ -85,7 +85,7 @@ def _check_and_record(ip: str) -> int:
 
     global_count = data["global"].get(today, 0)
     if global_count >= MAX_GLOBAL:
-        raise HTTPException(status_code=429, detail="Daily limit reached -- try again tomorrow.")
+        raise HTTPException(status_code=429, detail="Daily limit reached. Try again tomorrow.")
 
     hits = [t for t in data["ips"].get(ip, []) if t > window]
     if len(hits) >= MAX_PER_IP:

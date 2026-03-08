@@ -78,7 +78,7 @@
       })
       .finally(function () {
         btn.disabled    = false;
-        btn.textContent = "Ask";
+        btn.textContent = "Ask Claude";
       });
   });
 })();
