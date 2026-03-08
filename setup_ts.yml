@@ -64,7 +64,7 @@
         content: |
           services:
             teamspeak:
-              image: ertagh/teamspeak3-server:arm64v8-latest-box
+              image: ertagh/teamspeak3-server:latest
               container_name: teamspeak-server
               restart: unless-stopped
               ports:
@@ -72,6 +72,8 @@
                 - "10011:10011/tcp"
                 - "10022:10022/tcp"
                 - "30033:30033/tcp"
+              environment:
+                - TS3SERVER_LICENSE=accept
               volumes:
                 - ts3-data:/teamspeak/save
               deploy:
