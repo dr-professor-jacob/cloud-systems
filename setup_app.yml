@@ -5,6 +5,14 @@
   vars:
     certbot_email: "jr521816@ohio.edu"
   tasks:
+    - name: Wait for apt lock to be released
+      ansible.builtin.shell: "while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do sleep 5; done"
+      register: apt_lock_wait
+      until: apt_lock_wait.rc == 0
+      retries: 12 # Wait up to 60 seconds
+      delay: 5
+      changed_when: false
+
     - name: Update apt cache
       apt:
         update_cache: yes
