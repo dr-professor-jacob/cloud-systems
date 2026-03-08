@@ -1,16 +1,10 @@
-.terraform/
-*.tfstate
-*.tfstate.*
-mits_key
-inventory.ini
-hosts.yml
-group_vars/all/terraform_outputs.yml
-.mcp.json
-deploy.sh
-terraform.tfvars
-venv/
-*.log
-mcp_cloud_server.py
-sentinel_api.py
-sentinel_monitor.py
-myfile.py
+﻿# Local configuration files
+*.local
+
+# Backup and temporary files
+*.bak
+*.swp
+
+# IDE / Editor directories
+.vscode/
+.idea/
