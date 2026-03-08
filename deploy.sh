@@ -6,6 +6,21 @@ cd ~/cloud-systems
 echo "==> git pull"
 git pull
 
+# ── OpenTofu installation ─────────────────────────────────────────────────────
+if ! command -v tofu &> /dev/null; then
+    echo "==> OpenTofu not found, installing..."
+    sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+    curl -fsSL https://get.opentofu.org/opentofu.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/opentofu.gpg
+    sudo chmod a+r /etc/apt/keyrings/opentofu.gpg
+    echo \
+      "deb [signed-by=/etc/apt/keyrings/opentofu.gpg] https://packages.opentofu.org/opentofu/tofu/any/ \
+      any main" | sudo tee /etc/apt/sources.list.d/opentofu.list > /dev/null
+    sudo apt-get update
+    sudo apt-get install -y tofu
+    echo "==> OpenTofu installed successfully."
+fi
+
+
 # ── Cloudflare API token ──────────────────────────────────────────────────────
 if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
   echo "==> CLOUDFLARE_API_TOKEN not set"
@@ -48,12 +63,8 @@ until ssh -i mits_key \
 done
 echo "==> SSH ready"
 
-echo "==> Running app playbook"
-ansible-playbook setup_app.yml -i inventory.ini
-echo "==> Running db playbook"
-ansible-playbook setup_db.yml -i inventory.ini
-echo "==> Running TeamSpeak playbook"
-ansible-playbook setup_ts.yml -i inventory.ini
+echo "==> Running Ansible playbooks"
+ansible-playbook site.yml -i inventory.ini
 
 ELAPSED=$(( $(date +%s) - START ))
 MINS=$(( ELAPSED / 60 ))

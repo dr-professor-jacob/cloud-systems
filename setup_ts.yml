@@ -2,6 +2,10 @@
 - name: Setup TeamSpeak 3 Server
   hosts: app_servers
   become: yes
+  pre_tasks:
+    - name: Wait for cloud-init to complete
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
   tasks:
     - name: Install Docker
       ansible.builtin.include_role:
