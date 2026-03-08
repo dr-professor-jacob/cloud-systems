@@ -51,3 +51,9 @@
     name: docker
     state: started
     enabled: yes
+
+- name: Add admin user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
