@@ -15,26 +15,34 @@ mcp = FastMCP("cloud-ops", host="127.0.0.1", port=8001)
 
 
 def _ansible(module: str, args: str) -> str:
-    result = subprocess.run(
-        ["ansible", "app_node", "-i", "inventory.ini", "-m", module, "-a", args],
-        capture_output=True, text=True
-    )
-    out = result.stdout + result.stderr
-    return out.split(">>")[-1].strip() if ">>" in out else out.strip()
+    try:
+        result = subprocess.run(
+            ["ansible", "app_node", "-i", "inventory.ini", "-m", module, "-a", args],
+            capture_output=True, text=True, check=True
+        )
+        out = result.stdout
+        return out.split(">>")[-1].strip() if ">>" in out else out.strip()
+    except subprocess.CalledProcessError as e:
+        return f"Ansible command failed:\n--- stdout ---\n{e.stdout}\n--- stderr ---\n{e.stderr}"
 
 
 def _playbook(name: str) -> str:
-    result = subprocess.run(
-        ["ansible-playbook", "-i", "inventory.ini", name],
-        capture_output=True, text=True
-    )
-    return result.stdout[-3000:] if len(result.stdout) > 3000 else result.stdout
+    try:
+        result = subprocess.run(
+            ["ansible-playbook", "-i", "inventory.ini", name],
+            capture_output=True, text=True, check=True,
+        )
+        return result.stdout[-3000:]
+    except subprocess.CalledProcessError as e:
+        return f"Ansible playbook failed:\n--- stdout ---\n{e.stdout}\n--- stderr ---\n{e.stderr}"
 
 
 @mcp.tool()
 def check_health() -> str:
     """Check the status of all services on the app VM (nginx, ask-app, mcp-infra, sentinel)."""
-    return _ansible("shell", "systemctl is-active nginx ask-app mcp-infra sentinel.timer 2>&1 | paste - <(echo -e 'nginx\\nask-app\\nmcp-infra\\nsentinel.timer')")
+    cmd = "for s in nginx ask-app mcp-infra sentinel.timer; do printf '%-15s' $s; systemctl is-active $s; done"
+    status_raw = _ansible("shell", cmd)
+    return status_raw.replace("active", "✅ ACTIVE").replace("inactive", "❌ INACTIVE").replace("activating", "⏳ ACTIVATING")
 
 
 @mcp.tool()
@@ -60,6 +68,14 @@ def apply_remediation() -> str:
 def get_nginx_errors(lines: int = 20) -> str:
     """Read the nginx error log from the app VM."""
     return _ansible("shell", f"tail -n {lines} /var/log/nginx/app_error.log 2>/dev/null || tail -n {lines} /var/log/nginx/error.log 2>/dev/null")
+
+
+@mcp.tool()
+def restart_service(service: str) -> str:
+    """Restart a specific service on the app VM. Options: nginx, ask-app, mcp-infra."""
+    if service not in ["nginx", "ask-app", "mcp-infra"]:
+        return "Invalid service name. Use 'nginx', 'ask-app', or 'mcp-infra'."
+    return _ansible("systemd", f"name={service} state=restarted")
 
 
 if __name__ == "__main__":
