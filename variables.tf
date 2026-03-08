@@ -13,7 +13,7 @@ variable "admin_username" {
 variable "allowed_ssh_ip" {
   description = "CIDR of the host allowed to SSH to the app VM"
   type        = string
-  default     = "*"
+  default     = "0.0.0.0/0" # Allow from any IP, security is handled by SSH key
 }
 
 variable "domain_name" {
