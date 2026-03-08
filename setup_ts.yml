@@ -11,14 +11,21 @@
       delay: 5
       changed_when: false
 
+    - name: Update apt cache with retries
+      ansible.builtin.apt:
+        update_cache: yes
+      retries: 5
+      delay: 10
+      register: apt_update
+      until: apt_update is succeeded
+
     - name: Install Docker dependencies
-      apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - curl
           - gnupg
         state: present
-        update_cache: yes
 
     - name: Add Docker GPG key
       ansible.builtin.get_url:
@@ -35,14 +42,13 @@
         update_cache: yes
 
     - name: Install Docker Engine
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
           - containerd.io
           - docker-compose-plugin
         state: present
-        update_cache: yes
 
     - name: Enable and start Docker
       ansible.builtin.systemd:
