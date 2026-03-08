@@ -16,6 +16,14 @@
         done
       changed_when: false
   tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+      retries: 10
+      delay: 15
+      register: apt_cache
+      until: apt_cache is succeeded
+
     - name: Install Nginx, Certbot, and security packages
       ansible.builtin.apt:
         name:
@@ -24,7 +32,6 @@
           - python3-certbot-nginx
           - ssl-cert
         state: present
-        update_cache: yes
 
     - name: Apply common security configuration
       ansible.builtin.include_role:
