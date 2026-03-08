@@ -134,4 +134,16 @@ http {
             proxy_read_timeout 30s;
         }
     }
+
+    # Dummy server for TeamSpeak subdomain to handle HSTS.
+    # Prevents browser SSL errors when navigating to ts.jrickey.cc.
+    server {
+        listen 443 ssl http2;
+        server_name ts.{{ app_domain }};
+
+        ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+        ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+        return 404;
+    }
 }
