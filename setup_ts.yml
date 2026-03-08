@@ -11,13 +11,13 @@
       delay: 5
       changed_when: false
 
-    - name: Update apt cache with retries
-      ansible.builtin.apt:
-        update_cache: yes
-      retries: 5
-      delay: 10
-      register: apt_update
-      until: apt_update is succeeded
+    - name: Update apt cache with retries (shell)
+      ansible.builtin.shell: apt-get update
+      register: apt_update_result
+      retries: 3
+      delay: 2
+      until: apt_update_result.rc == 0
+      changed_when: false
 
     - name: Install Docker dependencies
       ansible.builtin.apt:
