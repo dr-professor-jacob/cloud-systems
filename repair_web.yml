@@ -33,6 +33,15 @@
         - /etc/letsencrypt/live
         - /etc/letsencrypt/archive
 
+    - name: Fetch MCP API key from Key Vault
+      command: >
+        az keyvault secret show --vault-name {{ key_vault_name }}
+        --name mcp-api-key --query value --output tsv
+      delegate_to: localhost
+      become: no
+      register: mcp_key_result
+      changed_when: false
+
     - name: Restore nginx config from canonical template
       template:
         src: templates/nginx_ssl.conf.j2
@@ -40,6 +49,8 @@
         owner: root
         group: root
         mode: '0644'
+      vars:
+        mcp_api_key: "{{ mcp_key_result.stdout }}"
       notify: Validate and reload nginx
 
     - name: Store nginx config checksum for sentinel
