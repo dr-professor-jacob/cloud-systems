@@ -64,7 +64,7 @@
         content: |
           services:
             teamspeak:
-              image: mbentley/teamspeak:latest
+              image: ertagh/teamspeak3-server:arm64v8-latest-box
               container_name: teamspeak-server
               restart: unless-stopped
               ports:
@@ -72,13 +72,8 @@
                 - "10011:10011/tcp"
                 - "10022:10022/tcp"
                 - "30033:30033/tcp"
-              environment:
-                TS3SERVER_LICENSE: accept
-                TS3SERVER_DB_PLUGIN: ts3db_sqlite3
-                TS3SERVER_DB_SQLCREATEPATH: create_sqlite
-                TS3SERVER_QUERY_PROTOCOLS: raw,ssh
               volumes:
-                - ts3-data:/var/ts3server
+                - ts3-data:/teamspeak/save
               deploy:
                 resources:
                   limits:
