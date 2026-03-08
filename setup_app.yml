@@ -19,6 +19,7 @@
           - python3-venv
           - fail2ban
           - unattended-upgrades
+          - ssl-cert
         state: present
 
     - name: Configure fail2ban SSH jail
