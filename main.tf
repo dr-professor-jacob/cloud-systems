@@ -102,6 +102,42 @@ resource "azurerm_network_security_group" "app_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  security_rule {
+    name                       = "AllowTS3Voice"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Udp"
+    source_port_range          = "*"
+    destination_port_range     = "9987"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowTS3Query"
+    priority                   = 140
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_ranges    = ["10011", "10022"]
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowTS3FileTransfer"
+    priority                   = 150
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "30033"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
 resource "azurerm_network_security_group" "db_nsg" {
@@ -323,6 +359,15 @@ resource "local_file" "ansible_vars" {
 resource "cloudflare_record" "app" {
   zone_id = var.cloudflare_zone_id
   name    = "@"
+  content = azurerm_public_ip.app_pip.ip_address
+  type    = "A"
+  ttl     = 60
+  proxied = false
+}
+
+resource "cloudflare_record" "ts" {
+  zone_id = var.cloudflare_zone_id
+  name    = "ts"
   content = azurerm_public_ip.app_pip.ip_address
   type    = "A"
   ttl     = 60

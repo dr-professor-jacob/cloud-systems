@@ -52,6 +52,8 @@ echo "==> Running app playbook"
 ansible-playbook setup_app.yml -i inventory.ini
 echo "==> Running db playbook"
 ansible-playbook setup_db.yml -i inventory.ini
+echo "==> Running TeamSpeak playbook"
+ansible-playbook setup_ts.yml -i inventory.ini
 
 ELAPSED=$(( $(date +%s) - START ))
 MINS=$(( ELAPSED / 60 ))
