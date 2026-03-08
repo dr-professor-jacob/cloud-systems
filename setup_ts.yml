@@ -56,19 +56,22 @@
       args:
         chdir: /opt/teamspeak
 
-    - name: Wait for admin token to appear in logs
+    - name: Wait for TeamSpeak to be ready
       ansible.builtin.command: docker compose logs teamspeak
       args:
         chdir: /opt/teamspeak
       register: ts_logs
-      until: "'token=' in ts_logs.stdout"
-      retries: 10
+      until: "'listening on 0.0.0.0:9987' in ts_logs.stdout or 'token=' in ts_logs.stdout"
+      retries: 12
       delay: 5
       changed_when: no
 
-    - name: Show admin token (save this!)
+    - name: Show admin token (first boot only)
       ansible.builtin.debug:
         msg:
           - "====== TEAMSPEAK ADMIN TOKEN (SAVE THIS!) ======"
-          - "{{ ts_logs.stdout | regex_search('token=([A-Za-z0-9+/]+)') }}"
+          - "{{ ts_logs.stdout | regex_search('token=([A-Za-z0-9+/=]+)') | default('Server already initialized - see note below') }}"
           - "================================================"
+          - "If no token shown: server was already running. SSH in and run:"
+          - "  docker exec teamspeak-server cat /teamspeak/save/query_ip_whitelist.txt"
+          - "  or use ServerQuery on port 10011 to create a new token."
