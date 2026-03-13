@@ -457,20 +457,6 @@
         <tr><td><code>sentinel_log</code></td><td>Last 30 lines of /var/log/sentinel.log (service health checks, alerts, auto-restarts)</td></tr>
         <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
       </table>
-      <div class="note">
-        Connect Claude Code by adding this to <code>~/.claude/mcp.json</code>:
-      </div>
-      <div class="code-block" style="margin-top:.75rem;">
-        <div class="code-label">Connect with Claude Code</div>
-        <pre>{
-  <span class="s">"mcpServers"</span>: {
-    <span class="s">"cloud-infra"</span>: {
-      <span class="s">"type"</span>: <span class="s">"http"</span>,
-      <span class="s">"url"</span>:  <span class="s">"https://{{ app_domain }}/mcp/"</span>
-    }
-  }
-}</pre>
-      </div>
     </div>
 
     <!-- Self-Healing -->
