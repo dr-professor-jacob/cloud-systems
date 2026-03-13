@@ -37,6 +37,10 @@ DOMAIN=$(tofu output -raw app_domain)
 KV=$(tofu output -raw key_vault_name)
 echo "==> App IP: $IP  Domain: $DOMAIN"
 
+# Keep inventory in sync with current public IP and Key Vault name
+sed -i "s|jrick@[0-9.]*\"|jrick@${IP}\"|" inventory.ini
+sed -i "s|^key_vault_name=.*|key_vault_name=${KV}|" inventory.ini
+
 # ── Anthropic API key ─────────────────────────────────────────────────────────
 if ! az keyvault secret show \
     --vault-name "$KV" \
