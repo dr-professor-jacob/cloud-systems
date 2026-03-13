@@ -27,19 +27,11 @@ SYSTEM_PROMPT = (
     "configured with Ansible. Secrets (DB password, API key) are stored in Azure Key Vault and "
     "fetched at runtime, nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and one MCP server (mcp-infra on the app VM) round out the stack. "
-    "You have a tool to read the sentinel health log. Use it when a visitor asks about service health, "
-    "recent alerts, or what the self-healing system has been doing. "
     "Keep answers concise. 3-5 lines max. Use short paragraphs or a brief list if it helps clarity. "
     "Never write a wall of text. Be direct and specific."
 )
 
-TOOLS = [
-    {
-        "name": "sentinel_log",
-        "description": "Read the last 30 lines of /var/log/sentinel.log. Shows service health checks, alerts, auto-restarts, and config integrity results.",
-        "input_schema": {"type": "object", "properties": {}, "required": []},
-    },
-]
+TOOLS = []
 
 
 def _update_activity(question: str, answer: str, tools_used: list) -> None:
