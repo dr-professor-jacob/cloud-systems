@@ -241,7 +241,7 @@
     <div class="card">
       <div class="card-title">Ask Claude</div>
       <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
-        Claude has access to live tools on this server. Ask about the architecture, the security design, or what the server is doing right now.
+        Ask Claude anything about this project's architecture, security design, or how it was built.
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
         <button type="button" class="chip" data-q="How does the zero-trust secret management work?">zero-trust secrets</button>
@@ -416,11 +416,8 @@
       <div class="card">
         <div class="card-title">MCP Interface</div>
         <p style="font-size:.875rem;color:#333;line-height:1.6;margin-bottom:.9rem;">
-          MCP (Model Context Protocol) lets Claude call tools running on a server. This deployment runs one:
+          MCP (Model Context Protocol) is an open standard that lets AI models call tools on external servers. This deployment runs one MCP server (<strong>mcp-infra</strong>) on the app VM, accessible to the owner via Claude Code.
         </p>
-        <ul class="bullets">
-          <li><strong>mcp-infra</strong> (this VM): sentinel health log and session activity.</li>
-        </ul>
         <div class="note">
           Claude runs on Anthropic's servers, not on these VMs. The VM calls the Claude API, Claude picks which tools to run, and only sees what they return.
         </div>
@@ -449,16 +446,6 @@
 
     </div>
 
-    <!-- MCP tools -->
-    <div class="card">
-      <div class="card-title">Available MCP Tools</div>
-      <table class="vis-table">
-        <tr><td colspan="2" style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#0078d4;padding-bottom:.3rem;">App VM (mcp-infra)</td></tr>
-        <tr><td><code>sentinel_log</code></td><td>Last 30 lines of /var/log/sentinel.log (service health checks, alerts, auto-restarts)</td></tr>
-        <tr><td><code>write_activity</code></td><td>Logs a summary of each Claude session to the Claude Activity panel</td></tr>
-      </table>
-    </div>
-
     <!-- Self-Healing -->
     <div class="card">
       <div class="card-title">Self-Healing Architecture</div>
@@ -467,24 +454,13 @@
         verifies the nginx config checksum against the post-deploy baseline, and auto-restarts any failed service.
         All events are written to <code>/var/log/sentinel.log</code>.
       </p>
-      <div class="row">
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Sentinel checks (every 5 min)</div>
-          <ul class="bullets">
-            <li>nginx, ask-app, mcp-infra active via <code>systemctl</code></li>
-            <li>nginx config checksum matches post-deploy baseline</li>
-            <li>nginx_status endpoint responds on localhost</li>
-            <li>Auto-restarts failed services, logs all events</li>
-          </ul>
-        </div>
-        <div>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">MCP tools (app VM)</div>
-          <ul class="bullets">
-            <li><code>sentinel_log</code>: reads service health check log</li>
-            <li><code>write_activity</code>: logs Claude sessions to the activity feed</li>
-          </ul>
-        </div>
-      </div>
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#0078d4;margin-bottom:.6rem;">Sentinel checks (every 5 min)</div>
+      <ul class="bullets">
+        <li>nginx, ask-app, mcp-infra active via <code>systemctl</code></li>
+        <li>nginx config checksum matches post-deploy baseline</li>
+        <li>nginx_status endpoint responds on localhost</li>
+        <li>Auto-restarts failed services, logs all events</li>
+      </ul>
       <div class="note">
         After every deploy, Ansible saves a SHA-256 checksum of the nginx config. The sentinel recomputes it every 5 minutes; any change raises an alert and logs it. If a service needs manual repair, re-running the Ansible playbook restores it from source control.
       </div>
