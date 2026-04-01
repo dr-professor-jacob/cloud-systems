@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+    <title>THE IPv4 Rando Network Generator</title>
+    <style>
+        /* Define a CSS class for the logo */
+        .logo {
+            float: right; /* Float the logo to the right */
+            margin-left: 10px; /* Add some margin to separate it from the content */
+        }
+
+        /* Apply background color and text color to the entire page */
+        body {
+            background-color: #00694E; /* Background color HEX #00694E */
+            color: #FFFFFF; /* Text color HEX #FFFFFF */
+            font-size: 150%; /* Increase text size by 50% */
+            position: relative; /* Allow absolute positioning of the bottom logo */
+        }
+
+        /* Style for the bottom logo */
+        .bottom-logo {
+            float: left; /*position: absolute;*/
+            bottom: 500;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 500px; /* Adjust the width as needed */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>THE IPv4 Rando Network Generator</h1>
+        <!-- Update the logo source to "ect-logo.png" -->
+	<a href="https://www.ohio.edu/mcclure"><img src="ect-logo.png" alt="ECT Ducky Logo" class="logo"></a>
+    </header>
+
+    <form method="post" id="networkForm">
+        <label for="priv">Private Address Space: </label>
+                <input type="checkbox" id="priv" name="priv" value="Option Value">
+                <br>
+        Enter the subnet mask size (1-32) in bits for the network:
+                <input type="number" id="size" name="size" min="1" max="32" required="">
+                <input type="submit" value="Generate"><br><br>
+    </form>
+
+    <script>
+        function generateRandomIPv4Network(size, priv) {
+            const Netsize = size;
+            if (size < 1 || size > 32) {
+                return "Invalid size. Size must be between 1 and 32.";
+            }
+
+            // Generate a subnet mask
+            const subnetMask = [];
+            for (let i = 0; i < 4; i++) {
+                if (size >= 8) {
+                    subnetMask.push(255);
+                    size -= 8;
+                } else {
+                    subnetMask.push(256 - Math.pow(2, 8 - size));
+                    size = 0;
+                }
+            }
+
+            // Generate a random network address within the subnet
+	    networkAddress = [];
+	    do {
+   	        for (let i = 0; i < 4; i++) {
+		    networkAddress[i] = Math.floor(Math.random() * 256) & subnetMask[i];
+		}
+
+		//Avoid some of the special blocks.
+		usable = true
+		if( networkAddress[0] == 0 ) usable = false ;
+		if( networkAddress[0] == 10 ) usable = false ;
+		if( networkAddress[0] == 100 && networkAddress[1] >= 64 && networkAddress[1] <= 127 ) usable = false ;
+		if( networkAddress[0] == 127 ) usable = false ;
+		if( networkAddress[0] == 169 && networkAddress[1] == 254 ) usable = false ;
+		if( networkAddress[0] == 172 && networkAddress[1] >= 16 && networkAddress[1] <= 31 ) usable = false ;
+		if( networkAddress[0] == 192 && networkAddress[1] == 168 ) usable = false ;
+		if( networkAddress[0] >= 224 ) usable = false ;
+	    } while (!usable);
+
+	    // Overwite portions of address with private address space.  Will choose a variable RFP 1918 space based on size.
+	   if (priv) {
+		if ( Netsize < 12 ) {
+			networkAddress[0] = 10;
+	    	} else if ( Netsize < 16 ) {
+		    if ( networkAddress[0] > 128 ) {
+			networkAddress[0] = 10;
+		    } else {
+			networkAddress[0] = 172;
+			networkAddress[1] = Math.floor( Math.random() * 15 + 16) & subnetMask[1];
+		    }
+		} else {
+		    if ( networkAddress[0] > 200 ) {
+			networkAddress[0] = 10;
+		    } else if ( networkAddress[0] > 150) {
+			networkAddress[0] = 172;
+			networkAddress[1] = Math.floor( Math.random() * 15 + 16)  & subnetMask[1];
+		    } else {
+			networkAddress[0] = 192;
+			networkAddress[1] = 168;
+		    }
+		}
+	    }
+
+	    network = networkAddress.join('.')
+            const networkcidr = networkAddress.join('.') + '/' + Netsize;
+
+            // Display the result
+		document.getElementById("result").innerHTML = `<p>Random IPv4 Network: <a href="http://www.its.ohio.edu/ipcalc/index.html?network=${network}&mask=${Netsize}&division=1.0">${networkcidr}</a></p>`;
+        }
+
+        document.getElementById("networkForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const size = parseInt(document.getElementById("size").value);
+	    const priv = document.getElementById("priv").checked;
+            generateRandomIPv4Network(size, priv);
+        });
+    </script>
+
+    <div id="result"></div>
+
+    <!-- Add the bottom logo -->
+    <a href="https://www.ohio.edu/mcclure"><img src="ect-logo-bottom-banner.png" alt="OHIO ECT Logo" class="bottom-logo"></a>
+
+
+
+</body></html>

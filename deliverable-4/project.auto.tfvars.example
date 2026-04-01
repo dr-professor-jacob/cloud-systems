@@ -1,0 +1,17 @@
+# project.auto.tfvars.example
+# Copy this file to project.auto.tfvars and fill in your values.
+#
+#   cp project.auto.tfvars.example project.auto.tfvars
+
+resource_group_name = "deliverable-4"
+
+# REQUIRED: Make this globally unique.  Use your initials + 'subnets'.
+# Example: if your name is Jordan Smith, use 'jsmithsubnets'
+acr_name = "CHANGEME"
+
+app_name    = "subnets"
+environment = "student-lab"
+
+# Set this to deploy a real image version (e.g. "1.0.0").
+# Leave as "latest" on first apply — the hello-world placeholder will be used.
+image_tag = "latest"
