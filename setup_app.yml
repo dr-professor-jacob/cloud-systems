@@ -213,24 +213,29 @@
         enabled: yes
         daemon_reload: yes
 
-    - name: Fetch MCP API key from Key Vault
-      command: >
-        az keyvault secret show --vault-name cloud-v3-kv
-        --name mcp-api-key --query value --output tsv
-      delegate_to: localhost
-      become: no
-      register: mcp_key_result
-      changed_when: false
+    # Secrets fetched at runtime via managed identity — no plaintext on disk
+    - name: Deploy fetch-secrets script
+      copy:
+        src: templates/fetch_secrets.sh
+        dest: /usr/local/sbin/fetch-secrets.sh
+        owner: root
+        group: root
+        mode: '0700'
 
-    # Visitor ask service (Claude demo)
-    - name: Fetch Anthropic API key from Key Vault
-      command: >
-        az keyvault secret show --vault-name cloud-v3-kv
-        --name anthropic-api-key --query value --output tsv
-      delegate_to: localhost
-      become: no
-      register: anthropic_key_result
-      changed_when: false
+    - name: Deploy fetch-secrets systemd service
+      copy:
+        src: templates/fetch_secrets.service
+        dest: /etc/systemd/system/fetch-secrets.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable and start fetch-secrets service
+      systemd:
+        name: fetch-secrets
+        state: started
+        enabled: yes
+        daemon_reload: yes
 
     - name: Create ask-app virtualenv
       command: python3 -m venv /opt/ask-app
@@ -263,14 +268,12 @@
         mode: '0755'
 
     - name: Deploy ask-app systemd service
-      template:
+      copy:
         src: templates/ask_app.service
         dest: /etc/systemd/system/ask-app.service
         owner: root
         group: root
         mode: '0644'
-      vars:
-        anthropic_api_key: "{{ anthropic_key_result.stdout }}"
       notify: Restart ask-app
 
     - name: Enable and start ask-app service
@@ -350,8 +353,6 @@
         owner: root
         group: root
         mode: '0644'
-      vars:
-        mcp_api_key: "{{ mcp_key_result.stdout }}"
       notify: Validate and reload Nginx
 
   handlers:

@@ -232,6 +232,10 @@ resource "azurerm_linux_virtual_machine" "app_vm" {
     version   = "latest"
   }
 
+  identity {
+    type = "SystemAssigned"
+  }
+
   boot_diagnostics {}
 }
 
@@ -283,6 +287,13 @@ resource "azurerm_key_vault" "kv" {
     object_id = data.azurerm_client_config.current.object_id
 
     secret_permissions = ["Get", "Set", "List", "Delete", "Purge"]
+  }
+
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = azurerm_linux_virtual_machine.app_vm.identity[0].principal_id
+
+    secret_permissions = ["Get"]
   }
 }
 

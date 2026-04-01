@@ -34,11 +34,8 @@ http {
     # Rate limiting
     limit_req_zone $binary_remote_addr zone=default:10m rate=10r/s;
 
-    # MCP bearer token check
-    map $http_authorization $mcp_auth_ok {
-        "Bearer {{ mcp_api_key }}" 1;
-        default                    0;
-    }
+    # MCP bearer token check — loaded from Key Vault at boot by fetch-secrets.service
+    include /run/nginx/mcp_auth.conf;
 
     gzip on;
     gzip_vary on;
