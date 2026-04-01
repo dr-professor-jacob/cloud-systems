@@ -154,6 +154,30 @@
       </div>
     </div>
 
+    <!-- Ask Claude -->
+    <div class="card">
+      <div class="card-title">Ask Claude</div>
+      <p style="font-size:.875rem;color:#555;line-height:1.6;margin-bottom:1rem;">
+        Claude has access to live tools on this server. Ask about the architecture, the security design, or what the server is doing right now.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem;">
+        <button type="button" class="chip" data-q="How does the zero-trust secret management work?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">zero-trust secrets</button>
+        <button type="button" class="chip" data-q="How does the self-healing system work? What does it monitor?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">self-healing</button>
+        <button type="button" class="chip" data-q="How is the database protected from the internet?" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">DB isolation</button>
+        <button type="button" id="chip-wildcard" style="font-size:.72rem;padding:.25rem .65rem;background:#f0f4ff;color:#1a56db;border:1px solid #c7d9f8;border-radius:99px;cursor:pointer;">?</button>
+      </div>
+      <form id="ask-form">
+        <textarea id="ask-input" maxlength="300" rows="3"
+          placeholder="Ask anything about this project..."
+          style="width:100%;box-sizing:border-box;font-family:inherit;font-size:.9rem;border:1px solid #d4d0cb;border-radius:4px;padding:.6rem .75rem;resize:vertical;color:#222;background:#faf9f7;"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;gap:.5rem;flex-wrap:wrap;">
+          <span id="ask-counter" style="font-size:.72rem;color:#888;">300 characters remaining</span>
+          <button id="ask-btn" type="submit"
+            style="font-size:.875rem;padding:.45rem 1.2rem;background:#1a56db;color:#fff;border:none;border-radius:4px;cursor:pointer;font-weight:500;white-space:nowrap;">Ask Claude</button>
+        </div>
+      </form>
+    </div>
+
     <!-- Projects -->
     <div class="card">
       <div class="card-title">Projects</div>

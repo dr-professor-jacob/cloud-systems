@@ -21,6 +21,13 @@ if ! command -v tofu &> /dev/null; then
 fi
 
 
+# ── SSH source IP restriction ─────────────────────────────────────────────────
+if [ -z "$TF_VAR_allowed_ssh_ip" ]; then
+  MY_IP=$(curl -sf https://api.ipify.org)
+  export TF_VAR_allowed_ssh_ip="${MY_IP}/32"
+  echo "==> SSH restricted to ${MY_IP}/32"
+fi
+
 # ── Cloudflare API token ──────────────────────────────────────────────────────
 if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
   echo "==> CLOUDFLARE_API_TOKEN not set"
