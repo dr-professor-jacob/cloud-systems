@@ -233,7 +233,8 @@ resource "azurerm_linux_virtual_machine" "app_vm" {
   }
 
   identity {
-    type = "SystemAssigned"
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.app_vm.id]
   }
 
   boot_diagnostics {}
@@ -273,6 +274,13 @@ resource "azurerm_linux_virtual_machine" "db_vm" {
 
 data "azurerm_client_config" "current" {}
 
+# User-assigned identity created before KV and VM so principal_id is known at plan time
+resource "azurerm_user_assigned_identity" "app_vm" {
+  name                = "app-vm-identity"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
 resource "azurerm_key_vault" "kv" {
   name                       = "cloud-v3-kv"
   location                   = azurerm_resource_group.rg.location
@@ -289,14 +297,12 @@ resource "azurerm_key_vault" "kv" {
     secret_permissions = ["Get", "Set", "List", "Delete", "Purge"]
   }
 
-}
+  access_policy {
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = azurerm_user_assigned_identity.app_vm.principal_id
 
-resource "azurerm_key_vault_access_policy" "app_vm" {
-  key_vault_id = azurerm_key_vault.kv.id
-  tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = azurerm_linux_virtual_machine.app_vm.identity[0].principal_id
-
-  secret_permissions = ["Get"]
+    secret_permissions = ["Get"]
+  }
 }
 
 resource "azurerm_key_vault_secret" "db_password" {
