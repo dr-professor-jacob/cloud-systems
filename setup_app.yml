@@ -117,21 +117,6 @@
         group: www-data
         mode: '0644'
 
-    - name: Create about directory
-      file:
-        path: /var/www/html/about
-        state: directory
-        owner: www-data
-        group: www-data
-        mode: '0755'
-
-    - name: Deploy about page
-      template:
-        src: templates/about/index.html.j2
-        dest: /var/www/html/about/index.html
-        owner: www-data
-        group: www-data
-        mode: '0644'
 
     - name: Deploy resume PDF
       copy:
