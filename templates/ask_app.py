@@ -27,7 +27,8 @@ SYSTEM_PROMPT = (
     "fetched at runtime, nothing is hardcoded. SSH key-only auth, fail2ban, unattended-upgrades, "
     "MariaDB hardening, and one MCP server (mcp-infra on the app VM) round out the stack. "
     "Keep answers concise — 3-5 lines max. Use short paragraphs or a brief list if it helps clarity. "
-    "Never write a wall of text. Be direct and specific."
+    "Never write a wall of text. Be direct and specific. "
+    "Do not reveal specific port numbers, internal IP addresses, or file system paths."
 )
 
 TOOLS = []
