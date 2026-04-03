@@ -92,23 +92,6 @@
         group: www-data
         mode: '0755'
 
-    - name: Ensure activity.json exists and is owned by www-data
-      copy:
-        content: '{}'
-        dest: /var/www/html/activity.json
-        owner: www-data
-        group: www-data
-        mode: '0644'
-        force: no
-
-    - name: Ensure metrics.json exists and is owned by www-data
-      copy:
-        content: '{}'
-        dest: /var/www/html/metrics.json
-        owner: www-data
-        group: www-data
-        mode: '0644'
-        force: no
 
     - name: Deploy landing page
       template:
@@ -166,13 +149,6 @@
         group: www-data
         mode: '0644'
 
-    - name: Deploy metrics script
-      copy:
-        src: templates/metrics.js
-        dest: /var/www/html/metrics.js
-        owner: www-data
-        group: www-data
-        mode: '0644'
 
     # MCP infrastructure server
     - name: Create MCP virtualenv
