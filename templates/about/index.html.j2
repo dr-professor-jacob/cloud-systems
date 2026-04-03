@@ -192,14 +192,13 @@
         and Claude decides when to call them based on what a user asks.
       </p>
       <p style="font-size:.9rem;color:#333;line-height:1.7;margin-bottom:.9rem;">
-        This site runs one MCP server (<code>mcp-infra</code>) on the app VM. It exposes two tools:
-        <code>sentinel_log</code> (reads the service health log) and <code>write_activity</code> (logs each session
-        to the activity feed on the project page).
+        This site runs one MCP server (<code>mcp-infra</code>) on the app VM. It exposes one tool:
+        <code>sentinel_log</code>, which reads the live service health log.
       </p>
       <div class="note">
         Claude runs on Anthropic's infrastructure, not on this VM. The VM calls the Claude API, Claude chooses which
         tools to invoke, and only sees the data the tools return. The MCP server itself has no access to secrets or
-        the database: it can only read a log file and write to a JSON file.
+        the database: it can only read a log file.
       </div>
       <div class="tags">
         <span class="tag">MCP / Streamable HTTP</span>
@@ -221,7 +220,7 @@
         <ul class="bullets">
           <li>Your question is POSTed to <code>/ask</code> on this server.</li>
           <li>A FastAPI app sends it to the Claude API with a system prompt describing the infrastructure.</li>
-          <li>The answer is returned to your browser and logged to the activity feed.</li>
+          <li>The answer is returned to your browser.</li>
         </ul>
         <div class="note">
           The endpoint is rate-limited: 10 questions per IP per day, 150 globally per day.

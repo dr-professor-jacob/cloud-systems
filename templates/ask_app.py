@@ -33,26 +33,6 @@ SYSTEM_PROMPT = (
 TOOLS = []
 
 
-def _update_activity(question: str, answer: str, tools_used: list) -> None:
-    try:
-        path = Path("/var/www/html/activity.json")
-        try:
-            existing = json.loads(path.read_text()) if path.exists() else {}
-            history = existing.get("calls", [])
-            if not isinstance(history, list) or not history or not isinstance(history[0], dict):
-                history = []
-        except Exception:
-            history = []
-        history.insert(0, {
-            "time": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "question": question[:100] + ("..." if len(question) > 100 else ""),
-            "tools": tools_used if tools_used else [],
-            "answer": answer,
-        })
-        path.write_text(json.dumps({"calls": history[:20]}))
-    except Exception:
-        pass
-
 
 def _load() -> dict:
     if RATE_FILE.exists():
@@ -117,7 +97,5 @@ async def ask(q: Question, request: Request):
         messages=[{"role": "user", "content": text}],
     )
     answer = next((b.text for b in response.content if hasattr(b, "text")), "")
-
-    _update_activity(text, answer, [])
 
     return {"answer": answer, "remaining": remaining}
