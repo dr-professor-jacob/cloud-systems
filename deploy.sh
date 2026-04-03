@@ -74,6 +74,10 @@ until ssh -i mits_key \
 done
 echo "==> SSH ready"
 
+echo "==> Updating known_hosts with current VM host key"
+ssh-keygen -R 10.0.1.4 2>/dev/null || true
+ssh-keyscan -H 10.0.1.4 >> ~/.ssh/known_hosts
+
 echo "==> Running Ansible playbooks"
 ansible-playbook site.yml -i inventory.ini
 
