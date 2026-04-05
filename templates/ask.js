@@ -24,6 +24,13 @@
     });
   }
 
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form.dispatchEvent(new Event("submit"));
+    }
+  });
+
   input.addEventListener("input", function () {
     var left = MAX - input.value.length;
     counter.textContent = left + " characters remaining";
