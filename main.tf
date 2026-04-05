@@ -111,7 +111,7 @@ resource "azurerm_network_security_group" "app_nsg" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_ranges    = ["10011", "10022"]
-    source_address_prefix      = "*"
+    source_address_prefix      = var.allowed_ssh_ip
     destination_address_prefix = "*"
   }
 
@@ -156,7 +156,7 @@ resource "azurerm_linux_virtual_machine" "app_vm" {
 
   admin_ssh_key {
     username   = var.admin_username
-    public_key = file("mits_key.pub")
+    public_key = file("cloud-systems.pub")
   }
 
   network_interface_ids = [azurerm_network_interface.app_nic.id]

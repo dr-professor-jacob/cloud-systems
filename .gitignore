@@ -10,6 +10,13 @@
 .vscode/
 .idea/
 
-# SSH private key — public key (mits_key.pub) is tracked, private key must not be
-mits_key
+# SSH private key — public key (cloud-systems.pub) is tracked, private key must not be
+cloud-systems
+
+# OpenTofu/Terraform working directory
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+
 .claude/

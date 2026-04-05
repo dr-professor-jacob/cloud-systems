@@ -4,7 +4,8 @@ START=$(date +%s)
 cd ~/cloud-systems
 
 echo "==> git pull"
-git pull
+git fetch origin
+git reset --hard origin/master
 
 # ── OpenTofu installation ─────────────────────────────────────────────────────
 if ! command -v tofu &> /dev/null; then
@@ -65,7 +66,7 @@ if ! az keyvault secret show \
 fi
 
 echo "==> Waiting for SSH on $IP..."
-until ssh -i mits_key \
+until ssh -i cloud-systems \
     -o StrictHostKeyChecking=no \
     -o ConnectTimeout=5 \
     jrick@"$IP" true 2>/dev/null; do
@@ -74,8 +75,10 @@ until ssh -i mits_key \
 done
 echo "==> SSH ready"
 
-echo "==> Updating known_hosts with current VM host key"
+echo "==> Updating known_hosts with current VM host keys"
+ssh-keygen -R "$IP" 2>/dev/null || true
 ssh-keygen -R 10.0.1.4 2>/dev/null || true
+ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts
 ssh-keyscan -H 10.0.1.4 >> ~/.ssh/known_hosts
 
 echo "==> Running Ansible playbooks"

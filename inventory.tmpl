@@ -3,5 +3,5 @@ app_node ansible_host=10.0.1.4
 
 [all:vars]
 ansible_user=jrick
-ansible_ssh_private_key_file=./mits_key
-ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -i ./mits_key -o StrictHostKeyChecking=no jrick@${public_ip}"'
+ansible_ssh_private_key_file=./cloud-systems
+ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -i ./cloud-systems -o StrictHostKeyChecking=accept-new jrick@${public_ip}"'
