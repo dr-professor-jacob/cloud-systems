@@ -12,3 +12,4 @@
 
 # SSH private key — public key (mits_key.pub) is tracked, private key must not be
 mits_key
+.claude/
