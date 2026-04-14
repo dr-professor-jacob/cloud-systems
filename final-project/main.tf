@@ -1,0 +1,315 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+  subscription_id = var.subscription_id
+}
+
+data "azurerm_client_config" "current" {}
+
+locals {
+  tags = {
+    project    = "rf-survey"
+    managed_by = "opentofu"
+  }
+  # Use placeholder image until first build-push.sh run
+  worker_image = var.image_tag_worker == "placeholder" ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${azurerm_container_registry.main.login_server}/rf-worker:${var.image_tag_worker}"
+  web_image    = var.image_tag_web == "placeholder" ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${azurerm_container_registry.main.login_server}/rf-web:${var.image_tag_web}"
+  sb_fqn       = "${azurerm_servicebus_namespace.main.name}.servicebus.windows.net"
+  storage_url  = "https://${azurerm_storage_account.main.name}.blob.core.windows.net"
+}
+
+# ---------------------------------------------------------------------------
+# Resource Group
+# ---------------------------------------------------------------------------
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
+  location = var.location
+  tags     = local.tags
+}
+
+# ---------------------------------------------------------------------------
+# Service Bus Namespace + Queues
+# ---------------------------------------------------------------------------
+resource "azurerm_servicebus_namespace" "main" {
+  name                = "${var.project_name}-sb"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "Standard"
+  tags                = local.tags
+}
+
+resource "azurerm_servicebus_queue" "sweeps" {
+  name         = "rf-sweeps"
+  namespace_id = azurerm_servicebus_namespace.main.id
+
+  default_message_ttl                  = "PT5M"   # 5 minutes — stale sweeps discarded
+  max_size_in_megabytes                = 1024
+  enable_partitioning                  = false
+}
+
+resource "azurerm_servicebus_queue" "commands" {
+  name         = "rf-commands"
+  namespace_id = azurerm_servicebus_namespace.main.id
+
+  default_message_ttl   = "PT10M"  # 10 minutes — decode jobs expire
+  max_size_in_megabytes = 1024
+}
+
+resource "azurerm_servicebus_queue" "results" {
+  name         = "rf-results"
+  namespace_id = azurerm_servicebus_namespace.main.id
+
+  default_message_ttl   = "PT1H"   # 1 hour — results linger for polling
+  max_size_in_megabytes = 1024
+}
+
+# ---------------------------------------------------------------------------
+# SAS rule for Pi edge node (Send to sweeps/results, Receive from commands)
+# ---------------------------------------------------------------------------
+resource "azurerm_servicebus_namespace_authorization_rule" "pi" {
+  name         = "pi-edge"
+  namespace_id = azurerm_servicebus_namespace.main.id
+  listen       = true
+  send         = true
+  manage       = false
+}
+
+# ---------------------------------------------------------------------------
+# Storage Account + Containers
+# ---------------------------------------------------------------------------
+resource "azurerm_storage_account" "main" {
+  name                     = "${var.project_name}storage"
+  resource_group_name      = azurerm_resource_group.main.name
+  location                 = azurerm_resource_group.main.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  tags                     = local.tags
+}
+
+resource "azurerm_storage_container" "sweeps" {
+  name                  = "rfsweeps"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "results" {
+  name                  = "rfresults"
+  storage_account_id    = azurerm_storage_account.main.id
+  container_access_type = "private"
+}
+
+# ---------------------------------------------------------------------------
+# Azure Container Registry
+# ---------------------------------------------------------------------------
+resource "azurerm_container_registry" "main" {
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = "Basic"
+  admin_enabled       = false
+  tags                = local.tags
+}
+
+# ---------------------------------------------------------------------------
+# Log Analytics
+# ---------------------------------------------------------------------------
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${var.project_name}-logs"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+  tags                = local.tags
+}
+
+# ---------------------------------------------------------------------------
+# User-Assigned Managed Identity + Role Assignments
+# ---------------------------------------------------------------------------
+resource "azurerm_user_assigned_identity" "main" {
+  name                = "${var.project_name}-identity"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tags                = local.tags
+}
+
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.main.principal_id
+}
+
+resource "azurerm_role_assignment" "sb_owner" {
+  scope                = azurerm_servicebus_namespace.main.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = azurerm_user_assigned_identity.main.principal_id
+}
+
+resource "azurerm_role_assignment" "blob_contrib" {
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.main.principal_id
+}
+
+# ---------------------------------------------------------------------------
+# Container Apps Environment
+# ---------------------------------------------------------------------------
+resource "azurerm_container_app_environment" "main" {
+  name                       = "${var.project_name}-env"
+  location                   = azurerm_resource_group.main.location
+  resource_group_name        = azurerm_resource_group.main.name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  tags                       = local.tags
+}
+
+# ---------------------------------------------------------------------------
+# Container App: rf-worker
+# No ingress — processes queues in background.
+# ---------------------------------------------------------------------------
+resource "azurerm_container_app" "worker" {
+  name                         = "rf-worker"
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  revision_mode                = "Single"
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.main.id]
+  }
+
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    identity = azurerm_user_assigned_identity.main.id
+  }
+
+  secret {
+    name  = "anthropic-key"
+    value = var.anthropic_api_key
+  }
+
+  template {
+    min_replicas = 0
+    max_replicas = 1
+
+    container {
+      name   = "rf-worker"
+      image  = local.worker_image
+      cpu    = 0.5
+      memory = "1Gi"
+
+      env {
+        name  = "SERVICE_BUS_NAMESPACE"
+        value = local.sb_fqn
+      }
+      env {
+        name  = "STORAGE_ACCOUNT_URL"
+        value = local.storage_url
+      }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.main.client_id
+      }
+    }
+  }
+
+  tags       = local.tags
+  depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.sb_owner, azurerm_role_assignment.blob_contrib]
+}
+
+# ---------------------------------------------------------------------------
+# Container App: rf-web
+# Public HTTPS ingress.
+# ---------------------------------------------------------------------------
+resource "azurerm_container_app" "web" {
+  name                         = "rf-web"
+  container_app_environment_id = azurerm_container_app_environment.main.id
+  resource_group_name          = azurerm_resource_group.main.name
+  revision_mode                = "Single"
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.main.id]
+  }
+
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    identity = azurerm_user_assigned_identity.main.id
+  }
+
+  secret {
+    name  = "anthropic-key"
+    value = var.anthropic_api_key
+  }
+
+  template {
+    min_replicas = 1
+    max_replicas = 2
+
+    container {
+      name   = "rf-web"
+      image  = local.web_image
+      cpu    = 0.25
+      memory = "0.5Gi"
+
+      env {
+        name  = "SERVICE_BUS_NAMESPACE"
+        value = local.sb_fqn
+      }
+      env {
+        name  = "STORAGE_ACCOUNT_URL"
+        value = local.storage_url
+      }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.main.client_id
+      }
+      env {
+        name        = "ANTHROPIC_API_KEY"
+        secret_name = "anthropic-key"
+      }
+    }
+  }
+
+  ingress {
+    external_enabled = true
+    target_port      = 8000
+    transport        = "http"
+    traffic_weight {
+      percentage      = 100
+      latest_revision = true
+    }
+  }
+
+  tags       = local.tags
+  depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.sb_owner, azurerm_role_assignment.blob_contrib]
+}
+
+# ---------------------------------------------------------------------------
+# Outputs
+# ---------------------------------------------------------------------------
+output "acr_login_server" {
+  value       = azurerm_container_registry.main.login_server
+  description = "ACR hostname — used by build-push.sh"
+}
+
+output "web_url" {
+  value       = "https://${azurerm_container_app.web.ingress[0].fqdn}"
+  description = "Public HTTPS URL for the RF dashboard"
+}
+
+output "sb_pi_connection_string" {
+  value       = azurerm_servicebus_namespace_authorization_rule.pi.primary_connection_string
+  description = "Service Bus connection string for the Pi edge node"
+  sensitive   = true
+}
+
+output "resource_group_name" {
+  value = azurerm_resource_group.main.name
+}

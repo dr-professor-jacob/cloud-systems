@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RF Survey Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d0d;
+      color: #d0d0d0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: #111;
+      border-bottom: 1px solid #222;
+    }
+    header h1 { font-size: 15px; color: #4af; letter-spacing: 2px; text-transform: uppercase; }
+    #status   { color: #888; font-size: 11px; }
+    #peak-signal { color: #ff5; font-size: 11px; }
+
+    main { padding: 12px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Waterfall ─────────────────────────────────── */
+    #waterfall-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border: 1px solid #222;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #waterfall {
+      display: block;
+      width: 100%;
+      height: 240px;
+      cursor: crosshair;
+      image-rendering: pixelated;
+    }
+    #band-overlay {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    #freq-axis {
+      display: block;
+      width: 100%;
+      height: 18px;
+      background: #0a0a0a;
+    }
+
+    /* click tooltip */
+    #click-hint {
+      position: absolute;
+      top: 6px; right: 8px;
+      color: #444;
+      font-size: 10px;
+      pointer-events: none;
+    }
+
+    /* ── Peak hold toggle ──────────────────────────── */
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      color: #aaa;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #242424; color: #fff; }
+    .btn.active { border-color: #4af; color: #4af; }
+
+    /* ── Two-column layout ─────────────────────────── */
+    .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 700px) { .columns { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .panel h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #555;
+      border-bottom: 1px solid #1e1e1e;
+      padding-bottom: 4px;
+    }
+
+    /* ── Results panel ─────────────────────────────── */
+    #results-panel { grid-column: 1 / -1; }
+    #results { min-height: 40px; }
+    .pending { color: #888; font-style: italic; }
+    .error   { color: #f55; }
+    .result-meta { color: #4af; font-size: 11px; margin-bottom: 4px; }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #0a0a0a;
+      padding: 8px;
+      border-radius: 3px;
+      color: #afa;
+      font-size: 11px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    /* ── Ask Claude ────────────────────────────────── */
+    #ask-form { display: flex; gap: 6px; }
+    #ask-input {
+      flex: 1;
+      background: #0d0d0d;
+      border: 1px solid #333;
+      color: #ddd;
+      padding: 5px 8px;
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+    #ask-input:focus { border-color: #4af; }
+    #ask-output {
+      color: #ccc;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      min-height: 20px;
+    }
+    #ask-remaining { color: #444; font-size: 10px; text-align: right; }
+
+    /* ── Band legend ───────────────────────────────── */
+    #legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #888;
+    }
+    .legend-swatch {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Color scale bar ───────────────────────────── */
+    #colorscale {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: #666;
+    }
+    #colorscale canvas { border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>RF Survey</h1>
+  <span id="peak-signal">—</span>
+  <span id="status">Connecting…</span>
+</header>
+
+<main>
+
+  <!-- Waterfall -->
+  <div id="waterfall-container">
+    <canvas id="waterfall" height="240"></canvas>
+    <canvas id="band-overlay" height="240"></canvas>
+    <span id="click-hint">Click to decode</span>
+  </div>
+  <canvas id="freq-axis" height="18"></canvas>
+
+  <div class="controls">
+    <button class="btn active" id="btn-avg">Avg</button>
+    <button class="btn" id="btn-peak">Peak Hold</button>
+    <button class="btn" id="btn-min">Min Hold</button>
+    <button class="btn" id="btn-reset-peak">Reset Peak</button>
+    <div id="colorscale">
+      <span>−120 dBm</span>
+      <canvas id="scale-bar" width="120" height="10"></canvas>
+      <span>−20 dBm</span>
+    </div>
+  </div>
+
+  <div class="columns">
+
+    <!-- Decode results -->
+    <div class="panel" id="results-panel">
+      <h2>Decode Results</h2>
+      <div id="results"><span class="pending">Click a frequency on the waterfall to decode…</span></div>
+    </div>
+
+    <!-- Ask Claude -->
+    <div class="panel">
+      <h2>Ask Claude</h2>
+      <form id="ask-form">
+        <input id="ask-input" type="text" placeholder="What's on 162.4 MHz?" maxlength="300" autocomplete="off">
+        <button class="btn" type="submit">Ask</button>
+      </form>
+      <div id="ask-output"></div>
+      <div id="ask-remaining"></div>
+    </div>
+
+  </div>
+
+  <!-- Band legend -->
+  <div class="panel">
+    <h2>Band Legend</h2>
+    <div id="legend"></div>
+  </div>
+
+</main>
+
+<script src="/static/waterfall.js"></script>
+<script>
+  // ── Color scale bar ──────────────────────────────────────────────────────
+  (function() {
+    const c   = document.getElementById("scale-bar");
+    const ctx = c.getContext("2d");
+    const img = ctx.createImageData(120, 10);
+    for (let x = 0; x < 120; x++) {
+      const dbm = -120 + x * (100 / 120);
+      const [r,g,b] = dbmToColor(dbm);
+      for (let y = 0; y < 10; y++) {
+        const i = (y * 120 + x) * 4;
+        img.data[i] = r; img.data[i+1] = g; img.data[i+2] = b; img.data[i+3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  })();
+
+  // ── Band legend ──────────────────────────────────────────────────────────
+  (function() {
+    const el = document.getElementById("legend");
+    BANDS.forEach(b => {
+      const item = document.createElement("div");
+      item.className = "legend-item";
+      item.innerHTML = `<div class="legend-swatch" style="background:${b.color}"></div>${b.label}`;
+      el.appendChild(item);
+    });
+  })();
+
+  // ── Display mode toggle ──────────────────────────────────────────────────
+  let displayMode = "avg";  // avg | peak | min_hold
+  const btns = { avg: document.getElementById("btn-avg"), peak: document.getElementById("btn-peak"), min: document.getElementById("btn-min") };
+
+  function setMode(mode) {
+    displayMode = mode;
+    Object.values(btns).forEach(b => b.classList.remove("active"));
+    if (mode === "avg")      btns.avg.classList.add("active");
+    if (mode === "peak")     btns.peak.classList.add("active");
+    if (mode === "min_hold") btns.min.classList.add("active");
+    redrawWaterfall();
+  }
+
+  btns.avg.addEventListener("click",  () => setMode("avg"));
+  btns.peak.addEventListener("click", () => setMode("peak"));
+  btns.min.addEventListener("click",  () => setMode("min_hold"));
+
+  document.getElementById("btn-reset-peak").addEventListener("click", () => {
+    if (currentPeak) currentPeak = currentAvg ? [...currentAvg] : null;
+    if (window.peak) peak = avg ? new Float32Array(avg) : null;
+    redrawWaterfall();
+  });
+
+  // Expose displayMode so waterfall.js can read it
+  window.getDisplayMode = () => displayMode;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Copy to project.auto.tfvars and fill in real values.
+# project.auto.tfvars is gitignored — never commit it.
+
+subscription_id   = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+location          = "eastus"
+resource_group_name = "rf-survey-rg"
+project_name      = "rfsrvy"   # 3-8 chars, used in storage account name
+acr_name          = "yourname-rf"  # globally unique, alphanumeric only
+anthropic_api_key = "sk-ant-..."
+
+# Leave as "placeholder" until you run build-push.sh
+image_tag_worker  = "placeholder"
+image_tag_web     = "placeholder"
