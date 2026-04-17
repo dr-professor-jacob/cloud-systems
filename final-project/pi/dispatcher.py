@@ -8,6 +8,7 @@ import logging
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -205,7 +206,9 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Claim the dongle — ingest.py will wait until we release it
+    # Stop any in-flight rtl_power sweep, then claim the dongle
+    subprocess.run(["pkill", "-TERM", "rtl_power"], capture_output=True)
+    time.sleep(1.5)   # give USB stack time to release the device
     DEVICE_LOCK.touch()
     log.info("Device lock acquired for tool=%s", tool)
     try:
