@@ -206,10 +206,10 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Stop any in-flight rtl_power sweep, then claim the dongle
+    # Lock first so ingest won't start a new sweep, then kill any in-flight one
+    DEVICE_LOCK.touch()
     subprocess.run(["pkill", "-TERM", "rtl_power"], capture_output=True)
     time.sleep(1.5)   # give USB stack time to release the device
-    DEVICE_LOCK.touch()
     log.info("Device lock acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
