@@ -47,6 +47,16 @@ variable "vm_identity_principal_id" {
   default     = ""
 }
 
+variable "container_app_env_name" {
+  description = "Name of existing Container App Environment to reuse (student sub: 1 per region)"
+  type        = string
+}
+
+variable "container_app_env_rg" {
+  description = "Resource group containing the existing Container App Environment"
+  type        = string
+}
+
 variable "anthropic_api_key" {
   description = "Anthropic API key for Claude integration"
   type        = string

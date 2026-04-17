@@ -93,6 +93,13 @@ cd ~/cloud-systems/final-project
 # Get subscription ID from current az session
 SUB_ID=$(az account show --query id -o tsv)
 
+# Find existing Container App Environment (student sub: 1 per region)
+CAE_NAME=$(az containerapp env list --subscription "$SUB_ID" \
+  --query "[0].name" -o tsv 2>/dev/null || true)
+CAE_RG=$(az containerapp env list --subscription "$SUB_ID" \
+  --query "[0].resourceGroup" -o tsv 2>/dev/null || true)
+echo "==> Existing Container App Environment: ${CAE_NAME:-NONE} (rg: ${CAE_RG:-?})"
+
 # Create project.auto.tfvars if it doesn't exist (only acr_name needs input)
 if [[ ! -f project.auto.tfvars ]]; then
   echo "==> project.auto.tfvars not found"
@@ -106,6 +113,8 @@ acr_name                 = "${ACR_NAME_VAL}"
 anthropic_api_key        = "${ANTHROPIC_KEY}"
 image_tag_worker         = "placeholder"
 vm_identity_principal_id = "${VM_PRINCIPAL}"
+container_app_env_name   = "${CAE_NAME}"
+container_app_env_rg     = "${CAE_RG}"
 EOF
   echo "==> project.auto.tfvars created"
 else
@@ -114,6 +123,15 @@ else
   sed -i "s|^anthropic_api_key\s*=.*|anthropic_api_key        = \"${ANTHROPIC_KEY}\"|" project.auto.tfvars
   if [[ -n "$VM_PRINCIPAL" ]]; then
     sed -i "s|^vm_identity_principal_id\s*=.*|vm_identity_principal_id = \"${VM_PRINCIPAL}\"|" project.auto.tfvars
+  fi
+  if [[ -n "$CAE_NAME" ]]; then
+    if grep -q "container_app_env_name" project.auto.tfvars; then
+      sed -i "s|^container_app_env_name\s*=.*|container_app_env_name   = \"${CAE_NAME}\"|" project.auto.tfvars
+      sed -i "s|^container_app_env_rg\s*=.*|container_app_env_rg     = \"${CAE_RG}\"|" project.auto.tfvars
+    else
+      printf 'container_app_env_name   = "%s"\ncontainer_app_env_rg     = "%s"\n' \
+        "$CAE_NAME" "$CAE_RG" >> project.auto.tfvars
+    fi
   fi
 fi
 

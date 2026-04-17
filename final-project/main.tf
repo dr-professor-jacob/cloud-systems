@@ -117,15 +117,11 @@ resource "azurerm_container_registry" "main" {
 }
 
 # ---------------------------------------------------------------------------
-# Log Analytics
+# Reuse existing Container App Environment (student subscription: 1 per region)
 # ---------------------------------------------------------------------------
-resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${var.project_name}-logs"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
-  tags                = local.tags
+data "azurerm_container_app_environment" "shared" {
+  name                = var.container_app_env_name
+  resource_group_name = var.container_app_env_rg
 }
 
 # ---------------------------------------------------------------------------
@@ -175,23 +171,12 @@ resource "azurerm_role_assignment" "vm_blob" {
 }
 
 # ---------------------------------------------------------------------------
-# Container Apps Environment
-# ---------------------------------------------------------------------------
-resource "azurerm_container_app_environment" "main" {
-  name                       = "${var.project_name}-env"
-  location                   = azurerm_resource_group.main.location
-  resource_group_name        = azurerm_resource_group.main.name
-  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
-  tags                       = local.tags
-}
-
-# ---------------------------------------------------------------------------
 # Container App: rf-worker
 # No ingress — processes queues in background.
 # ---------------------------------------------------------------------------
 resource "azurerm_container_app" "worker" {
   name                         = "rf-worker"
-  container_app_environment_id = azurerm_container_app_environment.main.id
+  container_app_environment_id = data.azurerm_container_app_environment.shared.id
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
