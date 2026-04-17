@@ -68,16 +68,18 @@ def annotate_freq(freq_hz: int) -> dict:
 avg      = None   # numpy array, shape (N,)
 peak     = None
 min_hold = None
+raw      = None   # last single sweep, unaveraged
 freq_meta = None  # {freq_start, freq_step, n_bins}
 last_blob_write = 0.0
 
 
 def process_sweep(data: dict) -> None:
-    """Update running avg, peak, and min_hold from a new sweep."""
-    global avg, peak, min_hold, freq_meta, last_blob_write
+    """Update running avg, peak, min_hold, and raw from a new sweep."""
+    global avg, peak, min_hold, raw, freq_meta, last_blob_write
 
     bins = np.array(data["bins"], dtype=np.float32)
     n = len(bins)
+    raw = bins.copy()
 
     if avg is None:
         avg      = bins.copy()
@@ -102,7 +104,7 @@ def process_sweep(data: dict) -> None:
 
 
 def _write_sweep_blob() -> None:
-    """Write current averaged spectrum + peak/min to Blob Storage."""
+    """Write current averaged spectrum + peak/min/raw to Blob Storage."""
     if avg is None:
         return
     ts = datetime.now(timezone.utc).isoformat()
@@ -114,6 +116,7 @@ def _write_sweep_blob() -> None:
         "avg":        avg.tolist(),
         "peak":       peak.tolist(),
         "min_hold":   min_hold.tolist(),
+        "raw":        raw.tolist() if raw is not None else [],
     }
     blob = blob_client.get_blob_client(BLOB_SWEEPS, "latest.json")
     blob.upload_blob(json.dumps(payload), overwrite=True)

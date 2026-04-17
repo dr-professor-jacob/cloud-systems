@@ -36,6 +36,7 @@ let history      = [];    // circular buffer of Float32Arrays
 let currentPeak    = null;
 let currentMinHold = null;
 let currentAvg     = null;
+let currentRaw     = null;
 
 const canvas      = document.getElementById("waterfall");
 const ctx         = canvas.getContext("2d");
@@ -189,6 +190,7 @@ async function fetchSweep() {
     currentAvg     = data.avg;
     currentPeak    = data.peak;
     currentMinHold = data.min_hold;
+    currentRaw     = data.raw && data.raw.length ? data.raw : null;
 
     // Push new row to history
     history.push(new Float32Array(data.avg));
@@ -198,11 +200,143 @@ async function fetchSweep() {
     drawBands();
     drawFreqAxis();
     updatePeakDisplay(data.peak);
+    drawSpectrumChart();
+    updateStationList();
 
     const ts = new Date(data.ts).toLocaleTimeString();
     statusEl.textContent = `Live — last update ${ts} — ${nBins} bins`;
   } catch (e) {
     statusEl.textContent = `Error: ${e.message}`;
+  }
+}
+
+// ─── Spectrum line chart ─────────────────────────────────────────────────────
+function drawSpectrumChart() {
+  const c = document.getElementById("spectrum-chart");
+  if (!c) return;
+  c.width = c.offsetWidth || c.parentElement.clientWidth;
+  const w = c.width, h = c.height;
+  const sctx = c.getContext("2d");
+  sctx.fillStyle = "#000";
+  sctx.fillRect(0, 0, w, h);
+
+  if (!currentAvg || !nBins) return;
+
+  const dbLo = DB_MIN, dbHi = DB_MAX;
+
+  function drawLine(bins, color, alpha) {
+    sctx.beginPath();
+    sctx.strokeStyle = color;
+    sctx.globalAlpha = alpha;
+    sctx.lineWidth = 1;
+    for (let px = 0; px < w; px++) {
+      const binIdx = Math.min(Math.floor((px / w) * bins.length), bins.length - 1);
+      const dbm = bins[binIdx];
+      const y = h - ((dbm - dbLo) / (dbHi - dbLo)) * h;
+      if (px === 0) sctx.moveTo(px, y);
+      else sctx.lineTo(px, y);
+    }
+    sctx.stroke();
+    sctx.globalAlpha = 1;
+  }
+
+  // Draw raw first (behind), then avg on top
+  if (currentRaw) drawLine(currentRaw, "#334", 0.6);
+  drawLine(currentAvg, "#4af", 1.0);
+
+  // Y axis labels
+  sctx.fillStyle = "#444";
+  sctx.font = "9px monospace";
+  sctx.fillText(`${dbHi}`, 2, 9);
+  sctx.fillText(`${dbLo}`, 2, h - 2);
+}
+
+// ─── FM / NOAA station detector ──────────────────────────────────────────────
+const FIXED_STATIONS = [
+  { freq: 162.425, label: "NOAA WX", tool: "rtl_fm" },
+  { freq: 162.550, label: "NOAA WX 2", tool: "rtl_fm" },
+];
+
+function findFmPeaks(peak) {
+  if (!peak || !nBins) return [];
+  const stations = [];
+  const fmLo = 87.5, fmHi = 108.0;
+  const threshold = DB_MIN + (DB_MAX - DB_MIN) * 0.55;
+  const minSpacing = 0.3; // MHz
+
+  for (let i = 1; i < nBins - 1; i++) {
+    const freq = freqStart + (i / nBins) * (freqEnd - freqStart);
+    if (freq < fmLo || freq > fmHi) continue;
+    if (peak[i] > threshold && peak[i] > peak[i-1] && peak[i] > peak[i+1]) {
+      // Check spacing from last added
+      if (!stations.length || freq - stations[stations.length-1].freq > minSpacing) {
+        stations.push({ freq: parseFloat(freq.toFixed(2)), label: `${freq.toFixed(1)} MHz`, tool: "rtl_fm" });
+      }
+    }
+  }
+  return stations;
+}
+
+function updateStationList() {
+  const el = document.getElementById("station-list");
+  if (!el) return;
+
+  const peaks = findFmPeaks(currentPeak);
+  const all = [...FIXED_STATIONS, ...peaks];
+
+  if (!all.length) {
+    el.innerHTML = `<span style="color:#444;font-size:11px;">No stations detected yet…</span>`;
+    return;
+  }
+
+  el.innerHTML = "";
+  all.forEach(s => {
+    const btn = document.createElement("button");
+    btn.className = "btn";
+    btn.textContent = s.label;
+    btn.style.color = s.label.startsWith("NOAA") ? "#5d5" : "#4af";
+    btn.addEventListener("click", () => listenToStation(s));
+    el.appendChild(btn);
+  });
+}
+
+async function listenToStation(station) {
+  const resultsEl = document.getElementById("results");
+  const audio = document.getElementById("audio-player");
+  audio.style.display = "none";
+  resultsEl.innerHTML = `<p class="pending">⏳ Tuning to ${station.label} — capturing 20s of audio…</p>`;
+  document.getElementById("results-panel").scrollIntoView({ behavior: "smooth" });
+
+  try {
+    const res = await fetch("/api/decode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ freq_hz: Math.round(station.freq * 1e6), tool: "rtl_fm", duration: 20 }),
+    });
+    const { job_id } = await res.json();
+
+    let attempts = 0;
+    const poller = setInterval(async () => {
+      attempts++;
+      const r = await fetch(`/api/results/${job_id}`);
+      if (r.status === 200) {
+        clearInterval(poller);
+        const data = await r.json();
+        if (data.output && data.output.startsWith("audio_url:")) {
+          const url = data.output.replace("audio_url:", "");
+          audio.src = url;
+          audio.style.display = "block";
+          resultsEl.innerHTML = `<div class="result-meta">Now playing: ${station.label}</div>`;
+        } else {
+          resultsEl.innerHTML = `<div class="result-meta">${station.label}</div><pre>${escapeHtml(data.output)}</pre>`;
+        }
+      } else if (attempts > 15) {
+        clearInterval(poller);
+        resultsEl.innerHTML = `<p class="error">Timed out waiting for audio.</p>`;
+      }
+    }, 3000);
+  } catch (err) {
+    resultsEl.innerHTML = `<p class="error">Error: ${err.message}</p>`;
   }
 }
 
@@ -326,6 +460,7 @@ function resizeCanvases() {
   drawBands();
   drawFreqAxis();
   redrawWaterfall();
+  drawSpectrumChart();
 }
 
 window.addEventListener("resize", resizeCanvases);
