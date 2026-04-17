@@ -95,9 +95,22 @@ function renderRow(bins, y, imgData) {
   }
 }
 
+// ─── No-data placeholder ─────────────────────────────────────────────────────
+function drawNoData() {
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#333";
+  ctx.font = "14px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Waiting for Pi sweep data…", w / 2, h / 2);
+  ctx.textAlign = "left";
+  bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
+}
+
 // ─── Full waterfall redraw ────────────────────────────────────────────────────
 function redrawWaterfall() {
-  if (history.length === 0) return;
+  if (history.length === 0) { drawNoData(); return; }
   const h   = canvas.height;
   const w   = canvas.width;
   const img = ctx.createImageData(w, h);
@@ -308,6 +321,7 @@ function resizeCanvases() {
 
 window.addEventListener("resize", resizeCanvases);
 resizeCanvases();
+drawNoData();
 
 // ─── Start polling ────────────────────────────────────────────────────────────
 fetchSweep();
