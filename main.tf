@@ -297,3 +297,12 @@ resource "cloudflare_record" "ts" {
   ttl     = 60
   proxied = false
 }
+
+resource "cloudflare_record" "rf" {
+  zone_id = var.cloudflare_zone_id
+  name    = "rf"
+  content = azurerm_public_ip.app_pip.ip_address
+  type    = "A"
+  ttl     = 60
+  proxied = false
+}
