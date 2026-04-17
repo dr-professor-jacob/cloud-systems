@@ -38,7 +38,7 @@ resource "azurerm_resource_group" "main" {
 # Service Bus Namespace + Queues
 # ---------------------------------------------------------------------------
 resource "azurerm_servicebus_namespace" "main" {
-  name                = "${var.project_name}-sb"
+  name                = "${var.project_name}-bus"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   sku                 = "Standard"
