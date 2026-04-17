@@ -227,6 +227,36 @@ async function fetchSweep() {
   }
 }
 
+// ─── Hover tooltip ───────────────────────────────────────────────────────────
+const tooltip = document.getElementById("freq-tooltip");
+
+canvas.addEventListener("mousemove", (e) => {
+  const rect    = canvas.getBoundingClientRect();
+  const x       = e.clientX - rect.left;
+  const freqMhz = xToFreq(x * canvas.width / rect.width);
+
+  let band = null;
+  for (const b of BANDS) {
+    if (freqMhz >= b.start && freqMhz <= b.end) { band = b; break; }
+  }
+
+  // Find power at this frequency
+  let powerStr = "";
+  if (currentAvg && nBins > 0) {
+    const binIdx = Math.min(Math.floor((freqMhz - freqStart) / (freqEnd - freqStart) * nBins), nBins - 1);
+    if (binIdx >= 0) powerStr = `  ${currentAvg[binIdx].toFixed(1)} dBm`;
+  }
+
+  tooltip.style.display = "block";
+  tooltip.style.left = `${Math.min(e.offsetX + 12, rect.width - 160)}px`;
+  tooltip.style.top  = `${Math.max(e.offsetY - 28, 4)}px`;
+  tooltip.innerHTML  = band
+    ? `<span style="color:${band.color}">${band.label}</span> &nbsp;${freqMhz.toFixed(2)} MHz${powerStr}`
+    : `${freqMhz.toFixed(2)} MHz${powerStr}`;
+});
+
+canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+
 // ─── Click to decode ──────────────────────────────────────────────────────────
 canvas.addEventListener("click", async (e) => {
   const rect    = canvas.getBoundingClientRect();

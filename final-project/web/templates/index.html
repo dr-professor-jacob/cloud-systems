@@ -149,23 +149,19 @@
     }
     #ask-remaining { color: #444; font-size: 10px; text-align: right; }
 
-    /* ── Band legend ───────────────────────────────── */
-    #legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      color: #888;
-    }
-    .legend-swatch {
-      width: 10px; height: 10px;
-      border-radius: 2px;
-      flex-shrink: 0;
+    /* ── Hover tooltip ─────────────────────────────── */
+    #freq-tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.82);
+      border: 1px solid #333;
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #ddd;
+      pointer-events: none;
+      white-space: nowrap;
+      display: none;
+      z-index: 10;
     }
 
     /* ── Color scale bar ───────────────────────────── */
@@ -194,6 +190,7 @@
     <canvas id="waterfall" height="240"></canvas>
     <canvas id="band-overlay" height="240"></canvas>
     <span id="click-hint">Click to decode</span>
+    <div id="freq-tooltip"></div>
   </div>
   <canvas id="freq-axis" height="18"></canvas>
 
@@ -207,7 +204,6 @@
       <canvas id="scale-bar" width="120" height="10"></canvas>
       <span>+30 dBm</span>
     </div>
-    <div id="legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-left:12px;"></div>
   </div>
 
   <div class="columns">
@@ -249,17 +245,6 @@
       }
     }
     ctx.putImageData(img, 0, 0);
-  })();
-
-  // ── Band legend ──────────────────────────────────────────────────────────
-  (function() {
-    const el = document.getElementById("legend");
-    BANDS.forEach(b => {
-      const item = document.createElement("div");
-      item.className = "legend-item";
-      item.innerHTML = `<div class="legend-swatch" style="background:${b.color}"></div>${b.label}`;
-      el.appendChild(item);
-    });
   })();
 
   // ── Display mode toggle ──────────────────────────────────────────────────
