@@ -149,7 +149,7 @@
           - mcp
           - uvicorn
           - starlette
-        virtualenv: /opt/mcp-infra
+        executable: /opt/mcp-infra/bin/pip
 
     - name: Deploy MCP server script
       copy:
@@ -211,7 +211,7 @@
           - fastapi
           - uvicorn
           - anthropic
-        virtualenv: /opt/ask-app
+        executable: /opt/ask-app/bin/pip
 
     - name: Deploy ask_app.py
       copy:
@@ -312,7 +312,7 @@
           - azure-storage-blob
           - azure-identity
           - numpy
-        virtualenv: /opt/rf-web
+        executable: /opt/rf-web/bin/pip
 
     - name: Create rf-web app directory
       file:
