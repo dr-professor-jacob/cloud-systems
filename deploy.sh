@@ -4,6 +4,7 @@ START=$(date +%s)
 cd ~/cloud-systems
 
 echo "==> git sync"
+git stash -q 2>/dev/null || true
 git fetch origin
 git checkout -B master origin/master
 
