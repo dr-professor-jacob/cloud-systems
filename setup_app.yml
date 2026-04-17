@@ -402,6 +402,11 @@
       notify: Validate and reload Nginx
 
   handlers:
+    - name: Restart SSH
+      service:
+        name: ssh
+        state: restarted
+
     - name: Validate and reload Nginx
       command: nginx -t
       notify: Reload Nginx
