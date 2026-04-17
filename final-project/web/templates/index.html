@@ -200,9 +200,9 @@
     <button class="btn" id="btn-min">Min Hold</button>
     <button class="btn" id="btn-reset-peak">Reset Peak</button>
     <div id="colorscale">
-      <span>−60 dBm</span>
+      <span>−10 dBm</span>
       <canvas id="scale-bar" width="120" height="10"></canvas>
-      <span>+30 dBm</span>
+      <span>+40 dBm</span>
     </div>
   </div>
 
@@ -237,7 +237,7 @@
     const ctx = c.getContext("2d");
     const img = ctx.createImageData(120, 10);
     for (let x = 0; x < 120; x++) {
-      const dbm = -60 + x * (90 / 120);
+      const dbm = -10 + x * (50 / 120);
       const [r,g,b] = dbmToColor(dbm);
       for (let y = 0; y < 10; y++) {
         const i = (y * 120 + x) * 4;
