@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
-START=$(date +%s)
 cd ~/cloud-systems
 
-echo "==> git sync"
-git stash -q 2>/dev/null || true
-git fetch origin
-git checkout -B master origin/master
+# Re-exec after git sync so bash always runs the latest version of this script
+if [[ -z "${_DEPLOY_SYNCED:-}" ]]; then
+  echo "==> git sync"
+  git stash -q 2>/dev/null || true
+  git fetch origin
+  git checkout -B master origin/master
+  export _DEPLOY_SYNCED=1
+  export START=$(date +%s)
+  exec bash deploy.sh "$@"
+fi
+
+START=${START:-$(date +%s)}
 
 # ── OpenTofu installation ─────────────────────────────────────────────────────
 if ! command -v tofu &>/dev/null; then
