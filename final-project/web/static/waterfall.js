@@ -241,7 +241,7 @@ function drawSpectrumChart() {
   }
 
   // Draw raw first (behind), then avg on top
-  if (currentRaw) drawLine(currentRaw, "#334", 0.6);
+  if (currentRaw) drawLine(currentRaw, "#666", 0.75);
   drawLine(currentAvg, "#4af", 1.0);
 
   // Y axis labels

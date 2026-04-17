@@ -157,7 +157,28 @@ echo ""
 echo "==> Building rf-worker image..."
 export ACR_NAME
 ACR_NAME=$(echo "$ACR_SERVER" | cut -d. -f1)
+
+# Capture image tag (git short hash)
+IMG_TAG=$(git rev-parse --short HEAD 2>/dev/null || echo "latest")
 bash build-push.sh
+
+# Update Container App with the newly built image
+echo "==> Updating rf-worker container to tag ${IMG_TAG}..."
+az containerapp update \
+  --name rf-worker \
+  --resource-group rf-survey-rg \
+  --image "${ACR_SERVER}/rf-worker:${IMG_TAG}" \
+  --output none
+
+# Also store storage connection string for Pi
+STORAGE_CONN=$(az storage account show-connection-string \
+  --name "$(tofu output -raw storage_account_name 2>/dev/null || echo "")" \
+  --resource-group rf-survey-rg \
+  --query connectionString -o tsv 2>/dev/null || true)
+if [[ -n "$STORAGE_CONN" ]]; then
+  store_kv "rf-storage-conn" "$STORAGE_CONN"
+  echo "==> Stored rf-storage-conn in Key Vault"
+fi
 
 cd ~/cloud-systems
 
@@ -189,5 +210,5 @@ echo "  RF Survey:  https://rf.${DOMAIN_OUT}"
 echo ""
 echo "  Pi setup (via Pi Connect or SSH to sdr-node):"
 echo "    RF_KEY_VAULT=${KV} sudo -E bash pi/fetch_secrets.sh"
-echo "    sudo systemctl start rf-ingest rf-dispatcher"
+echo "    sudo systemctl restart rf-ingest rf-dispatcher"
 echo "════════════════════════════════════════════════════════════════"

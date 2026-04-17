@@ -254,3 +254,8 @@ output "storage_account_url" {
 output "resource_group_name" {
   value = azurerm_resource_group.main.name
 }
+
+output "storage_account_name" {
+  value       = azurerm_storage_account.main.name
+  description = "Storage account name — used by deploy.sh to fetch connection string for Pi"
+}
