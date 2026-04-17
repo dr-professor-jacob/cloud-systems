@@ -134,28 +134,7 @@ function redrawWaterfall() {
 
 // ─── Band annotation overlay ──────────────────────────────────────────────────
 function drawBands() {
-  const w = bandCanvas.width;
-  const h = bandCanvas.height;
-  bandCtx.clearRect(0, 0, w, h);
-  bandCtx.font = "10px monospace";
-
-  for (const band of BANDS) {
-    const x1 = freqToX(band.start);
-    const x2 = freqToX(band.end);
-    const bw  = Math.max(x2 - x1, 2);
-
-    // Colored bar at bottom
-    bandCtx.fillStyle = band.color + "55";  // semi-transparent
-    bandCtx.fillRect(x1, h - 18, bw, 18);
-    bandCtx.fillStyle = band.color;
-    bandCtx.fillRect(x1, h - 2, bw, 2);
-
-    // Label if wide enough
-    if (bw > 20) {
-      bandCtx.fillStyle = "#fff";
-      bandCtx.fillText(band.label, x1 + 2, h - 5);
-    }
-  }
+  bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
 // ─── Frequency axis ───────────────────────────────────────────────────────────
