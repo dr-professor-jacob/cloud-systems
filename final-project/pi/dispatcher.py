@@ -206,11 +206,11 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Lock first so ingest won't start a new sweep, then kill any in-flight one
-    DEVICE_LOCK.touch()
-    subprocess.run(["pkill", "-TERM", "rtl_power"], capture_output=True)
-    time.sleep(1.5)   # give USB stack time to release the device
-    log.info("Device lock acquired for tool=%s", tool)
+    # Stop ingest so we have exclusive device access, restart when done
+    log.info("Stopping rf-ingest for exclusive device access...")
+    subprocess.run(["systemctl", "stop", "rf-ingest"], capture_output=True)
+    time.sleep(1.0)   # let USB stack fully release
+    log.info("Device acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
             return run_rtl433(freq_hz, duration)
@@ -222,8 +222,8 @@ def dispatch(job: dict) -> str:
             return run_rtlpower_scan(freq_hz, duration)
         return "Unhandled tool"
     finally:
-        DEVICE_LOCK.unlink(missing_ok=True)
-        log.info("Device lock released")
+        subprocess.run(["systemctl", "start", "rf-ingest"], capture_output=True)
+        log.info("rf-ingest restarted")
 
 
 def main():
