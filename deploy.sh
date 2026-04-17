@@ -114,11 +114,20 @@ cd ~/cloud-systems/final-project
 SUB_ID=$(az account show --query id -o tsv)
 
 # Find existing Container App Environment (student sub: 1 per region)
-CAE_NAME=$(az containerapp env list --subscription "$SUB_ID" \
+# az containerapp env list misses some envs; az resource list is reliable
+CAE_NAME=$(az resource list --subscription "$SUB_ID" \
+  --resource-type "Microsoft.App/managedEnvironments" \
   --query "[0].name" -o tsv 2>/dev/null || true)
-CAE_RG=$(az containerapp env list --subscription "$SUB_ID" \
+CAE_RG=$(az resource list --subscription "$SUB_ID" \
+  --resource-type "Microsoft.App/managedEnvironments" \
   --query "[0].resourceGroup" -o tsv 2>/dev/null || true)
 echo "==> Container App Environment: ${CAE_NAME:-NONE} (rg: ${CAE_RG:-?})"
+
+if [[ -z "$CAE_NAME" ]]; then
+  echo "ERROR: No Container App Environment found in subscription." >&2
+  echo "       Deploy deliverable-4 first, or check az resource list." >&2
+  exit 1
+fi
 
 # ACR name stored in KV — prompt once
 ACR_NAME_VAL=$(kv_get_or_prompt "acr-name" "ACR name (globally unique, alphanumeric, e.g. jrickeysdr)")
