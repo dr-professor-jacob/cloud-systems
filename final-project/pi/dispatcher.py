@@ -112,27 +112,46 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     Requires: ffmpeg installed (sudo apt install ffmpeg)
     Requires: AZURE_STORAGE_* env vars set (same rf.env secrets file).
     """
-    import tempfile, os
-    out_mp3 = f"/tmp/rf_audio_{freq_hz}.mp3"
+    import os
+    raw_file = f"/tmp/rf_raw_{freq_hz}.raw"
+    out_mp3  = f"/tmp/rf_audio_{freq_hz}.mp3"
 
     # Determine mode: wideband FM for broadcast band, narrowband for others
     freq_mhz = freq_hz / 1e6
     if 87.5 <= freq_mhz <= 108:
-        mode, sample_rate = "wbfm", "170k"
+        mode, out_rate = "wbfm", "32000"
     else:
-        mode, sample_rate = "fm", "24k"
+        mode, out_rate = "fm",   "24000"
 
-    # rtl_fm | ffmpeg → mp3  (timeout kills rtl_fm after duration seconds)
-    cmd = (
-        f"timeout {duration} rtl_fm -M {mode} -f {freq_hz} -s {sample_rate} - "
-        f"| ffmpeg -y -f s16le -ac 1 -ar {sample_rate} -i pipe:0 "
-        f"-codec:a libmp3lame -b:a 64k {out_mp3}"
+    # Step 1: capture raw PCM to file (avoids pipe issues with subprocess)
+    rtl_cmd = (
+        f"timeout {duration} rtl_fm -M {mode} -f {freq_hz} -s 1008000 -r {out_rate} - "
+        f"> {raw_file}"
     )
-    log.info("Running rtl_fm | ffmpeg for %ds @ %.3f MHz", duration, freq_mhz)
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=duration + 30)
+    log.info("Step 1: rtl_fm capture %ds @ %.3f MHz → %s", duration, freq_mhz, raw_file)
+    r1 = subprocess.run(rtl_cmd, shell=True, capture_output=True, text=True, timeout=duration + 10)
+    log.info("rtl_fm stderr: %s", r1.stderr[:200])
+
+    if not os.path.exists(raw_file) or os.path.getsize(raw_file) < 1000:
+        return f"rtl_fm capture failed. stderr: {r1.stderr[:300]}"
+
+    # Step 2: encode raw PCM → MP3
+    ffmpeg_cmd = [
+        "ffmpeg", "-y",
+        "-f", "s16le", "-ac", "1", "-ar", out_rate,
+        "-i", raw_file,
+        "-codec:a", "libmp3lame", "-b:a", "64k",
+        out_mp3,
+    ]
+    log.info("Step 2: ffmpeg encode → %s", out_mp3)
+    subprocess.run(ffmpeg_cmd, capture_output=True, timeout=30)
+    try:
+        os.unlink(raw_file)
+    except OSError:
+        pass
 
     if not os.path.exists(out_mp3) or os.path.getsize(out_mp3) < 1024:
-        return f"rtl_fm capture failed or produced empty output. stderr: {r.stderr[:200]}"
+        return f"ffmpeg encode failed or produced empty output."
 
     # Upload to Blob Storage using connection string
     storage_conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
