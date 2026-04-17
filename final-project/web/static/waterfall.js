@@ -330,7 +330,7 @@ async function listenToStation(station) {
         } else {
           resultsEl.innerHTML = `<div class="result-meta">${station.label}</div><pre>${escapeHtml(data.output)}</pre>`;
         }
-      } else if (attempts > 15) {
+      } else if (attempts > 25) {
         clearInterval(poller);
         resultsEl.innerHTML = `<p class="error">Timed out waiting for audio.</p>`;
       }
@@ -408,7 +408,7 @@ canvas.addEventListener("click", async (e) => {
             <div class="result-meta">${tool} @ ${freqMhz.toFixed(3)} MHz — ${new Date(data.ts).toLocaleTimeString()}</div>
             <pre>${escapeHtml(data.output)}</pre>
           </div>`;
-      } else if (attempts > 12) {
+      } else if (attempts > 20) {
         clearInterval(poller);
         resultsEl.innerHTML = `<p class="error">Timed out waiting for Pi result.</p>`;
       }

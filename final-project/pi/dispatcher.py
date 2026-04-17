@@ -22,6 +22,7 @@ QUEUE_RESULTS  = "rf-results"
 MAX_DURATION   = 60   # cap any job at 60 seconds
 
 TOOL_ALLOWLIST = {"rtl_433", "dump1090", "rtl_power_scan", "rtl_fm"}
+DEVICE_LOCK    = Path("/tmp/rtlsdr.lock")   # held while dongle is in use
 
 
 def load_env(path: Path) -> None:
@@ -132,15 +133,15 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     if not os.path.exists(out_mp3) or os.path.getsize(out_mp3) < 1024:
         return f"rtl_fm capture failed or produced empty output. stderr: {r.stderr[:200]}"
 
-    # Upload to Blob Storage
-    conn_str = os.environ.get("SERVICE_BUS_CONNECTION_STRING", "")
-    storage_url = os.environ.get("STORAGE_ACCOUNT_URL", "")
-    if storage_url:
+    # Upload to Blob Storage using connection string
+    storage_conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
+    storage_url  = os.environ.get("STORAGE_ACCOUNT_URL", "")
+    if storage_conn:
         try:
             from azure.storage.blob import BlobServiceClient
-            from azure.identity import AzureCliCredential
-            blob_name = f"audio/{freq_hz}_{int(__import__('time').time())}.mp3"
-            client = BlobServiceClient(storage_url, credential=AzureCliCredential())
+            import time as _time
+            blob_name = f"audio/{freq_hz}_{int(_time.time())}.mp3"
+            client = BlobServiceClient.from_connection_string(storage_conn)
             with open(out_mp3, "rb") as f:
                 client.get_blob_client("rfresults", blob_name).upload_blob(f, overwrite=True)
             os.unlink(out_mp3)
@@ -148,9 +149,8 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
         except Exception as e:
             log.error("Blob upload failed: %s", e)
 
-    # Fallback: return file size info
     size_kb = os.path.getsize(out_mp3) // 1024
-    return f"Audio captured ({size_kb} KB) but Blob upload not configured. File at {out_mp3}"
+    return f"Audio captured ({size_kb} KB) but storage not configured."
 
 
 def run_rtlpower_scan(freq_hz: int, duration: int) -> str:
@@ -205,15 +205,22 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    if tool == "rtl_433":
-        return run_rtl433(freq_hz, duration)
-    elif tool == "dump1090":
-        return run_dump1090(duration)
-    elif tool == "rtl_fm":
-        return run_rtl_fm(freq_hz, duration)
-    elif tool == "rtl_power_scan":
-        return run_rtlpower_scan(freq_hz, duration)
-    return "Unhandled tool"
+    # Claim the dongle — ingest.py will wait until we release it
+    DEVICE_LOCK.touch()
+    log.info("Device lock acquired for tool=%s", tool)
+    try:
+        if tool == "rtl_433":
+            return run_rtl433(freq_hz, duration)
+        elif tool == "dump1090":
+            return run_dump1090(duration)
+        elif tool == "rtl_fm":
+            return run_rtl_fm(freq_hz, duration)
+        elif tool == "rtl_power_scan":
+            return run_rtlpower_scan(freq_hz, duration)
+        return "Unhandled tool"
+    finally:
+        DEVICE_LOCK.unlink(missing_ok=True)
+        log.info("Device lock released")
 
 
 def main():

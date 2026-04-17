@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 SECRETS_FILE  = Path("/run/secrets/rf.env")
 SWEEP_CSV     = Path("/tmp/rf_sweep.csv")
 QUEUE_SWEEPS  = "rf-sweeps"
+DEVICE_LOCK   = Path("/tmp/rtlsdr.lock")   # dispatcher sets this while using the dongle
 
 # Sweep parameters — adjust to taste
 FREQ_START    = "24M"
@@ -82,6 +83,17 @@ def parse_rtlpower_csv(path: Path) -> tuple[list[float], int, int]:
 
 def sweep_once() -> dict | None:
     """Run rtl_power once and return parsed sweep dict, or None on error."""
+    # Wait if dispatcher is actively using the dongle
+    waited = 0
+    while DEVICE_LOCK.exists():
+        if waited == 0:
+            log.info("Dongle in use by dispatcher — waiting...")
+        time.sleep(1)
+        waited += 1
+        if waited > 120:
+            log.warning("Lock held >120s — ignoring and attempting sweep")
+            break
+
     SWEEP_CSV.unlink(missing_ok=True)
 
     cmd = [
