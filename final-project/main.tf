@@ -49,9 +49,8 @@ resource "azurerm_servicebus_queue" "sweeps" {
   name         = "rf-sweeps"
   namespace_id = azurerm_servicebus_namespace.main.id
 
-  default_message_ttl                  = "PT5M"   # 5 minutes — stale sweeps discarded
-  max_size_in_megabytes                = 1024
-  enable_partitioning                  = false
+  default_message_ttl   = "PT5M"   # 5 minutes — stale sweeps discarded
+  max_size_in_megabytes = 1024
 }
 
 resource "azurerm_servicebus_queue" "commands" {
