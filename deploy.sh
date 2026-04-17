@@ -159,7 +159,7 @@ cd ~/cloud-systems
 # ════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "==> [Phase 3] Waiting for SSH on $IP..."
-until ssh -i cloud-systems \
+until ssh -i ~/cloud-systems/cloud-systems \
     -o StrictHostKeyChecking=no \
     -o ConnectTimeout=5 \
     jrick@"$IP" true 2>/dev/null; do
@@ -167,11 +167,6 @@ until ssh -i cloud-systems \
   sleep 5
 done
 echo "==> SSH ready"
-
-ssh-keygen -R "$IP" 2>/dev/null || true
-ssh-keygen -R 10.0.1.4 2>/dev/null || true
-ssh-keyscan -H "$IP" >> ~/.ssh/known_hosts
-ssh-keyscan -H 10.0.1.4 >> ~/.ssh/known_hosts
 
 echo "==> Running Ansible..."
 ansible-playbook site.yml -i inventory.ini
