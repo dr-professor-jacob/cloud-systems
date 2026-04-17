@@ -31,6 +31,8 @@
           - certbot
           - python3-certbot-nginx
           - ssl-cert
+          - python3-venv
+          - python3-pip
         state: present
 
     - name: Apply common security configuration
