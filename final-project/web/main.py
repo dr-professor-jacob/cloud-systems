@@ -13,10 +13,9 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import ManagedIdentityCredential
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from azure.storage.blob import BlobServiceClient
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request  # Request still used in /api/ask
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -123,12 +122,11 @@ def _check_rate(ip: str) -> int:
 # ---------------------------------------------------------------------------
 app = FastAPI(title="RF Survey Dashboard")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
 
 
 @app.get("/")
-async def index(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+async def index():
+    return FileResponse("templates/index.html")
 
 
 @app.get("/api/waterfall")
