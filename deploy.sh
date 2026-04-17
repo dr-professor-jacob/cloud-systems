@@ -3,9 +3,9 @@ set -euo pipefail
 START=$(date +%s)
 cd ~/cloud-systems
 
-echo "==> git pull"
+echo "==> git sync"
 git fetch origin
-git reset --hard origin/master
+git checkout -B master origin/master
 
 # ── OpenTofu installation ─────────────────────────────────────────────────────
 if ! command -v tofu &>/dev/null; then
