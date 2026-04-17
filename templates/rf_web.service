@@ -1,0 +1,18 @@
+[Unit]
+Description=RF Survey Dashboard (FastAPI)
+After=network.target fetch-secrets.service
+Requires=fetch-secrets.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/rf-web
+ExecStart=/opt/rf-web/bin/uvicorn main:app --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=/run/secrets/rf.env
+
+[Install]
+WantedBy=multi-user.target

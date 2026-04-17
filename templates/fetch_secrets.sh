@@ -29,6 +29,17 @@ mkdir -p /run/secrets
 printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_KEY" > /run/secrets/ask-app.env
 chmod 600 /run/secrets/ask-app.env
 
+# ── rf-web env (SERVICE_BUS_NAMESPACE, STORAGE_ACCOUNT_URL) ───────────────
+RF_SB=$(get_secret rf-sb-namespace)
+RF_STORAGE=$(get_secret rf-storage-url)
+RF_ANTHROPIC=$(get_secret anthropic-api-key)
+{
+  printf 'SERVICE_BUS_NAMESPACE=%s\n' "$RF_SB"
+  printf 'STORAGE_ACCOUNT_URL=%s\n'   "$RF_STORAGE"
+  printf 'ANTHROPIC_API_KEY=%s\n'     "$RF_ANTHROPIC"
+} > /run/secrets/rf.env
+chmod 600 /run/secrets/rf.env
+
 # ── nginx MCP auth map (mcp-api-key) ───────────────────────────────────────
 MCP_KEY=$(get_secret mcp-api-key)
 mkdir -p /run/nginx

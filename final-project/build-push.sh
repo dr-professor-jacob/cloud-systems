@@ -32,21 +32,16 @@ az acr build \
   --file worker/Dockerfile \
   worker/
 
-# ── Build & push web ──────────────────────────────────────────────────────────
-echo ""
-echo "==> Building rf-web..."
-az acr build \
-  --registry "$ACR_NAME" \
-  --image "rf-web:${TAG}" \
-  --file web/Dockerfile \
-  web/
-
 # ── Deploy ────────────────────────────────────────────────────────────────────
+# Note: rf-web runs on the portfolio VM (nginx proxy → port 8080).
+# Only rf-worker lives in Container Apps.
 echo ""
-echo "==> Images pushed. Deploy with:"
+echo "==> Worker image pushed. Deploy with:"
 echo ""
-echo "    tofu apply -var image_tag_worker=${TAG} -var image_tag_web=${TAG}"
+echo "    tofu apply -var image_tag_worker=${TAG}"
 echo ""
-echo "    Or to update running containers without full apply:"
+echo "    Or to update the running container without full apply:"
 echo "    az containerapp update --name rf-worker --resource-group rf-survey-rg --image ${ACR}/rf-worker:${TAG}"
-echo "    az containerapp update --name rf-web    --resource-group rf-survey-rg --image ${ACR}/rf-web:${TAG}"
+echo ""
+echo "==> To deploy rf-web changes to the VM:"
+echo "    ansible-playbook -i inventory.ini setup_app.yml --tags rf-web"

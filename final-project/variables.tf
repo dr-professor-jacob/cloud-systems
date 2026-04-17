@@ -41,10 +41,10 @@ variable "image_tag_worker" {
   default     = "placeholder"
 }
 
-variable "image_tag_web" {
-  description = "Docker image tag for rf-web container (use 'placeholder' until first build)"
+variable "vm_identity_principal_id" {
+  description = "Principal ID of the app VM's managed identity (run: az vm identity show -n <vm> -g <rg> --query principalId -o tsv)"
   type        = string
-  default     = "placeholder"
+  default     = ""
 }
 
 variable "anthropic_api_key" {

@@ -121,7 +121,7 @@ def _check_rate(ip: str) -> int:
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = app = FastAPI(title="RF Survey Dashboard")
+app = FastAPI(title="RF Survey Dashboard")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -165,7 +165,7 @@ class DecodeRequest(BaseModel):
 @app.post("/api/decode")
 async def decode(req: DecodeRequest):
     """Publish a demodulation job to the Pi dispatcher."""
-    ALLOWED_TOOLS = {"rtl_433", "dump1090", "rtl_power_scan"}
+    ALLOWED_TOOLS = {"rtl_433", "dump1090", "rtl_power_scan", "rtl_fm"}
     if req.tool not in ALLOWED_TOOLS:
         raise HTTPException(400, f"tool must be one of: {', '.join(sorted(ALLOWED_TOOLS))}")
     if not (0 < req.freq_hz < 2_000_000_000):

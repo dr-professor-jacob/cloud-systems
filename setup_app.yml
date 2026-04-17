@@ -285,6 +285,92 @@
         enabled: yes
         daemon_reload: yes
 
+    # ── RF Survey Dashboard (rf-web) ──────────────────────────────────────────
+
+    - name: Obtain SSL certificate for rf subdomain
+      command: >
+        certbot certonly --webroot -w /var/www/html
+        -d rf.{{ app_domain }} --non-interactive --agree-tos
+        -m {{ certbot_email }}
+      args:
+        creates: /etc/letsencrypt/live/rf.{{ app_domain }}/fullchain.pem
+
+    - name: Create rf-web virtualenv
+      command: python3 -m venv /opt/rf-web
+      args:
+        creates: /opt/rf-web/bin/python
+
+    - name: Install rf-web dependencies
+      pip:
+        name:
+          - fastapi
+          - "uvicorn[standard]"
+          - anthropic
+          - azure-servicebus
+          - azure-storage-blob
+          - azure-identity
+          - numpy
+        virtualenv: /opt/rf-web
+
+    - name: Create rf-web app directory
+      file:
+        path: /opt/rf-web/static
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Create rf-web templates directory
+      file:
+        path: /opt/rf-web/templates
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy rf-web main.py
+      copy:
+        src: final-project/web/main.py
+        dest: /opt/rf-web/main.py
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      notify: Restart rf-web
+
+    - name: Deploy rf-web waterfall.js
+      copy:
+        src: final-project/web/static/waterfall.js
+        dest: /opt/rf-web/static/waterfall.js
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Deploy rf-web index.html
+      copy:
+        src: final-project/web/templates/index.html
+        dest: /opt/rf-web/templates/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Deploy rf-web systemd service
+      copy:
+        src: templates/rf_web.service
+        dest: /etc/systemd/system/rf-web.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart rf-web
+
+    - name: Enable and start rf-web service
+      systemd:
+        name: rf-web
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # ─────────────────────────────────────────────────────────────────────────
+
     - name: Store nginx config checksum for sentinel
       shell: sha256sum /etc/nginx/nginx.conf | awk '{print $1}' > /etc/nginx/.sentinel_checksum
       changed_when: false
@@ -334,5 +420,11 @@
     - name: Restart ask-app
       systemd:
         name: ask-app
+        state: restarted
+        daemon_reload: yes
+
+    - name: Restart rf-web
+      systemd:
+        name: rf-web
         state: restarted
         daemon_reload: yes

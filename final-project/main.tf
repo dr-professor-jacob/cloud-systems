@@ -21,7 +21,6 @@ locals {
   }
   # Use placeholder image until first build-push.sh run
   worker_image = var.image_tag_worker == "placeholder" ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${azurerm_container_registry.main.login_server}/rf-worker:${var.image_tag_worker}"
-  web_image    = var.image_tag_web == "placeholder" ? "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest" : "${azurerm_container_registry.main.login_server}/rf-web:${var.image_tag_web}"
   sb_fqn       = "${azurerm_servicebus_namespace.main.name}.servicebus.windows.net"
   storage_url  = "https://${azurerm_storage_account.main.name}.blob.core.windows.net"
 }
@@ -159,6 +158,24 @@ resource "azurerm_role_assignment" "blob_contrib" {
 }
 
 # ---------------------------------------------------------------------------
+# Role assignments for the existing app VM's managed identity
+# so rf-web (running on the VM) can access Service Bus + Blob
+# ---------------------------------------------------------------------------
+resource "azurerm_role_assignment" "vm_sb" {
+  count                = var.vm_identity_principal_id != "" ? 1 : 0
+  scope                = azurerm_servicebus_namespace.main.id
+  role_definition_name = "Azure Service Bus Data Owner"
+  principal_id         = var.vm_identity_principal_id
+}
+
+resource "azurerm_role_assignment" "vm_blob" {
+  count                = var.vm_identity_principal_id != "" ? 1 : 0
+  scope                = azurerm_storage_account.main.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = var.vm_identity_principal_id
+}
+
+# ---------------------------------------------------------------------------
 # Container Apps Environment
 # ---------------------------------------------------------------------------
 resource "azurerm_container_app_environment" "main" {
@@ -224,74 +241,6 @@ resource "azurerm_container_app" "worker" {
 }
 
 # ---------------------------------------------------------------------------
-# Container App: rf-web
-# Public HTTPS ingress.
-# ---------------------------------------------------------------------------
-resource "azurerm_container_app" "web" {
-  name                         = "rf-web"
-  container_app_environment_id = azurerm_container_app_environment.main.id
-  resource_group_name          = azurerm_resource_group.main.name
-  revision_mode                = "Single"
-
-  identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.main.id]
-  }
-
-  registry {
-    server   = azurerm_container_registry.main.login_server
-    identity = azurerm_user_assigned_identity.main.id
-  }
-
-  secret {
-    name  = "anthropic-key"
-    value = var.anthropic_api_key
-  }
-
-  template {
-    min_replicas = 1
-    max_replicas = 2
-
-    container {
-      name   = "rf-web"
-      image  = local.web_image
-      cpu    = 0.25
-      memory = "0.5Gi"
-
-      env {
-        name  = "SERVICE_BUS_NAMESPACE"
-        value = local.sb_fqn
-      }
-      env {
-        name  = "STORAGE_ACCOUNT_URL"
-        value = local.storage_url
-      }
-      env {
-        name  = "AZURE_CLIENT_ID"
-        value = azurerm_user_assigned_identity.main.client_id
-      }
-      env {
-        name        = "ANTHROPIC_API_KEY"
-        secret_name = "anthropic-key"
-      }
-    }
-  }
-
-  ingress {
-    external_enabled = true
-    target_port      = 8000
-    transport        = "http"
-    traffic_weight {
-      percentage      = 100
-      latest_revision = true
-    }
-  }
-
-  tags       = local.tags
-  depends_on = [azurerm_role_assignment.acr_pull, azurerm_role_assignment.sb_owner, azurerm_role_assignment.blob_contrib]
-}
-
-# ---------------------------------------------------------------------------
 # Outputs
 # ---------------------------------------------------------------------------
 output "acr_login_server" {
@@ -299,15 +248,20 @@ output "acr_login_server" {
   description = "ACR hostname — used by build-push.sh"
 }
 
-output "web_url" {
-  value       = "https://${azurerm_container_app.web.ingress[0].fqdn}"
-  description = "Public HTTPS URL for the RF dashboard"
-}
-
 output "sb_pi_connection_string" {
   value       = azurerm_servicebus_namespace_authorization_rule.pi.primary_connection_string
-  description = "Service Bus connection string for the Pi edge node"
+  description = "Service Bus connection string for Pi edge node — store in KV after apply"
   sensitive   = true
+}
+
+output "sb_namespace_fqn" {
+  value       = local.sb_fqn
+  description = "Service Bus FQDN — store as KV secret rf-sb-namespace for VM"
+}
+
+output "storage_account_url" {
+  value       = local.storage_url
+  description = "Blob Storage URL — store as KV secret rf-storage-url for VM"
 }
 
 output "resource_group_name" {

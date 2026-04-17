@@ -10,4 +10,7 @@ anthropic_api_key = "sk-ant-..."
 
 # Leave as "placeholder" until you run build-push.sh
 image_tag_worker  = "placeholder"
-image_tag_web     = "placeholder"
+
+# Principal ID of the app VM's managed identity — fill in after first tofu apply
+# az vm identity show -n cloud-app-vm -g cloud-infra-rg --query principalId -o tsv
+vm_identity_principal_id = ""
