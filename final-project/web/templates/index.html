@@ -43,6 +43,7 @@
       height: 240px;
       cursor: crosshair;
       image-rendering: pixelated;
+      background: #000;
     }
     #band-overlay {
       position: absolute;
@@ -202,9 +203,9 @@
     <button class="btn" id="btn-min">Min Hold</button>
     <button class="btn" id="btn-reset-peak">Reset Peak</button>
     <div id="colorscale">
-      <span>−120 dBm</span>
+      <span>−60 dBm</span>
       <canvas id="scale-bar" width="120" height="10"></canvas>
-      <span>−20 dBm</span>
+      <span>+30 dBm</span>
     </div>
     <div id="legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-left:12px;"></div>
   </div>
@@ -240,7 +241,7 @@
     const ctx = c.getContext("2d");
     const img = ctx.createImageData(120, 10);
     for (let x = 0; x < 120; x++) {
-      const dbm = -120 + x * (100 / 120);
+      const dbm = -60 + x * (90 / 120);
       const [r,g,b] = dbmToColor(dbm);
       for (let y = 0; y < 10; y++) {
         const i = (y * 120 + x) * 4;

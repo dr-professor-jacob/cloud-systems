@@ -5,8 +5,8 @@
 
 const POLL_INTERVAL = 5000;
 const WATERFALL_ROWS = 120;   // history depth (rows)
-const DB_MIN = -120;
-const DB_MAX = -20;
+const DB_MIN = -60;
+const DB_MAX = 30;
 
 // Band annotations — must match worker.py BANDS table
 const BANDS = [
