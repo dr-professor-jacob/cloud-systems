@@ -117,11 +117,14 @@ resource "azurerm_container_registry" "main" {
 }
 
 # ---------------------------------------------------------------------------
-# Reuse existing Container App Environment (student subscription: 1 per region)
+# Container Apps Environment
 # ---------------------------------------------------------------------------
-data "azurerm_container_app_environment" "shared" {
-  name                = var.container_app_env_name
-  resource_group_name = var.container_app_env_rg
+resource "azurerm_container_app_environment" "main" {
+  name                = "${var.project_name}-env"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  logs_destination    = "none"
+  tags                = local.tags
 }
 
 # ---------------------------------------------------------------------------
@@ -176,7 +179,7 @@ resource "azurerm_role_assignment" "vm_blob" {
 # ---------------------------------------------------------------------------
 resource "azurerm_container_app" "worker" {
   name                         = "rf-worker"
-  container_app_environment_id = data.azurerm_container_app_environment.shared.id
+  container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
