@@ -307,6 +307,7 @@
         name:
           - fastapi
           - "uvicorn[standard]"
+          - jinja2
           - anthropic
           - azure-servicebus
           - azure-storage-blob
