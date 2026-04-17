@@ -119,14 +119,14 @@ function redrawWaterfall() {
   const mode = window.getDisplayMode ? window.getDisplayMode() : "avg";
 
   if (mode === "peak" && currentPeak) {
-    // Single row stretched to fill canvas height
     for (let row = 0; row < h; row++) renderRow(currentPeak, row, img);
   } else if (mode === "min_hold" && currentMinHold) {
     for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
   } else {
-    // Rolling waterfall of averaged sweeps
-    for (let row = 0; row < Math.min(history.length, h); row++) {
-      renderRow(history[history.length - 1 - row], row, img);
+    // Rolling waterfall — newest row at top, tile to fill if not enough history yet
+    for (let row = 0; row < h; row++) {
+      const histIdx = history.length - 1 - (row % history.length);
+      renderRow(history[histIdx], row, img);
     }
   }
   ctx.putImageData(img, 0, 0);
