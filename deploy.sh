@@ -28,12 +28,23 @@ if [[ -z "${TF_VAR_allowed_ssh_ip:-}" ]]; then
   echo "==> SSH restricted to ${MY_IP}/32"
 fi
 
-# ── Cloudflare API token ──────────────────────────────────────────────────────
-if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
-  echo "==> CLOUDFLARE_API_TOKEN not set"
-  read -rsp "    Enter Cloudflare API token: " CLOUDFLARE_API_TOKEN
-  echo
-  export CLOUDFLARE_API_TOKEN
+# ── Cloudflare credentials + domain (persisted to terraform.tfvars) ──────────
+if [[ ! -f terraform.tfvars ]]; then
+  echo "==> terraform.tfvars not found — creating it (gitignored, stays in Cloud Shell)"
+  read -rsp "    Cloudflare API token: " CF_TOKEN; echo
+  read -rp  "    Cloudflare Zone ID:   " CF_ZONE
+  read -rp  "    Domain name (e.g. jrickey.cc): " DOMAIN_NAME
+  cat > terraform.tfvars <<EOF
+cloudflare_zone_id = "${CF_ZONE}"
+domain_name        = "${DOMAIN_NAME}"
+EOF
+  export CLOUDFLARE_API_TOKEN="$CF_TOKEN"
+else
+  # File exists — still need the token (not stored on disk)
+  if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+    read -rsp "    Cloudflare API token: " CLOUDFLARE_API_TOKEN; echo
+    export CLOUDFLARE_API_TOKEN
+  fi
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
