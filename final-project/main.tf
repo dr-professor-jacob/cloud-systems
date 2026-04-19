@@ -220,19 +220,17 @@ resource "azurerm_container_app" "worker" {
 
     # KEDA autoscale: scale out when rf-sweeps queue depth > 5 messages.
     # Pi off → 0 replicas ($0). Pi on → queue fills → worker scales 1→3.
-    scale_rule {
-      name = "sb-sweeps-queue"
-      custom {
-        type = "azure-servicebus"
-        metadata = {
-          queueName    = azurerm_servicebus_queue.sweeps.name
-          namespace    = azurerm_servicebus_namespace.main.name
-          messageCount = "5"
-        }
-        authentication {
-          secret_ref        = "sb-keda-conn"
-          trigger_parameter = "connection"
-        }
+    custom_scale_rule {
+      name             = "sb-sweeps-queue"
+      custom_rule_type = "azure-servicebus"
+      metadata = {
+        queueName    = azurerm_servicebus_queue.sweeps.name
+        namespace    = azurerm_servicebus_namespace.main.name
+        messageCount = "5"
+      }
+      authentication {
+        secret_ref        = "sb-keda-conn"
+        trigger_parameter = "connection"
       }
     }
 
