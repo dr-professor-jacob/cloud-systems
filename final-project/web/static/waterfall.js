@@ -207,12 +207,6 @@ async function fetchSweep() {
     const ts = new Date(data.ts).toLocaleTimeString();
     statusEl.textContent = `Live — last update ${ts} — ${nBins} bins`;
 
-    // Seed antenna advisor with peak frequency
-    if (data.peak && data.peak.length) {
-      let maxIdx = 0;
-      for (let i = 1; i < data.peak.length; i++) if (data.peak[i] > data.peak[maxIdx]) maxIdx = i;
-      updateAntennaAdvisor(freqStart + (maxIdx / nBins) * (freqEnd - freqStart));
-    }
   } catch (e) {
     statusEl.textContent = `Error: ${e.message}`;
   }
@@ -374,8 +368,6 @@ canvas.addEventListener("mousemove", (e) => {
   tooltip.innerHTML  = band
     ? `<span style="color:${band.color}">${band.label}</span> &nbsp;${freqMhz.toFixed(2)} MHz${powerStr}`
     : `${freqMhz.toFixed(2)} MHz${powerStr}`;
-
-  updateAntennaAdvisor(freqMhz);
 });
 
 canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
@@ -714,6 +706,8 @@ function resizeCanvases() {
   bandCanvas.width  = w;
   const axisCanvas  = document.getElementById("freq-axis");
   if (axisCanvas) axisCanvas.width = w;
+  const specChart   = document.getElementById("spectrum-chart");
+  if (specChart) specChart.width = w;
   drawBands();
   drawFreqAxis();
   redrawWaterfall();

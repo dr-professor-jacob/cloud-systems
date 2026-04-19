@@ -194,8 +194,10 @@ def run_rtlpower_scan(freq_hz: int, duration: int) -> str:
     ]
     log.info("Running sub-scan: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=duration + 20)
-    if r.returncode != 0:
-        return f"Sub-scan failed: {r.stderr[:100]}"
+    # rtl_power writes info to stderr (e.g. "Number of frequency hops: N") even on success.
+    # Only fail if the output CSV is missing or empty.
+    if not Path(outfile).exists() or Path(outfile).stat().st_size == 0:
+        return f"Sub-scan produced no data. stderr: {r.stderr[:200]}"
 
     # Parse and summarize: find peak bin
     peak_freq, peak_dbm = None, -999.0

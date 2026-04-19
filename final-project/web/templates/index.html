@@ -180,24 +180,34 @@
 
 <main>
 
-  <!-- Waterfall -->
-  <div id="waterfall-container">
-    <canvas id="waterfall" height="240"></canvas>
-    <canvas id="band-overlay" height="240"></canvas>
-    <span id="click-hint">Click to decode</span>
-    <div id="freq-tooltip"></div>
+  <!-- Waterfall + Spectrum + Shared axis — grouped so no gap between them -->
+  <div style="display:flex;flex-direction:column;gap:0;">
+    <div id="waterfall-container">
+      <canvas id="waterfall" height="240"></canvas>
+      <canvas id="band-overlay" height="240"></canvas>
+      <span id="click-hint">Click to decode</span>
+      <div id="freq-tooltip"></div>
+    </div>
+    <!-- Spectrum chart shares the same x-axis as the waterfall -->
+    <canvas id="spectrum-chart" height="60" style="width:100%;display:block;background:#000;border-top:1px solid #1a1a1a;"></canvas>
+    <canvas id="freq-axis" height="18" style="display:block;width:100%;background:#0a0a0a;"></canvas>
   </div>
-  <canvas id="freq-axis" height="18"></canvas>
 
-  <div class="controls">
-    <button class="btn active" id="btn-avg">Avg</button>
-    <button class="btn" id="btn-peak">Peak Hold</button>
-    <button class="btn" id="btn-min">Min Hold</button>
-    <button class="btn" id="btn-reset-peak">Reset Peak</button>
-    <div id="colorscale">
-      <span>−10 dBm</span>
-      <canvas id="scale-bar" width="120" height="10"></canvas>
-      <span>+40 dBm</span>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div class="controls">
+      <button class="btn active" id="btn-avg">Avg</button>
+      <button class="btn" id="btn-peak">Peak Hold</button>
+      <button class="btn" id="btn-min">Min Hold</button>
+      <button class="btn" id="btn-reset-peak">Reset Peak</button>
+      <div id="colorscale">
+        <span>−10 dBm</span>
+        <canvas id="scale-bar" width="120" height="10"></canvas>
+        <span>+40 dBm</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:10px;color:#555;">
+      <span style="color:#4af;">─ Averaged</span>
+      <span style="color:#666;">─ Raw sweep</span>
     </div>
   </div>
 
@@ -236,21 +246,12 @@
     </div>
   </div>
 
-  <!-- Spectrum line chart: raw vs averaged -->
-  <div class="panel" style="padding:8px 12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Spectrum Analyzer</span>
-      <div style="display:flex;gap:10px;font-size:10px;">
-        <span style="color:#4af;">─ Averaged</span>
-        <span style="color:#666;">─ Raw sweep</span>
-      </div>
-    </div>
-    <canvas id="spectrum-chart" height="80" style="width:100%;display:block;background:#000;border-radius:3px;"></canvas>
-  </div>
-
   <!-- FM / NOAA station buttons -->
   <div class="panel" id="stations-panel">
-    <h2>Detected Stations — click to listen</h2>
+    <h2 style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Detected Stations — click to listen</span>
+      <span style="font-size:10px;color:#444;font-weight:normal;">FM→26.4" max · NOAA WX→18.2"</span>
+    </h2>
     <div id="station-list" style="display:flex;flex-wrap:wrap;gap:6px;">
       <span style="color:#444;font-size:11px;">Scanning…</span>
     </div>
@@ -264,7 +265,10 @@
     <div class="panel" id="aircraft-panel">
       <h2 style="display:flex;justify-content:space-between;align-items:center;">
         <span>Aircraft Radar — ADS-B 1090 MHz</span>
-        <button class="btn" id="btn-adsb">▶ Scan 30s</button>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:#444;font-weight:normal;">λ/4 = 2.7"</span>
+          <button class="btn" id="btn-adsb">▶ Scan 30s</button>
+        </span>
       </h2>
       <div id="aircraft-status" style="color:#666;font-size:11px;margin-bottom:6px;">Click Scan or click 1090 MHz on waterfall</div>
       <div id="aircraft-map" style="height:240px;border-radius:3px;background:#0a0a0a;border:1px solid #1a1a1a;"></div>
@@ -274,7 +278,10 @@
     <div class="panel" id="ism-panel">
       <h2 style="display:flex;justify-content:space-between;align-items:center;">
         <span>ISM Sensor Feed — 433/915 MHz</span>
-        <button class="btn" id="btn-ism">▶ Scan 30s</button>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:#444;font-weight:normal;">433→6.8" · 915→3.2"</span>
+          <button class="btn" id="btn-ism">▶ Scan 30s</button>
+        </span>
       </h2>
       <div id="ism-status" style="color:#666;font-size:11px;margin-bottom:6px;">Decodes nearby wireless sensors, doorbells, weather stations…</div>
       <div id="ism-feed" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
@@ -298,27 +305,6 @@
 
   </div>
 
-  <!-- Antenna Advisor -->
-  <div class="panel" id="antenna-panel">
-    <h2>Antenna Advisor — RTL-SDR V3 Stock Telescoping Dipole</h2>
-    <div id="antenna-body" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-      <div id="antenna-text" style="flex:1;min-width:200px;">
-        <div id="antenna-freq"  style="color:#4af;font-size:13px;margin-bottom:6px;">Hover waterfall to see recommendation</div>
-        <div id="antenna-rec"   style="color:#afa;font-size:12px;line-height:1.7;"></div>
-        <div id="antenna-warn"  style="color:#fa5;font-size:11px;margin-top:4px;"></div>
-      </div>
-      <div style="flex:0 0 180px;">
-        <div style="font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Element extension</div>
-        <div style="position:relative;height:14px;background:#111;border:1px solid #222;border-radius:2px;overflow:hidden;">
-          <div id="antenna-bar" style="height:100%;background:#4af;width:0%;transition:width 0.2s;"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;margin-top:2px;">
-          <span>5 cm (collapsed)</span><span>67 cm (full)</span>
-        </div>
-        <div id="antenna-inches" style="text-align:center;font-size:11px;color:#888;margin-top:6px;"></div>
-      </div>
-    </div>
-  </div>
 
 </main>
 
