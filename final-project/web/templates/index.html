@@ -127,28 +127,6 @@
       overflow-y: auto;
     }
 
-    /* ── Ask Claude ────────────────────────────────── */
-    #ask-form { display: flex; gap: 6px; }
-    #ask-input {
-      flex: 1;
-      background: #0d0d0d;
-      border: 1px solid #333;
-      color: #ddd;
-      padding: 5px 8px;
-      border-radius: 3px;
-      font-family: inherit;
-      font-size: 12px;
-      outline: none;
-    }
-    #ask-input:focus { border-color: #4af; }
-    #ask-output {
-      color: #ccc;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      min-height: 20px;
-    }
-    #ask-remaining { color: #444; font-size: 10px; text-align: right; }
-
     /* ── Hover tooltip ─────────────────────────────── */
     #freq-tooltip {
       position: absolute;
@@ -227,25 +205,32 @@
     <audio id="audio-player" controls style="display:none;width:100%;margin-top:8px;"></audio>
   </div>
 
-  <div class="columns">
+  <!-- Decode results -->
+  <div class="panel" id="results-panel">
+    <h2>Decode Results</h2>
+    <div id="results"><span class="pending">Click a frequency on the waterfall to decode…</span></div>
+  </div>
 
-    <!-- Decode results -->
-    <div class="panel" id="results-panel">
-      <h2>Decode Results</h2>
-      <div id="results"><span class="pending">Click a frequency on the waterfall to decode…</span></div>
+  <!-- Antenna Advisor -->
+  <div class="panel" id="antenna-panel">
+    <h2>Antenna Advisor — RTL-SDR V3 Stock Telescoping Dipole</h2>
+    <div id="antenna-body" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="antenna-text" style="flex:1;min-width:200px;">
+        <div id="antenna-freq"  style="color:#4af;font-size:13px;margin-bottom:6px;">Hover waterfall to see recommendation</div>
+        <div id="antenna-rec"   style="color:#afa;font-size:12px;line-height:1.7;"></div>
+        <div id="antenna-warn"  style="color:#fa5;font-size:11px;margin-top:4px;"></div>
+      </div>
+      <div style="flex:0 0 180px;">
+        <div style="font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">Element extension</div>
+        <div style="position:relative;height:14px;background:#111;border:1px solid #222;border-radius:2px;overflow:hidden;">
+          <div id="antenna-bar" style="height:100%;background:#4af;width:0%;transition:width 0.2s;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;margin-top:2px;">
+          <span>5 cm (collapsed)</span><span>67 cm (full)</span>
+        </div>
+        <div id="antenna-inches" style="text-align:center;font-size:11px;color:#888;margin-top:6px;"></div>
+      </div>
     </div>
-
-    <!-- Ask Claude -->
-    <div class="panel">
-      <h2>Ask Claude</h2>
-      <form id="ask-form">
-        <input id="ask-input" type="text" placeholder="What's on 162.4 MHz?" maxlength="300" autocomplete="off">
-        <button class="btn" type="submit">Ask</button>
-      </form>
-      <div id="ask-output"></div>
-      <div id="ask-remaining"></div>
-    </div>
-
   </div>
 
 </main>

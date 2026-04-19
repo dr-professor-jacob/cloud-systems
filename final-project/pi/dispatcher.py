@@ -267,6 +267,13 @@ def main():
         while True:
             for msg in receiver.receive_messages(max_message_count=1, max_wait_time=30):
                 try:
+                    # Skip stale jobs — queue backlog from previous timeouts
+                    age = (datetime.now(timezone.utc) - msg.enqueued_time_utc).total_seconds()
+                    if age > 120:
+                        log.info("Dropping stale job (%.0fs old)", age)
+                        receiver.complete_message(msg)
+                        continue
+
                     job = json.loads(str(msg))
                     log.info("Job received: tool=%s freq=%.3f MHz duration=%ss",
                              job.get("tool"), job.get("freq_hz", 0) / 1e6, job.get("duration"))

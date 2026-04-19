@@ -205,6 +205,13 @@ async function fetchSweep() {
 
     const ts = new Date(data.ts).toLocaleTimeString();
     statusEl.textContent = `Live — last update ${ts} — ${nBins} bins`;
+
+    // Seed antenna advisor with peak frequency
+    if (data.peak && data.peak.length) {
+      let maxIdx = 0;
+      for (let i = 1; i < data.peak.length; i++) if (data.peak[i] > data.peak[maxIdx]) maxIdx = i;
+      updateAntennaAdvisor(freqStart + (maxIdx / nBins) * (freqEnd - freqStart));
+    }
   } catch (e) {
     statusEl.textContent = `Error: ${e.message}`;
   }
@@ -366,6 +373,8 @@ canvas.addEventListener("mousemove", (e) => {
   tooltip.innerHTML  = band
     ? `<span style="color:${band.color}">${band.label}</span> &nbsp;${freqMhz.toFixed(2)} MHz${powerStr}`
     : `${freqMhz.toFixed(2)} MHz${powerStr}`;
+
+  updateAntennaAdvisor(freqMhz);
 });
 
 canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
@@ -418,32 +427,54 @@ canvas.addEventListener("click", async (e) => {
   }
 });
 
-// ─── Ask Claude ───────────────────────────────────────────────────────────────
-document.getElementById("ask-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const input   = document.getElementById("ask-input");
-  const output  = document.getElementById("ask-output");
-  const question = input.value.trim();
-  if (!question) return;
+// ─── Antenna Advisor ─────────────────────────────────────────────────────────
+const ANT_MIN_CM = 5;    // stock dipole element fully collapsed
+const ANT_MAX_CM = 67;   // stock dipole element fully extended
 
-  output.textContent = "Thinking…";
-  try {
-    const res = await fetch("/api/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      output.textContent = data.answer;
-      document.getElementById("ask-remaining").textContent = `${data.remaining} questions remaining today`;
-    } else {
-      output.textContent = data.detail || "Error";
-    }
-  } catch (err) {
-    output.textContent = `Error: ${err.message}`;
+function updateAntennaAdvisor(freqMhz) {
+  const freqEl   = document.getElementById("antenna-freq");
+  const recEl    = document.getElementById("antenna-rec");
+  const warnEl   = document.getElementById("antenna-warn");
+  const barEl    = document.getElementById("antenna-bar");
+  const inchEl   = document.getElementById("antenna-inches");
+  if (!freqEl) return;
+
+  const lambda4_cm = 7500 / freqMhz;
+  const lambda4_in = lambda4_cm / 2.54;
+  const lambda2_cm = lambda4_cm * 2;
+
+  freqEl.textContent = `${freqMhz.toFixed(2)} MHz  —  λ/4 = ${lambda4_cm.toFixed(1)} cm  (${lambda4_in.toFixed(1)}")`;
+
+  let rec = "", warn = "", barPct = 0, color = "#4af";
+
+  if (lambda4_cm <= ANT_MIN_CM) {
+    // Fully collapse — still too long
+    barPct = 0;
+    color  = "#f55";
+    rec    = `Collapse fully (${ANT_MIN_CM} cm / ${(ANT_MIN_CM/2.54).toFixed(1)}")`;
+    warn   = `⚠ Stock antenna too long for ${freqMhz.toFixed(0)} MHz — even collapsed it's ${(ANT_MIN_CM/lambda4_cm).toFixed(1)}× too long`;
+  } else if (lambda4_cm > ANT_MAX_CM) {
+    // Extend fully — still too short
+    barPct = 100;
+    color  = "#fa5";
+    rec    = `Extend fully (${ANT_MAX_CM} cm / ${(ANT_MAX_CM/2.54).toFixed(1)}")`;
+    warn   = `⚠ Stock antenna too short for ${freqMhz.toFixed(0)} MHz — even at max it's ${(lambda4_cm/ANT_MAX_CM).toFixed(1)}× too short`;
+  } else {
+    barPct = ((lambda4_cm - ANT_MIN_CM) / (ANT_MAX_CM - ANT_MIN_CM)) * 100;
+    color  = "#4af";
+    rec    = `Set each element to  ${lambda4_cm.toFixed(1)} cm  (${lambda4_in.toFixed(1)}")`;
+    warn   = "";
   }
-});
+
+  recEl.innerHTML   = `<b>Each element:</b> ${rec}<br><span style="color:#666">Half-wave total: ${lambda2_cm.toFixed(1)} cm (${(lambda2_cm/2.54).toFixed(1)}")</span>`;
+  warnEl.textContent = warn;
+  barEl.style.width  = `${barPct}%`;
+  barEl.style.background = color;
+  inchEl.textContent = lambda4_cm >= ANT_MIN_CM && lambda4_cm <= ANT_MAX_CM
+    ? `✓ Within stock range`
+    : `✗ Outside stock range`;
+  inchEl.style.color = lambda4_cm >= ANT_MIN_CM && lambda4_cm <= ANT_MAX_CM ? "#4a4" : "#a44";
+}
 
 function escapeHtml(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
