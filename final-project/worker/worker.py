@@ -71,11 +71,13 @@ min_hold = None
 raw      = None   # last single sweep, unaveraged
 freq_meta = None  # {freq_start, freq_step, n_bins}
 last_blob_write = 0.0
+sweep_count  = 0
+start_time   = time.time()
 
 
 def process_sweep(data: dict) -> None:
     """Update running avg, peak, min_hold, and raw from a new sweep."""
-    global avg, peak, min_hold, raw, freq_meta, last_blob_write
+    global avg, peak, min_hold, raw, freq_meta, last_blob_write, sweep_count
 
     bins = np.array(data["bins"], dtype=np.float32)
     n = len(bins)
@@ -95,6 +97,8 @@ def process_sweep(data: dict) -> None:
         avg      = EMA_ALPHA * bins + (1 - EMA_ALPHA) * avg
         peak     = np.maximum(peak, bins)
         min_hold = np.minimum(min_hold, bins)
+
+    sweep_count += 1
 
     # Write to Blob on interval
     now = time.time()
@@ -121,11 +125,29 @@ def _write_sweep_blob() -> None:
     blob = blob_client.get_blob_client(BLOB_SWEEPS, "latest.json")
     blob.upload_blob(json.dumps(payload), overwrite=True)
 
+    # Write stats.json — worker health visible to dashboard
+    peak_idx  = int(np.argmax(peak))
+    peak_freq = (freq_meta["freq_start"] + peak_idx * freq_meta["freq_step"]) / 1e6
+    noise_reduction_db = round(5 * np.log10(max(sweep_count, 1)), 1)
+    stats = {
+        "sweep_count":        sweep_count,
+        "uptime_s":           int(time.time() - start_time),
+        "last_sweep_ts":      ts,
+        "n_bins":             freq_meta["n_bins"],
+        "peak_max_dbm":       round(float(np.max(peak)), 1),
+        "peak_freq_mhz":      round(peak_freq, 2),
+        "noise_reduction_db": noise_reduction_db,
+        "ema_alpha":          EMA_ALPHA,
+    }
+    stats_blob = blob_client.get_blob_client(BLOB_SWEEPS, "stats.json")
+    stats_blob.upload_blob(json.dumps(stats), overwrite=True)
+
     # Also archive timestamped snapshot
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     archive_blob = blob_client.get_blob_client(BLOB_SWEEPS, f"{date_str}/{ts}.json")
     archive_blob.upload_blob(json.dumps(payload), overwrite=True)
-    log.info("Blob updated — avg over %d bins", freq_meta["n_bins"])
+    log.info("Blob updated — sweep #%d, peak %.1f dBm @ %.2f MHz, noise reduction %.1f dB",
+             sweep_count, float(np.max(peak)), peak_freq, noise_reduction_db)
 
 
 def process_result(data: dict) -> None:

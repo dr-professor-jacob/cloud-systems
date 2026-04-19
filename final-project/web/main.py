@@ -129,6 +129,20 @@ async def index():
     return FileResponse("templates/index.html")
 
 
+@app.get("/api/pipeline")
+async def pipeline():
+    """Return worker stats for the Cloud Pipeline dashboard panel."""
+    try:
+        blob = get_blob().get_blob_client(BLOB_SWEEPS, "stats.json")
+        data = json.loads(blob.download_blob().readall())
+        return JSONResponse(data)
+    except ResourceNotFoundError:
+        return JSONResponse({"error": "No worker stats yet"}, status_code=503)
+    except Exception as e:
+        log.error("Pipeline stats error: %s", e)
+        raise HTTPException(500, "Failed to fetch pipeline stats")
+
+
 @app.get("/api/waterfall")
 async def waterfall():
     """Return latest averaged spectrum snapshot from Blob."""

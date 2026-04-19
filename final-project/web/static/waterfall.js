@@ -724,6 +724,45 @@ window.addEventListener("resize", resizeCanvases);
 resizeCanvases();
 drawNoData();
 
+// ─── Cloud Pipeline panel ────────────────────────────────────────────────────
+async function fetchPipeline() {
+  try {
+    const res = await fetch("/api/pipeline");
+    if (!res.ok) return;
+    const d = await res.json();
+
+    const workerEl  = document.getElementById("pipe-worker");
+    const workerVal = document.getElementById("pipe-worker-val");
+    const blobVal   = document.getElementById("pipe-blob-val");
+    const noiseEl   = document.getElementById("pipeline-noise");
+
+    if (workerVal) {
+      workerVal.textContent = `${d.sweep_count} sweeps · ${Math.floor(d.uptime_s / 60)}m uptime`;
+      if (workerEl) {
+        const age = d.last_sweep_ts
+          ? (Date.now() - new Date(d.last_sweep_ts).getTime()) / 1000
+          : 999;
+        workerEl.className = "pipe-node " + (age < 60 ? "active" : "idle");
+      }
+    }
+
+    if (blobVal) {
+      const age = d.last_sweep_ts
+        ? Math.round((Date.now() - new Date(d.last_sweep_ts).getTime()) / 1000)
+        : null;
+      blobVal.textContent = age != null ? `last write ${age}s ago` : "—";
+    }
+
+    if (noiseEl && d.noise_reduction_db != null) {
+      noiseEl.textContent =
+        `EMA α=${d.ema_alpha} · ${d.sweep_count} sweeps · noise floor ↓${d.noise_reduction_db} dB vs single sweep`;
+    }
+  } catch(e) { /* silent */ }
+}
+
+fetchPipeline();
+setInterval(fetchPipeline, 10000);
+
 // ─── Start polling ────────────────────────────────────────────────────────────
 fetchSweep();
 setInterval(fetchSweep, POLL_INTERVAL);

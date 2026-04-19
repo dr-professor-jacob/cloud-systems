@@ -128,6 +128,22 @@
       overflow-y: auto;
     }
 
+    /* ── Cloud Pipeline panel ──────────────────────── */
+    .pipe-node {
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 6px 10px;
+      text-align: center;
+      min-width: 110px;
+      flex: 1;
+    }
+    .pipe-label { color: #555; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .pipe-val   { color: #4af; font-size: 11px; }
+    .pipe-arrow { color: #333; font-size: 16px; flex: 0; padding: 0 2px; }
+    #pipe-worker.active .pipe-val { color: #4fa; }
+    #pipe-worker.idle   .pipe-val { color: #fa5; }
+
     /* ── Hover tooltip ─────────────────────────────── */
     #freq-tooltip {
       position: absolute;
@@ -182,6 +198,41 @@
       <span>−10 dBm</span>
       <canvas id="scale-bar" width="120" height="10"></canvas>
       <span>+40 dBm</span>
+    </div>
+  </div>
+
+  <!-- Cloud Pipeline panel -->
+  <div class="panel" id="pipeline-panel" style="padding:10px 14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Cloud Pipeline</span>
+      <span id="pipeline-noise" style="font-size:11px;color:#4af;"></span>
+    </div>
+    <!-- Flow diagram -->
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px;">
+      <div class="pipe-node" id="pipe-pi">
+        <div class="pipe-label">Pi 4 + RTL-SDR</div>
+        <div class="pipe-val" id="pipe-pi-val">sweep every ~15s</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node">
+        <div class="pipe-label">Service Bus</div>
+        <div class="pipe-val" style="color:#888;">rf-sweeps queue</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-worker">
+        <div class="pipe-label">Container App Worker</div>
+        <div class="pipe-val" id="pipe-worker-val">—</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node">
+        <div class="pipe-label">Blob Storage</div>
+        <div class="pipe-val" id="pipe-blob-val">—</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-web">
+        <div class="pipe-label">Dashboard</div>
+        <div class="pipe-val" style="color:#4af;">Live</div>
+      </div>
     </div>
   </div>
 
