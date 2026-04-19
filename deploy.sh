@@ -168,7 +168,7 @@ az containerapp update \
   --name rf-worker \
   --resource-group rf-survey-rg \
   --image "${ACR_SERVER}/rf-worker:${IMG_TAG}" \
-  --output none
+  --output none || echo "    (containerapp update failed — run: az provider register -n Microsoft.App --wait)"
 
 # Also store storage connection string for Pi
 STORAGE_CONN=$(az storage account show-connection-string \
