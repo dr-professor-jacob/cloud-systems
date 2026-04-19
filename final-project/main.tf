@@ -229,7 +229,7 @@ resource "azurerm_container_app" "worker" {
         messageCount = "5"
       }
       authentication {
-        secret_ref        = "sb-keda-conn"
+        secret_name       = "sb-keda-conn"
         trigger_parameter = "connection"
       }
     }
