@@ -123,14 +123,15 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     else:
         mode, out_rate = "fm",   "24000"
 
-    # Step 1: capture raw PCM to file (avoids pipe issues with subprocess)
-    rtl_cmd = (
-        f"timeout {duration} rtl_fm -M {mode} -f {freq_hz} -s 1008000 -r {out_rate} - "
-        f"> {raw_file}"
-    )
+    # Step 1: capture raw PCM directly to file (no shell, no pipe)
+    rtl_cmd = [
+        "timeout", str(duration),
+        "rtl_fm", "-M", mode, "-f", str(freq_hz), "-s", "1008000", "-r", out_rate,
+        raw_file,
+    ]
     log.info("Step 1: rtl_fm capture %ds @ %.3f MHz → %s", duration, freq_mhz, raw_file)
-    r1 = subprocess.run(rtl_cmd, shell=True, capture_output=True, text=True, timeout=duration + 10)
-    log.info("rtl_fm stderr: %s", r1.stderr[:200])
+    r1 = subprocess.run(rtl_cmd, capture_output=True, text=True, timeout=duration + 10)
+    log.info("rtl_fm stderr: %s", r1.stderr[:300])
 
     if not os.path.exists(raw_file) or os.path.getsize(raw_file) < 1000:
         return f"rtl_fm capture failed. stderr: {r1.stderr[:300]}"
