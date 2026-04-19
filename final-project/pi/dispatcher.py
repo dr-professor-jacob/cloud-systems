@@ -71,19 +71,19 @@ def run_dump1090(duration: int) -> str:
     import tempfile, json as _json, os
     tmpdir = tempfile.mkdtemp(prefix="dump1090_")
     cmd = [
-        "dump1090",
+        "readsb",
         "--quiet",
         "--write-json", tmpdir,
         "--write-json-every", "1",
-        "--net",          # enable network output (needed for --write-json)
+        "--net",
     ]
-    log.info("Running dump1090 for %ds → %s", duration, tmpdir)
+    log.info("Running readsb for %ds → %s", duration, tmpdir)
     try:
         subprocess.run(cmd, capture_output=True, text=True, timeout=duration)
     except subprocess.TimeoutExpired:
         pass  # expected — we kill it after duration
     except FileNotFoundError:
-        return "dump1090 not installed. Install with: sudo apt install dump1090-mutability"
+        return "readsb not installed. Run: sudo apt install readsb"
 
     aircraft_file = os.path.join(tmpdir, "aircraft.json")
     if not os.path.exists(aircraft_file):
