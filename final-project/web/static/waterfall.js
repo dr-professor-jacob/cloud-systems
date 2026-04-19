@@ -202,6 +202,7 @@ async function fetchSweep() {
     updatePeakDisplay(data.peak);
     drawSpectrumChart();
     updateStationList();
+    autoLogActivity();
 
     const ts = new Date(data.ts).toLocaleTimeString();
     statusEl.textContent = `Live — last update ${ts} — ${nBins} bins`;
@@ -412,11 +413,19 @@ canvas.addEventListener("click", async (e) => {
       if (r.status === 200) {
         clearInterval(poller);
         const data = await r.json();
-        resultsEl.innerHTML = `
-          <div class="result">
-            <div class="result-meta">${tool} @ ${freqMhz.toFixed(3)} MHz — ${new Date(data.ts).toLocaleTimeString()}</div>
-            <pre>${escapeHtml(data.output)}</pre>
-          </div>`;
+        logActivity(freqMhz, null);
+
+        // Route dump1090 results to the aircraft map
+        if (tool === "dump1090") {
+          renderAircraft(data.output);
+          resultsEl.innerHTML = `<div class="result-meta">ADS-B scan complete — see Aircraft Radar panel</div>`;
+        } else {
+          resultsEl.innerHTML = `
+            <div class="result">
+              <div class="result-meta">${tool} @ ${freqMhz.toFixed(3)} MHz — ${new Date(data.ts).toLocaleTimeString()}</div>
+              <pre>${escapeHtml(data.output)}</pre>
+            </div>`;
+        }
       } else if (attempts > 20) {
         clearInterval(poller);
         resultsEl.innerHTML = `<p class="error">Timed out waiting for Pi result.</p>`;
@@ -426,6 +435,223 @@ canvas.addEventListener("click", async (e) => {
     resultsEl.innerHTML = `<p class="error">Dispatch error: ${err.message}</p>`;
   }
 });
+
+// ─── Activity Ledger ─────────────────────────────────────────────────────────
+const activityLog = [];  // [{ts, freq, band, dbm}]
+
+function logActivity(freqMhz, dbm) {
+  const el = document.getElementById("ledger");
+  if (!el) return;
+  let band = "—";
+  for (const b of BANDS) if (freqMhz >= b.start && freqMhz <= b.end) { band = b.label; break; }
+  const ts = new Date().toLocaleTimeString();
+  activityLog.unshift({ ts, freqMhz: freqMhz.toFixed(2), band, dbm: dbm ? dbm.toFixed(1) : "—" });
+  if (activityLog.length > 50) activityLog.pop();
+  el.innerHTML = activityLog.map(e =>
+    `<div style="display:flex;gap:8px;border-bottom:1px solid #111;padding:2px 0;">
+      <span style="color:#444;flex:0 0 60px;">${e.ts}</span>
+      <span style="color:#4af;flex:0 0 80px;">${e.freqMhz} MHz</span>
+      <span style="color:#888;flex:1">${e.band}</span>
+      <span style="color:#fa5;">${e.dbm} dBm</span>
+    </div>`
+  ).join("");
+}
+
+// Log strong peaks automatically after each sweep
+function autoLogActivity() {
+  if (!currentPeak || !nBins) return;
+  const threshold = -5;  // only log signals above -5 dBm
+  let lastFreq = -999;
+  for (let i = 1; i < nBins - 1; i++) {
+    if (currentPeak[i] > threshold && currentPeak[i] > currentPeak[i-1] && currentPeak[i] > currentPeak[i+1]) {
+      const freq = freqStart + (i / nBins) * (freqEnd - freqStart);
+      if (freq - lastFreq > 1.0) {  // min 1 MHz spacing
+        logActivity(freq, currentPeak[i]);
+        lastFreq = freq;
+      }
+    }
+  }
+}
+
+// ─── Aircraft Radar ───────────────────────────────────────────────────────────
+let acMap = null;
+let acMarkers = [];
+
+function initAircraftMap() {
+  if (acMap || !document.getElementById("aircraft-map")) return;
+  acMap = L.map("aircraft-map", { zoomControl: true, attributionControl: false })
+    .setView([39.3292, -82.1013], 7);  // Athens, OH
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 13,
+  }).addTo(acMap);
+}
+
+function renderAircraft(jsonStr) {
+  initAircraftMap();
+  const statusEl = document.getElementById("aircraft-status");
+  let data;
+  try { data = JSON.parse(jsonStr); } catch(e) {
+    if (statusEl) statusEl.textContent = jsonStr.slice(0, 120);
+    return;
+  }
+  const aircraft = data.aircraft || [];
+  if (statusEl) statusEl.textContent = data.count
+    ? `${data.count} aircraft tracked — ${aircraft.filter(a => a.lat).length} with position`
+    : (data.message || "No aircraft");
+
+  // Clear old markers
+  acMarkers.forEach(m => acMap.removeLayer(m));
+  acMarkers = [];
+
+  const planeIcon = L.divIcon({
+    html: `<div style="color:#4af;font-size:18px;transform-origin:center;line-height:1">✈</div>`,
+    className: "", iconSize: [20, 20], iconAnchor: [10, 10],
+  });
+
+  aircraft.forEach(ac => {
+    if (!ac.lat || !ac.lon) return;
+    const label = ac.flight || ac.hex || "???";
+    const popup = `<b>${label}</b><br>
+      ${ac.alt ? `Alt: ${ac.alt} ft<br>` : ""}
+      ${ac.speed ? `Speed: ${ac.speed} kt<br>` : ""}
+      ${ac.track ? `Track: ${ac.track}°` : ""}`;
+    const icon = ac.track
+      ? L.divIcon({ html: `<div style="color:#4af;font-size:18px;transform:rotate(${ac.track}deg);line-height:1">✈</div>`, className: "", iconSize: [20,20], iconAnchor: [10,10] })
+      : planeIcon;
+    const m = L.marker([ac.lat, ac.lon], { icon })
+      .bindPopup(popup)
+      .addTo(acMap);
+    acMarkers.push(m);
+  });
+
+  if (acMarkers.length > 0) {
+    const group = L.featureGroup(acMarkers);
+    acMap.fitBounds(group.getBounds().pad(0.2));
+  }
+}
+
+async function scanAdsb() {
+  const statusEl = document.getElementById("aircraft-status");
+  const btn = document.getElementById("btn-adsb");
+  if (btn) { btn.disabled = true; btn.textContent = "Scanning…"; }
+  if (statusEl) statusEl.textContent = "Running dump1090 for 30s — counting transponders…";
+  initAircraftMap();
+
+  try {
+    const res = await fetch("/api/decode", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ freq_hz: 1090000000, tool: "dump1090", duration: 30 }),
+    });
+    const { job_id } = await res.json();
+    let attempts = 0;
+    const poller = setInterval(async () => {
+      attempts++;
+      const r = await fetch(`/api/results/${job_id}`);
+      if (r.status === 200) {
+        clearInterval(poller);
+        const data = await r.json();
+        renderAircraft(data.output);
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+      } else if (attempts > 25) {
+        clearInterval(poller);
+        if (statusEl) statusEl.textContent = "Scan timed out.";
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+      }
+    }, 3000);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `Error: ${e.message}`;
+    if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const adsbBtn = document.getElementById("btn-adsb");
+  if (adsbBtn) adsbBtn.addEventListener("click", scanAdsb);
+
+  // ─── ISM Sensor Feed ───────────────────────────────────────────────────────
+  const ismBtn = document.getElementById("btn-ism");
+  if (ismBtn) ismBtn.addEventListener("click", scanIsm);
+
+  initAircraftMap();
+});
+
+async function scanIsm() {
+  const statusEl = document.getElementById("ism-status");
+  const feedEl   = document.getElementById("ism-feed");
+  const btn      = document.getElementById("btn-ism");
+  if (btn) { btn.disabled = true; btn.textContent = "Scanning…"; }
+  if (statusEl) statusEl.textContent = "Listening on 433.92 MHz for 30s — waiting for packets…";
+
+  try {
+    const res = await fetch("/api/decode", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ freq_hz: 433920000, tool: "rtl_433", duration: 30 }),
+    });
+    const { job_id } = await res.json();
+    let attempts = 0;
+    const poller = setInterval(async () => {
+      attempts++;
+      const r = await fetch(`/api/results/${job_id}`);
+      if (r.status === 200) {
+        clearInterval(poller);
+        const data = await r.json();
+        renderIsmPackets(data.output);
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+      } else if (attempts > 15) {
+        clearInterval(poller);
+        if (statusEl) statusEl.textContent = "No packets — try again or move to 915 MHz area.";
+        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+      }
+    }, 3000);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = `Error: ${e.message}`;
+    if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
+  }
+}
+
+function renderIsmPackets(output) {
+  const statusEl = document.getElementById("ism-status");
+  const feedEl   = document.getElementById("ism-feed");
+  if (!feedEl) return;
+
+  // Try to parse JSON packets
+  const lines = output.split("\n");
+  let packets = [];
+  lines.forEach(l => {
+    try { packets.push(JSON.parse(l)); } catch(e) {}
+  });
+
+  if (packets.length === 0) {
+    if (statusEl) statusEl.textContent = output.slice(0, 120);
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = `${packets.length} packet(s) decoded`;
+
+  const ts = new Date().toLocaleTimeString();
+  packets.forEach(p => {
+    const div = document.createElement("div");
+    div.style.cssText = "border:1px solid #1a1a1a;border-radius:3px;padding:6px 8px;background:#0d0d0d;font-size:11px;";
+
+    const model  = p.model  || p.type  || "Unknown device";
+    const temp   = p.temperature_C != null ? `🌡 ${p.temperature_C}°C` :
+                   p.temperature_F != null ? `🌡 ${((p.temperature_F-32)*5/9).toFixed(1)}°C` : "";
+    const humid  = p.humidity != null  ? `💧 ${p.humidity}%` : "";
+    const batt   = p.battery_ok != null ? (p.battery_ok ? "🔋 OK" : "🪫 Low") : "";
+    const chan    = p.channel  != null  ? `ch${p.channel}` : "";
+    const id     = p.id != null ? `id:${p.id}` : "";
+
+    div.innerHTML = `
+      <div style="color:#4af;margin-bottom:3px;">${escapeHtml(model)} <span style="color:#444;">${chan} ${id}</span></div>
+      <div style="color:#afa;display:flex;gap:10px;flex-wrap:wrap;">
+        ${temp} ${humid} ${batt}
+        ${Object.entries(p).filter(([k]) => !["model","type","time","id","channel","temperature_C","temperature_F","humidity","battery_ok","mic","protocol","freq"].includes(k))
+          .slice(0,3).map(([k,v]) => `<span style="color:#888">${k}:${v}</span>`).join(" ")}
+      </div>
+      <div style="color:#333;font-size:10px;margin-top:2px;">${ts}</div>`;
+    feedEl.prepend(div);
+  });
+}
 
 // ─── Antenna Advisor ─────────────────────────────────────────────────────────
 const ANT_MIN_CM = 5;    // stock dipole element fully collapsed

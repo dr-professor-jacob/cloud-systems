@@ -93,16 +93,22 @@ def run_dump1090(duration: int) -> str:
         data = _json.loads(open(aircraft_file).read())
         aircraft = data.get("aircraft", [])
         if not aircraft:
-            return "No aircraft tracked during capture window."
-        lines = []
-        for ac in aircraft[:20]:
-            parts = [ac.get("flight", "???").strip()]
+            return _json.dumps({"aircraft": [], "count": 0, "message": "No aircraft tracked — try again or check antenna."})
+        # Keep only useful fields, limit to 30
+        clean = []
+        for ac in aircraft[:30]:
+            entry = {"hex": ac.get("hex", ""), "flight": ac.get("flight", "").strip()}
             if "lat" in ac and "lon" in ac:
-                parts.append(f"pos={ac['lat']:.3f},{ac['lon']:.3f}")
+                entry["lat"] = round(ac["lat"], 4)
+                entry["lon"] = round(ac["lon"], 4)
             if "altitude" in ac:
-                parts.append(f"alt={ac['altitude']}ft")
-            lines.append("  " + "  ".join(parts))
-        return f"{len(aircraft)} aircraft tracked:\n" + "\n".join(lines)
+                entry["alt"] = ac["altitude"]
+            if "speed" in ac:
+                entry["speed"] = ac["speed"]
+            if "track" in ac:
+                entry["track"] = ac["track"]
+            clean.append(entry)
+        return _json.dumps({"aircraft": clean, "count": len(aircraft)})
     except Exception as e:
         return f"Parse error: {e}"
 

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RF Survey Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -205,10 +206,45 @@
     <audio id="audio-player" controls style="display:none;width:100%;margin-top:8px;"></audio>
   </div>
 
-  <!-- Decode results -->
-  <div class="panel" id="results-panel">
-    <h2>Decode Results</h2>
-    <div id="results"><span class="pending">Click a frequency on the waterfall to decode…</span></div>
+  <!-- Two-column: Aircraft map + ISM sensor feed -->
+  <div class="columns">
+
+    <!-- Aircraft Radar -->
+    <div class="panel" id="aircraft-panel">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Aircraft Radar — ADS-B 1090 MHz</span>
+        <button class="btn" id="btn-adsb">▶ Scan 30s</button>
+      </h2>
+      <div id="aircraft-status" style="color:#666;font-size:11px;margin-bottom:6px;">Click Scan or click 1090 MHz on waterfall</div>
+      <div id="aircraft-map" style="height:240px;border-radius:3px;background:#0a0a0a;border:1px solid #1a1a1a;"></div>
+    </div>
+
+    <!-- ISM Sensor Feed -->
+    <div class="panel" id="ism-panel">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>ISM Sensor Feed — 433/915 MHz</span>
+        <button class="btn" id="btn-ism">▶ Scan 30s</button>
+      </h2>
+      <div id="ism-status" style="color:#666;font-size:11px;margin-bottom:6px;">Decodes nearby wireless sensors, doorbells, weather stations…</div>
+      <div id="ism-feed" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+
+  </div>
+
+  <!-- Decode results + Activity ledger -->
+  <div class="columns">
+
+    <div class="panel" id="results-panel">
+      <h2>Decode Results</h2>
+      <div id="results"><span class="pending">Click a frequency on the waterfall to decode…</span></div>
+    </div>
+
+    <!-- Activity Ledger -->
+    <div class="panel" id="ledger-panel">
+      <h2>Frequency Activity</h2>
+      <div id="ledger" style="max-height:180px;overflow-y:auto;font-size:11px;color:#888;"></div>
+    </div>
+
   </div>
 
   <!-- Antenna Advisor -->
@@ -235,6 +271,7 @@
 
 </main>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/static/waterfall.js"></script>
 <script>
   // ── Color scale bar ──────────────────────────────────────────────────────
