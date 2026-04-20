@@ -10,27 +10,26 @@ const DB_MAX = 40;
 
 // Band annotations — must match worker.py BANDS table
 const BANDS = [
-  { start: 87.5,   end: 108,    label: "FM",           color: "#4af" },
-  { start: 108,    end: 137,    label: "Aviation",     color: "#a8f" },
-  { start: 137,    end: 138,    label: "NOAA Sat",     color: "#5d5" },
-  { start: 144,    end: 148,    label: "Ham 2m",       color: "#fa5" },
-  { start: 156,    end: 174,    label: "Marine VHF",   color: "#5af" },
-  { start: 162.4,  end: 162.55, label: "Wx Radio",     color: "#5d5" },
-  { start: 433.05, end: 434.79, label: "ISM 433",      color: "#ff5" },
-  { start: 462,    end: 467,    label: "FRS/GMRS",     color: "#fa5" },
-  { start: 575,    end: 590,    label: "LTE B7/41",    color: "#f55" },
-  { start: 614,    end: 652,    label: "LTE B71",      color: "#f55" },
-  { start: 699,    end: 716,    label: "LTE B12/17",   color: "#f55" },
-  { start: 728,    end: 768,    label: "LTE B12/13",   color: "#f55" },
-  { start: 850,    end: 900,    label: "Cellular",     color: "#f55" },
-  { start: 902,    end: 928,    label: "ISM 915",      color: "#ff5" },
-  { start: 1089,   end: 1091,   label: "ADS-B",        color: "#5ff" },
-  { start: 1575,   end: 1576,   label: "GPS L1",       color: "#aff" },
+  { start: 87.5,   end: 108,    label: "FM",      color: "#4af" },
+  { start: 108,    end: 137,    label: "AVIA",    color: "#a8f" },
+  { start: 137,    end: 138,    label: "SAT",     color: "#5d5" },
+  { start: 144,    end: 148,    label: "HAM",     color: "#fa5" },
+  { start: 156,    end: 174,    label: "VHF",     color: "#5af" },
+  { start: 162.4,  end: 162.55, label: "WX",      color: "#5d5" },
+  { start: 433.05, end: 434.79, label: "ISM433",  color: "#ff5" },
+  { start: 462,    end: 467,    label: "FRS",     color: "#fa5" },
+  { start: 575,    end: 590,    label: "LTE41",   color: "#f55" },
+  { start: 614,    end: 652,    label: "LTE71",   color: "#f55" },
+  { start: 699,    end: 768,    label: "LTE12",   color: "#f55" },
+  { start: 850,    end: 900,    label: "CELL",    color: "#f55" },
+  { start: 902,    end: 928,    label: "ISM915",  color: "#ff5" },
+  { start: 1089,   end: 1091,   label: "ADSB",   color: "#5ff" },
+  { start: 1575,   end: 1576,   label: "GPS",     color: "#aff" },
   // Athens, OH ground-truth
-  { start: 91.3,   end: 91.3,   label: "WOUB-FM",      color: "#4af" },
-  { start: 105.5,  end: 105.5,  label: "WXTQ",         color: "#4af" },
-  { start: 146.625,end: 146.73, label: "W8UKE",        color: "#fa5" },
-  { start: 162.425,end: 162.425,label: "NOAA KZZ46",   color: "#5d5" },
+  { start: 91.3,   end: 91.3,   label: "WOUB",    color: "#4af" },
+  { start: 105.5,  end: 105.5,  label: "WXTQ",    color: "#4af" },
+  { start: 146.625,end: 146.73, label: "W8UKE",   color: "#fa5" },
+  { start: 162.425,end: 162.425,label: "KZZ46",   color: "#5d5" },
 ];
 
 let freqStart    = 24;    // MHz
@@ -169,8 +168,12 @@ function drawBandLabels() {
       lctx.beginPath();
       lctx.rect(x1, 0, w, 18);
       lctx.clip();
+      // dark pill behind text for readability
+      const tw = lctx.measureText(b.label).width;
+      lctx.fillStyle = "rgba(0,0,0,0.65)";
+      lctx.fillRect(x1 + 1, 2, tw + 4, 14);
       lctx.fillStyle = b.color;
-      lctx.fillText(b.label, x1 + 2, 12);
+      lctx.fillText(b.label, x1 + 3, 12);
       lctx.restore();
     } else {
       // Narrow band — just a tick mark
