@@ -234,10 +234,13 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Stop ingest so we have exclusive device access, restart when done
-    log.info("Stopping rf-ingest for exclusive device access...")
-    subprocess.run(["systemctl", "stop", "rf-ingest"], capture_output=True)
-    time.sleep(1.0)   # let USB stack fully release
+    # Kill any running rtl_power/rtl_fm processes owned by this user so the
+    # dongle is free.  systemctl stop requires root; pkill works same-user.
+    log.info("Killing ingest processes for exclusive device access...")
+    for sig in (["pkill", "-TERM", "-x", "rtl_power"],
+                ["pkill", "-TERM", "-x", "rtl_fm"]):
+        subprocess.run(sig, capture_output=True)
+    time.sleep(2.0)   # let USB stack fully release
     log.info("Device acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
@@ -250,8 +253,7 @@ def dispatch(job: dict) -> str:
             return run_rtlpower_scan(freq_hz, duration)
         return "Unhandled tool"
     finally:
-        subprocess.run(["systemctl", "start", "rf-ingest"], capture_output=True)
-        log.info("rf-ingest restarted")
+        log.info("Tool done — ingest will self-restart via systemd RestartSec")
 
 
 def main():
