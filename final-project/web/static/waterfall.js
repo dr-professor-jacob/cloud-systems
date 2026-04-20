@@ -328,11 +328,25 @@ let acMarkers = [];
 
 function initAircraftMap() {
   if (acMap || !document.getElementById("aircraft-map")) return;
-  acMap = L.map("aircraft-map", { zoomControl: true, attributionControl: false })
-    .setView([39.3292, -82.1013], 7);  // Athens, OH
+  acMap = L.map("aircraft-map", {
+    zoomControl: false,
+    attributionControl: false,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+  }).setView([39.3292, -82.1013], 8);
   L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
     maxZoom: 13,
   }).addTo(acMap);
+  // Center on user's location if available
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      acMap.setView([pos.coords.latitude, pos.coords.longitude], 8);
+    });
+  }
 }
 
 function renderAircraftData(data) {
