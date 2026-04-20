@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -104,12 +105,6 @@ def process_sweep(data: dict) -> None:
 
     sweep_count += 1
 
-    # Write to Blob on interval
-    now = time.time()
-    if now - last_blob_write >= BLOB_INTERVAL:
-        _write_sweep_blob()
-        last_blob_write = now
-
 
 def _write_sweep_blob() -> None:
     """Write current averaged spectrum + peak/min/raw to Blob Storage."""
@@ -171,12 +166,27 @@ def process_result(data: dict) -> None:
 # ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
+def blob_writer_thread():
+    """Write blob every BLOB_INTERVAL seconds regardless of sweep arrival."""
+    while True:
+        time.sleep(BLOB_INTERVAL)
+        if avg is not None:
+            try:
+                _write_sweep_blob()
+            except Exception as e:
+                log.error("Background blob write error: %s", e)
+
+
 def main():
     global blob_client
 
     cred = ManagedIdentityCredential(client_id=CLIENT_ID)
     sb   = ServiceBusClient(SB_NAMESPACE, cred)
     blob_client = BlobServiceClient(STORAGE_URL, credential=cred)
+
+    # Start background blob writer thread
+    t = threading.Thread(target=blob_writer_thread, daemon=True)
+    t.start()
 
     log.info("Worker started — listening on %s and %s", QUEUE_SWEEPS, QUEUE_RESULTS)
 
