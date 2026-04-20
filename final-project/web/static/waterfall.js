@@ -3,7 +3,7 @@
  * Polls /api/waterfall every 5s, renders spectrum on Canvas.
  */
 
-const POLL_INTERVAL = 5000;
+const POLL_INTERVAL = 3000;
 const WATERFALL_ROWS = 120;   // history depth (rows)
 const DB_MIN = -10;
 const DB_MAX = 40;
@@ -483,8 +483,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initAircraftMap();
   fetchIsm();
   fetchAdsb();
-  setInterval(fetchIsm,  2 * 60 * 1000);   // refresh every 2m
-  setInterval(fetchAdsb,  3 * 60 * 1000);  // refresh every 3m
+  setInterval(fetchIsm,  60 * 1000);   // refresh every 60s
+  setInterval(fetchAdsb, 60 * 1000);   // refresh every 60s
 });
 
 async function fetchIsm() {
