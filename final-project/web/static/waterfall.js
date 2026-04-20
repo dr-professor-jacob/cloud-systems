@@ -146,9 +146,10 @@ function drawBands() {
 function drawBandLabels() {
   const lc = document.getElementById("band-labels");
   if (!lc) return;
-  lc.width = canvas.width;
+  lc.width  = canvas.width;
+  lc.height = 18;
   const lctx = lc.getContext("2d");
-  lctx.clearRect(0, 0, lc.width, lc.height);
+  lctx.clearRect(0, 0, lc.width, 18);
   lctx.font = "9px monospace";
 
   // Only draw named bands wide enough to fit a label
