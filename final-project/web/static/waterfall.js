@@ -84,7 +84,7 @@ function xToFreq(x) {
 
 function binToFreq(binIdx) {
   if (!nBins) return 0;
-  return freqStart + (binIdx / nBins) * (freqEnd - freqStart);
+  return freqStart + (binIdx / nBins) * (freqEndData - freqStart);
 }
 
 // ─── Render one sweep row ──────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ function autoLogActivity() {
   let lastFreq = -999;
   for (let i = 1; i < nBins - 1; i++) {
     if (currentPeak[i] > threshold && currentPeak[i] > currentPeak[i-1] && currentPeak[i] > currentPeak[i+1]) {
-      const freq = freqStart + (i / nBins) * (freqEnd - freqStart);
+      const freq = freqStart + (i / nBins) * (freqEndData - freqStart);
       if (freq - lastFreq > 1.0) {
         const key = freq.toFixed(0);
         if (!seenFreqs.has(key) || now - seenFreqs.get(key) > dedupMs) {
