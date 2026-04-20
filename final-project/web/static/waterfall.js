@@ -343,8 +343,9 @@ function initAircraftMap() {
     boxZoom: false,
     keyboard: false,
   }).setView([39.3292, -82.1013], 8);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 13,
+    attribution: '© OpenStreetMap'
   }).addTo(acMap);
   // Center on user's location if available
   if (navigator.geolocation) {
