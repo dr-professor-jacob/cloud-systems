@@ -32,8 +32,11 @@ const BANDS = [
   { start: 162.425,end: 162.425,label: "KZZ46",   color: "#5d5" },
 ];
 
+const DISPLAY_MAX_MHZ = 1150;  // crop display here — right side is empty above 1090 MHz
+
 let freqStart    = 24;    // MHz
-let freqEnd      = 1700;  // MHz
+let freqEnd      = 1150;  // MHz — display end (capped at DISPLAY_MAX_MHZ)
+let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
 let currentPeak    = null;
@@ -87,8 +90,11 @@ function binToFreq(binIdx) {
 // ─── Render one sweep row ──────────────────────────────────────────────────────
 function renderRow(bins, y, imgData) {
   const w = canvas.width;
+  const maxBin = freqEndData > freqStart
+    ? Math.floor((freqEnd - freqStart) / (freqEndData - freqStart) * bins.length)
+    : bins.length;
   for (let px = 0; px < w; px++) {
-    const binIdx = Math.floor((px / w) * bins.length);
+    const binIdx = Math.floor((px / w) * maxBin);
     const dbm    = bins[Math.min(binIdx, bins.length - 1)];
     const [r, g, b] = dbmToColor(dbm);
     const i = (y * w + px) * 4;
@@ -146,10 +152,10 @@ function drawBandLabels() {
   const lc = document.getElementById("band-labels");
   if (!lc) return;
   lc.width  = canvas.width;
-  lc.height = 18;
+  lc.height = 20;
   const lctx = lc.getContext("2d");
-  lctx.clearRect(0, 0, lc.width, 18);
-  lctx.font = "9px monospace";
+  lctx.clearRect(0, 0, lc.width, 20);
+  lctx.font = "bold 10px monospace";
 
   // Only draw named bands wide enough to fit a label
   const minWidthPx = 20;
@@ -157,10 +163,10 @@ function drawBandLabels() {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
-    // Band background stripe — dark tint
-    lctx.globalAlpha = 0.25;
+    // Band background stripe
+    lctx.globalAlpha = 0.35;
     lctx.fillStyle = b.color;
-    lctx.fillRect(x1, 0, Math.max(w, 2), 18);
+    lctx.fillRect(x1, 0, Math.max(w, 2), 20);
     lctx.globalAlpha = 1.0;
     // Label — clip to band width so text never overflows
     if (w >= minWidthPx) {
@@ -170,10 +176,10 @@ function drawBandLabels() {
       lctx.clip();
       // dark pill behind text for readability
       const tw = lctx.measureText(b.label).width;
-      lctx.fillStyle = "rgba(0,0,0,0.65)";
-      lctx.fillRect(x1 + 1, 2, tw + 4, 14);
+      lctx.fillStyle = "rgba(0,0,0,0.75)";
+      lctx.fillRect(x1 + 1, 2, tw + 4, 15);
       lctx.fillStyle = b.color;
-      lctx.fillText(b.label, x1 + 3, 12);
+      lctx.fillText(b.label, x1 + 3, 13);
       lctx.restore();
     } else {
       // Narrow band — just a tick mark
@@ -229,9 +235,10 @@ async function fetchSweep() {
     }
     const data = await res.json();
 
-    freqStart = data.freq_start / 1e6;
-    freqEnd   = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
-    nBins     = data.n_bins;
+    freqStart   = data.freq_start / 1e6;
+    freqEndData = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
+    freqEnd     = Math.min(freqEndData, DISPLAY_MAX_MHZ);
+    nBins       = data.n_bins;
     currentAvg     = data.avg;
     currentPeak    = data.peak;
     currentMinHold = data.min_hold;
