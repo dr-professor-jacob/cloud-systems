@@ -23,10 +23,10 @@ SECRETS_FILE  = Path("/run/secrets/rf.env")
 DEVICE_LOCK   = Path("/tmp/rtlsdr.lock")
 BLOB_RESULTS  = "rfresults"
 
-ISM_INTERVAL  = 5 * 60    # seconds between ISM scans
-ADSB_INTERVAL = 10 * 60   # seconds between ADS-B scans
+ISM_INTERVAL  = 2 * 60    # seconds between ISM scans
+ADSB_INTERVAL = 3 * 60   # seconds between ADS-B scans
 ISM_DURATION  = 30
-ADSB_DURATION = 60
+ADSB_DURATION = 45
 
 
 def load_env(path: Path) -> None:

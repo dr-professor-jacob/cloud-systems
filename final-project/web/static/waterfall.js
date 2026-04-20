@@ -467,8 +467,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initAircraftMap();
   fetchIsm();
   fetchAdsb();
-  setInterval(fetchIsm,  5 * 60 * 1000);   // refresh every 5m
-  setInterval(fetchAdsb, 10 * 60 * 1000);  // refresh every 10m
+  setInterval(fetchIsm,  2 * 60 * 1000);   // refresh every 2m
+  setInterval(fetchAdsb,  3 * 60 * 1000);  // refresh every 3m
 });
 
 async function fetchIsm() {
