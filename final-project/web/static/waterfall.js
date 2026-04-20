@@ -158,9 +158,11 @@ function drawBandLabels() {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
-    // Band background stripe
-    lctx.fillStyle = b.color + "22";
+    // Band background stripe — dark tint
+    lctx.globalAlpha = 0.25;
+    lctx.fillStyle = b.color;
     lctx.fillRect(x1, 0, Math.max(w, 2), 18);
+    lctx.globalAlpha = 1.0;
     // Label — clip to band width so text never overflows
     if (w >= minWidthPx) {
       lctx.save();
