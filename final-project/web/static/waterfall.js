@@ -392,7 +392,7 @@ function logActivity(freqMhz, dbm) {
 // Log strong peaks automatically after each sweep
 function autoLogActivity() {
   if (!currentPeak || !nBins) return;
-  const threshold = -5;  // only log signals above -5 dBm
+  const threshold = 10;  // only log signals above 10 dBm
   let lastFreq = -999;
   for (let i = 1; i < nBins - 1; i++) {
     if (currentPeak[i] > threshold && currentPeak[i] > currentPeak[i-1] && currentPeak[i] > currentPeak[i+1]) {

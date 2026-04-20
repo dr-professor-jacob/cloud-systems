@@ -160,19 +160,32 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     if not os.path.exists(out_mp3) or os.path.getsize(out_mp3) < 1024:
         return f"ffmpeg encode failed or produced empty output."
 
-    # Upload to Blob Storage using connection string
+    # Upload to Blob Storage using connection string, return SAS URL (container is private)
     storage_conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
-    storage_url  = os.environ.get("STORAGE_ACCOUNT_URL", "")
     if storage_conn:
         try:
-            from azure.storage.blob import BlobServiceClient
+            from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+            from datetime import timedelta
             import time as _time
             blob_name = f"audio/{freq_hz}_{int(_time.time())}.mp3"
             client = BlobServiceClient.from_connection_string(storage_conn)
+            blob_client = client.get_blob_client("rfresults", blob_name)
             with open(out_mp3, "rb") as f:
-                client.get_blob_client("rfresults", blob_name).upload_blob(f, overwrite=True)
+                blob_client.upload_blob(f, overwrite=True)
             os.unlink(out_mp3)
-            return f"audio_url:{storage_url}/rfresults/{blob_name}"
+            # Generate SAS token valid for 2 hours so browser can play directly
+            account_name = client.account_name
+            account_key  = client.credential.account_key
+            sas = generate_blob_sas(
+                account_name=account_name,
+                container_name="rfresults",
+                blob_name=blob_name,
+                account_key=account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.now(timezone.utc) + timedelta(hours=2),
+            )
+            sas_url = f"https://{account_name}.blob.core.windows.net/rfresults/{blob_name}?{sas}"
+            return f"audio_url:{sas_url}"
         except Exception as e:
             log.error("Blob upload failed: %s", e)
 
