@@ -76,7 +76,8 @@ def scan_ism(duration: int) -> dict:
 def scan_adsb(duration: int) -> dict:
     """Run readsb and return aircraft list."""
     tmpdir = tempfile.mkdtemp(prefix="adsb_auto_")
-    cmd = ["readsb", "--quiet", "--write-json", tmpdir, "--write-json-every", "1", "--net"]
+    cmd = ["readsb", "--device-index", "0", "--gain", "49.6",
+           "--quiet", "--write-json", tmpdir, "--write-json-every", "1"]
     log.info("ADS-B scan: %ds → %s", duration, tmpdir)
     try:
         subprocess.run(cmd, capture_output=True, text=True, timeout=duration)
