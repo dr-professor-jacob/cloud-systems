@@ -247,13 +247,14 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Kill any running rtl_power/rtl_fm processes owned by this user so the
-    # dongle is free.  systemctl stop requires root; pkill works same-user.
-    log.info("Killing ingest processes for exclusive device access...")
-    for sig in (["pkill", "-TERM", "-x", "rtl_power"],
-                ["pkill", "-TERM", "-x", "rtl_fm"]):
-        subprocess.run(sig, capture_output=True)
-    time.sleep(2.0)   # let USB stack fully release
+    # 1. Set lock file — ingest.py polls this and won't start a new sweep
+    DEVICE_LOCK.touch()
+    log.info("Lock set — killing any running rtl_power/rtl_fm...")
+    # 2. Kill the current sweep subprocess (same user, no sudo needed)
+    for proc in (["pkill", "-TERM", "-x", "rtl_power"],
+                 ["pkill", "-TERM", "-x", "rtl_fm"]):
+        subprocess.run(proc, capture_output=True)
+    time.sleep(2.5)   # let USB stack fully release
     log.info("Device acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
@@ -266,7 +267,9 @@ def dispatch(job: dict) -> str:
             return run_rtlpower_scan(freq_hz, duration)
         return "Unhandled tool"
     finally:
-        log.info("Tool done — ingest will self-restart via systemd RestartSec")
+        # 3. Release lock — ingest.py will resume sweeping
+        DEVICE_LOCK.unlink(missing_ok=True)
+        log.info("Lock released — ingest resuming")
 
 
 def main():
