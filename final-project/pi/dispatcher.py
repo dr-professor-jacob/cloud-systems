@@ -249,12 +249,14 @@ def dispatch(job: dict) -> str:
 
     # 1. Set lock file — ingest.py polls this and won't start a new sweep
     DEVICE_LOCK.touch()
-    log.info("Lock set — killing any running rtl_power/rtl_fm...")
-    # 2. Kill the current sweep subprocess (same user, no sudo needed)
-    for proc in (["pkill", "-TERM", "-x", "rtl_power"],
-                 ["pkill", "-TERM", "-x", "rtl_fm"]):
+    log.info("Lock set — killing any running SDR processes...")
+    # 2. Kill ALL SDR processes (same user, no sudo needed); use SIGKILL to be sure
+    for proc in (["pkill", "-KILL", "-x", "rtl_power"],
+                 ["pkill", "-KILL", "-x", "rtl_fm"],
+                 ["pkill", "-KILL", "-x", "rtl_433"],
+                 ["pkill", "-KILL", "-f", "readsb"]):
         subprocess.run(proc, capture_output=True)
-    time.sleep(2.5)   # let USB stack fully release
+    time.sleep(3.0)   # let USB stack fully release
     log.info("Device acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
