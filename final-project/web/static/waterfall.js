@@ -140,6 +140,7 @@ function redrawWaterfall() {
     }
   }
   ctx.putImageData(img, 0, 0);
+  drawBandLabels();  // overlay labels directly on waterfall canvas
 }
 
 // ─── Band annotation overlay ──────────────────────────────────────────────────
@@ -147,44 +148,40 @@ function drawBands() {
   bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
-// ─── Band labels bar (top of waterfall) ──────────────────────────────────────
+// ─── Band labels — drawn directly on the waterfall canvas ────────────────────
 function drawBandLabels() {
-  const lc = document.getElementById("band-labels");
-  if (!lc) return;
-  lc.width  = canvas.width;
-  lc.height = 20;
-  const lctx = lc.getContext("2d");
-  lctx.clearRect(0, 0, lc.width, 20);
-  lctx.font = "bold 10px monospace";
+  const BAR_H    = 22;
+  const minWidthPx = 18;
+  ctx.font = "bold 11px monospace";
 
-  // Only draw named bands wide enough to fit a label
-  const minWidthPx = 20;
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
-    // Band background stripe
-    lctx.globalAlpha = 0.35;
-    lctx.fillStyle = b.color;
-    lctx.fillRect(x1, 0, Math.max(w, 2), 20);
-    lctx.globalAlpha = 1.0;
-    // Label — clip to band width so text never overflows
+
+    // Tinted band stripe
+    ctx.globalAlpha = 0.30;
+    ctx.fillStyle = b.color;
+    ctx.fillRect(x1, 0, Math.max(w, 2), BAR_H);
+    ctx.globalAlpha = 1.0;
+
+    // Label with dark pill background
     if (w >= minWidthPx) {
-      lctx.save();
-      lctx.beginPath();
-      lctx.rect(x1, 0, w, 18);
-      lctx.clip();
-      // dark pill behind text for readability
-      const tw = lctx.measureText(b.label).width;
-      lctx.fillStyle = "rgba(0,0,0,0.75)";
-      lctx.fillRect(x1 + 1, 2, tw + 4, 15);
-      lctx.fillStyle = b.color;
-      lctx.fillText(b.label, x1 + 3, 13);
-      lctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x1, 0, w, BAR_H);
+      ctx.clip();
+      const tw = ctx.measureText(b.label).width;
+      ctx.fillStyle = "rgba(0,0,0,0.82)";
+      ctx.fillRect(x1 + 2, 4, tw + 6, 15);
+      ctx.fillStyle = b.color;
+      ctx.fillText(b.label, x1 + 5, 15);
+      ctx.restore();
     } else {
-      // Narrow band — just a tick mark
-      lctx.fillStyle = b.color;
-      lctx.fillRect(x1, 0, 1, 18);
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(x1, 0, Math.max(w, 1), BAR_H);
+      ctx.globalAlpha = 1.0;
     }
   }
 }
@@ -497,8 +494,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initAircraftMap();
   fetchIsm();
   fetchAdsb();
-  setInterval(fetchIsm,  3 * 60 * 1000);   // refresh every 3m
-  setInterval(fetchAdsb, 3 * 60 * 1000);   // refresh every 3m
+  fetchAnomalies();
+  initHistory();
+  setInterval(fetchIsm,       3 * 60 * 1000);
+  setInterval(fetchAdsb,      3 * 60 * 1000);
+  setInterval(fetchAnomalies, 30 * 1000);      // check for new anomalies every 30s
 });
 
 async function fetchIsm() {
@@ -679,3 +679,112 @@ setInterval(fetchPipeline, 10000);
 // ─── Start polling ────────────────────────────────────────────────────────────
 fetchSweep();
 setInterval(fetchSweep, POLL_INTERVAL);
+
+// ─── Signal Anomalies ─────────────────────────────────────────────────────────
+async function fetchAnomalies() {
+  const statusEl = document.getElementById("anomaly-status");
+  const feedEl   = document.getElementById("anomaly-feed");
+  try {
+    const res = await fetch("/api/anomalies");
+    if (!res.ok) { if (statusEl) statusEl.textContent = "Building baseline…"; return; }
+    const items = await res.json();
+    if (!items || items.length === 0) {
+      if (statusEl) statusEl.textContent = "No anomalies detected yet — baseline accumulating";
+      return;
+    }
+    if (statusEl) statusEl.textContent = `${items.length} anomal${items.length === 1 ? "y" : "ies"} detected`;
+    if (!feedEl) return;
+    feedEl.innerHTML = items.slice(0, 8).map(a => {
+      const ts  = a.ts ? new Date(a.ts).toLocaleTimeString() : "";
+      const cls = a.classification ? `<div style="color:#afa;font-size:10px;margin-top:2px;">${escapeHtml(a.classification)}</div>` : "";
+      return `<div style="border:1px solid #1a1a1a;border-radius:3px;padding:6px 10px;background:#0d0d0d;">
+        <div style="display:flex;gap:10px;align-items:baseline;">
+          <span style="color:#ff5;font-size:12px;font-weight:bold;">${a.freq_mhz} MHz</span>
+          <span style="color:#fa5;font-size:11px;">+${a.excess_db} dB above baseline</span>
+          <span style="color:#f55;font-size:11px;">${a.power_dbm} dBm</span>
+          <span style="color:#555;font-size:10px;margin-left:auto;">${a.band}</span>
+          <span style="color:#333;font-size:10px;">${ts}</span>
+        </div>
+        ${cls}
+      </div>`;
+    }).join("");
+  } catch(e) { /* silent */ }
+}
+
+// ─── History Player ───────────────────────────────────────────────────────────
+let historySnapshots = [];
+let historyIndex     = -1;   // -1 = live
+let isLiveMode       = true;
+
+async function initHistory() {
+  try {
+    const res = await fetch("/api/history");
+    if (!res.ok) return;
+    const data = await res.json();
+    historySnapshots = data.snapshots || [];
+    const rangeEl = document.getElementById("history-range");
+    if (rangeEl && historySnapshots.length > 0)
+      rangeEl.textContent = `${historySnapshots.length} snapshots today`;
+  } catch(e) {}
+
+  document.getElementById("btn-live")?.addEventListener("click", () => {
+    isLiveMode   = true;
+    historyIndex = -1;
+    document.getElementById("history-ts").textContent = "● Live";
+    document.getElementById("btn-live").style.color = "#4af";
+  });
+
+  document.getElementById("btn-history-prev")?.addEventListener("click", () => stepHistory(1));
+  document.getElementById("btn-history-next")?.addEventListener("click", () => stepHistory(-1));
+}
+
+async function stepHistory(dir) {
+  // Refresh snapshot list first
+  try {
+    const res = await fetch("/api/history");
+    if (res.ok) { const d = await res.json(); historySnapshots = d.snapshots || []; }
+  } catch(e) {}
+
+  if (historySnapshots.length === 0) return;
+
+  if (isLiveMode) {
+    historyIndex = 0;
+    isLiveMode   = false;
+  } else {
+    historyIndex = Math.max(0, Math.min(historySnapshots.length - 1, historyIndex + dir));
+  }
+
+  const snap = historySnapshots[historyIndex];
+  document.getElementById("btn-live").style.color = "#555";
+
+  // Extract timestamp from path: "2026-04-20/2026-04-20T18:45:21.123456+00:00.json"
+  const parts = snap.split("/");
+  const tsRaw = parts[parts.length - 1].replace(".json", "");
+  try {
+    document.getElementById("history-ts").textContent =
+      new Date(tsRaw).toLocaleTimeString() + " (archived)";
+  } catch(e) {
+    document.getElementById("history-ts").textContent = tsRaw;
+  }
+
+  try {
+    const r = await fetch(`/api/history/${snap}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    // Load into waterfall without affecting live state
+    freqStart   = data.freq_start / 1e6;
+    freqEndData = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
+    freqEnd     = Math.min(freqEndData, DISPLAY_MAX_MHZ);
+    nBins       = data.n_bins;
+    currentAvg     = data.avg;
+    currentPeak    = data.peak;
+    currentMinHold = data.min_hold;
+    currentRaw     = data.raw || null;
+    history.length = 0;
+    history.push(new Float32Array(data.avg));
+    redrawWaterfall();
+    drawFreqAxis();
+    drawSpectrumChart();
+    updatePeakDisplay(data.peak);
+  } catch(e) { /* silent */ }
+}

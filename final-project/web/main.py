@@ -185,6 +185,72 @@ async def adsb():
         raise HTTPException(500, "Failed to fetch ADS-B data")
 
 
+# In-memory cache for Claude anomaly classifications
+_anomaly_classifications: dict = {}  # freq_mhz -> classification string
+
+@app.get("/api/anomalies")
+async def anomalies():
+    """Return recent signal anomalies, enriched with Claude classification."""
+    try:
+        blob = get_blob().get_blob_client(BLOB_RESULTS, "anomalies.json")
+        items = json.loads(blob.download_blob().readall())
+    except ResourceNotFoundError:
+        return JSONResponse([])
+    except Exception as e:
+        log.error("Anomaly fetch error: %s", e)
+        raise HTTPException(500, "Failed to fetch anomalies")
+
+    # Enrich with Claude — only classify frequencies not yet cached
+    if ANTHROPIC_KEY:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
+        for item in items[:5]:  # classify top 5
+            key = str(item["freq_mhz"])
+            if key not in _anomaly_classifications:
+                try:
+                    resp = client.messages.create(
+                        model="claude-haiku-4-5-20251001",
+                        max_tokens=80,
+                        system="You are a concise RF signal identifier. Given a frequency and signal info, identify what service likely uses it. One sentence, no more.",
+                        messages=[{"role": "user", "content":
+                            f"{item['freq_mhz']} MHz, {item['power_dbm']} dBm, {item['excess_db']} dB above baseline, band: {item['band']}. What is this?"}],
+                    )
+                    _anomaly_classifications[key] = next(
+                        (b.text for b in resp.content if hasattr(b, "text")), "")
+                except Exception:
+                    pass
+            item["classification"] = _anomaly_classifications.get(key, "")
+
+    return JSONResponse(items)
+
+
+@app.get("/api/history")
+async def history():
+    """List recent archived sweep snapshots."""
+    try:
+        container = get_blob().get_container_client(BLOB_SWEEPS)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        blobs = [b.name for b in container.list_blobs(name_starts_with=f"{today}/")]
+        blobs = sorted(blobs, reverse=True)[:48]  # last 48 snapshots (~24m at 30s interval)
+        return JSONResponse({"snapshots": blobs})
+    except Exception as e:
+        log.error("History list error: %s", e)
+        raise HTTPException(500, "Failed to list history")
+
+
+@app.get("/api/history/{blob_path:path}")
+async def history_snapshot(blob_path: str):
+    """Return a specific archived sweep snapshot by full blob path."""
+    try:
+        blob = get_blob().get_blob_client(BLOB_SWEEPS, blob_path)
+        data = json.loads(blob.download_blob().readall())
+        return JSONResponse(data)
+    except ResourceNotFoundError:
+        raise HTTPException(404, "Snapshot not found")
+    except Exception as e:
+        log.error("History fetch error: %s", e)
+        raise HTTPException(500, "Failed to fetch snapshot")
+
+
 @app.get("/api/results/{job_id}")
 async def get_result(job_id: str):
     """Poll for a demodulation result by job ID."""

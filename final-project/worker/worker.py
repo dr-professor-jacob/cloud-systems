@@ -27,8 +27,11 @@ QUEUE_RESULTS  = "rf-results"
 BLOB_SWEEPS    = "rfsweeps"
 BLOB_RESULTS   = "rfresults"
 
-EMA_ALPHA      = 0.1    # higher = faster response to changes
-BLOB_INTERVAL  = 30     # seconds between Blob writes
+EMA_ALPHA           = 0.1    # higher = faster response to changes
+BLOB_INTERVAL       = 30     # seconds between Blob writes
+ANOMALY_THRESHOLD   = 15.0   # dB above running avg to flag as anomaly
+ANOMALY_COOLDOWN    = 300    # seconds before re-flagging same frequency
+MIN_SWEEPS_FOR_ANOM = 10     # don't flag until baseline is established
 
 # ---------------------------------------------------------------------------
 # Band annotation table — (start_hz, end_hz, label, priority)
@@ -78,6 +81,8 @@ freq_meta = None  # {freq_start, freq_step, n_bins}
 last_blob_write = 0.0
 sweep_count  = 0
 start_time   = time.time()
+anomaly_cache = {}   # freq_mhz_rounded -> last_flagged_timestamp
+anomaly_log   = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, band}]
 
 
 def process_sweep(data: dict) -> None:
@@ -104,6 +109,42 @@ def process_sweep(data: dict) -> None:
         min_hold = np.minimum(min_hold, bins)
 
     sweep_count += 1
+
+    # Anomaly detection — only after baseline is established
+    if sweep_count >= MIN_SWEEPS_FOR_ANOM and raw is not None:
+        _detect_anomalies(raw, avg, freq_meta)
+
+
+def _detect_anomalies(raw_bins, avg_bins, meta) -> None:
+    global anomaly_cache, anomaly_log
+    now     = time.time()
+    n       = len(raw_bins)
+    fstart  = meta["freq_start"]
+    fstep   = meta["freq_step"]
+
+    for i in range(1, n - 1):
+        excess = float(raw_bins[i]) - float(avg_bins[i])
+        if (excess >= ANOMALY_THRESHOLD
+                and raw_bins[i] > raw_bins[i - 1]
+                and raw_bins[i] > raw_bins[i + 1]):
+            freq_hz  = fstart + i * fstep
+            freq_mhz = round(freq_hz / 1e6, 2)
+            key      = round(freq_mhz)
+            if key in anomaly_cache and now - anomaly_cache[key] < ANOMALY_COOLDOWN:
+                continue
+            anomaly_cache[key] = now
+            band = annotate_freq(int(freq_hz))
+            entry = {
+                "ts":        datetime.now(timezone.utc).isoformat(),
+                "freq_mhz":  freq_mhz,
+                "power_dbm": round(float(raw_bins[i]), 1),
+                "excess_db": round(excess, 1),
+                "band":      band["label"] or "Unknown",
+            }
+            anomaly_log.insert(0, entry)
+            anomaly_log[:] = anomaly_log[:20]   # keep last 20
+            log.info("Anomaly: %.2f MHz  +%.1f dB above avg  (%s)",
+                     freq_mhz, excess, entry["band"])
 
 
 def _write_sweep_blob() -> None:
@@ -143,6 +184,11 @@ def _write_sweep_blob() -> None:
     }
     stats_blob = blob_client.get_blob_client(BLOB_SWEEPS, "stats.json")
     stats_blob.upload_blob(json.dumps(stats), overwrite=True)
+
+    # Write anomaly log
+    if anomaly_log:
+        anom_blob = blob_client.get_blob_client(BLOB_RESULTS, "anomalies.json")
+        anom_blob.upload_blob(json.dumps(anomaly_log), overwrite=True)
 
     # Also archive timestamped snapshot
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")

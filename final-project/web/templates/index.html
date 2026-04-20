@@ -228,6 +228,30 @@
   </div>
 
 
+  <!-- Signal Anomaly Feed -->
+  <div class="panel" id="anomaly-panel">
+    <h2 style="display:flex;justify-content:space-between;align-items:center;">
+      <span>⚡ Signal Anomalies — AI Classified</span>
+      <span style="font-size:10px;color:#444;font-weight:normal;">signals &gt;15 dB above baseline · Claude Haiku</span>
+    </h2>
+    <div id="anomaly-status" style="color:#666;font-size:11px;margin-bottom:6px;">Waiting for baseline…</div>
+    <div id="anomaly-feed" style="display:flex;flex-direction:column;gap:4px;"></div>
+  </div>
+
+  <!-- History Player -->
+  <div class="panel" id="history-panel" style="padding:10px 14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">History Player</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="btn" id="btn-live" style="color:#4af;border-color:#4af;">● Live</button>
+        <button class="btn" id="btn-history-prev">◀</button>
+        <span id="history-ts" style="font-size:11px;color:#888;min-width:160px;text-align:center;">—</span>
+        <button class="btn" id="btn-history-next">▶</button>
+      </div>
+      <div id="history-range" style="font-size:10px;color:#444;">No snapshots yet</div>
+    </div>
+  </div>
+
   <!-- Two-column: Aircraft map + ISM sensor feed -->
   <div class="columns">
 
