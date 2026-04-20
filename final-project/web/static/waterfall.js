@@ -301,7 +301,8 @@ function drawSpectrumChart() {
 
 
 // ─── Activity Ledger ─────────────────────────────────────────────────────────
-const activityLog = [];  // [{ts, freq, band, dbm}]
+const activityLog = [];        // [{ts, freq, band, dbm}]
+const seenFreqs   = new Map(); // freqMhz → last logged timestamp
 
 function logActivity(freqMhz, dbm) {
   const el = document.getElementById("ledger");
@@ -321,16 +322,22 @@ function logActivity(freqMhz, dbm) {
   ).join("");
 }
 
-// Log strong peaks automatically after each sweep
+// Log strong peaks — deduplicated, only re-log after 5 minutes
 function autoLogActivity() {
   if (!currentPeak || !nBins) return;
-  const threshold = 10;  // only log signals above 10 dBm
+  const threshold  = 10;
+  const dedupMs    = 5 * 60 * 1000;
+  const now        = Date.now();
   let lastFreq = -999;
   for (let i = 1; i < nBins - 1; i++) {
     if (currentPeak[i] > threshold && currentPeak[i] > currentPeak[i-1] && currentPeak[i] > currentPeak[i+1]) {
       const freq = freqStart + (i / nBins) * (freqEnd - freqStart);
-      if (freq - lastFreq > 1.0) {  // min 1 MHz spacing
-        logActivity(freq, currentPeak[i]);
+      if (freq - lastFreq > 1.0) {
+        const key = freq.toFixed(0);
+        if (!seenFreqs.has(key) || now - seenFreqs.get(key) > dedupMs) {
+          seenFreqs.set(key, now);
+          logActivity(freq, currentPeak[i]);
+        }
         lastFreq = freq;
       }
     }
