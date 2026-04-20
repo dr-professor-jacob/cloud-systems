@@ -1,0 +1,15 @@
+[Unit]
+Description=RF Background Scanner (ISM + ADS-B)
+After=rf-secrets.service rf-ingest.service
+Requires=rf-secrets.service
+
+[Service]
+User=jtrickey
+WorkingDirectory=/home/jtrickey
+ExecStart=/home/jtrickey/rf-venv/bin/python /home/jtrickey/rf/rf-scanner.py
+Restart=always
+RestartSec=30
+EnvironmentFile=/run/secrets/rf.env
+
+[Install]
+WantedBy=multi-user.target

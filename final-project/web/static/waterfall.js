@@ -335,6 +335,42 @@ function initAircraftMap() {
   }).addTo(acMap);
 }
 
+function renderAircraftData(data) {
+  initAircraftMap();
+  const statusEl = document.getElementById("aircraft-status");
+  const aircraft = data.aircraft || [];
+  if (statusEl) statusEl.textContent = data.count
+    ? `${data.count} aircraft tracked — ${aircraft.filter(a => a.lat).length} with position`
+    : (data.message || "No aircraft");
+
+  acMarkers.forEach(m => acMap.removeLayer(m));
+  acMarkers = [];
+
+  const planeIcon = L.divIcon({
+    html: `<div style="color:#4af;font-size:18px;transform-origin:center;line-height:1">✈</div>`,
+    className: "", iconSize: [20, 20], iconAnchor: [10, 10],
+  });
+
+  aircraft.forEach(ac => {
+    if (!ac.lat || !ac.lon) return;
+    const label = ac.flight || ac.hex || "???";
+    const popup = `<b>${label}</b><br>
+      ${ac.altitude ? `Alt: ${ac.altitude} ft<br>` : ""}
+      ${ac.speed ? `Speed: ${ac.speed} kt<br>` : ""}
+      ${ac.track ? `Track: ${ac.track}°` : ""}`;
+    const icon = ac.track
+      ? L.divIcon({ html: `<div style="color:#4af;font-size:18px;transform:rotate(${ac.track}deg);line-height:1">✈</div>`, className: "", iconSize: [20,20], iconAnchor: [10,10] })
+      : planeIcon;
+    const m = L.marker([ac.lat, ac.lon], { icon }).bindPopup(popup).addTo(acMap);
+    acMarkers.push(m);
+  });
+
+  if (acMarkers.length > 0) {
+    const group = L.featureGroup(acMarkers);
+    acMap.fitBounds(group.getBounds().pad(0.2));
+  }
+}
+
 function renderAircraft(jsonStr) {
   initAircraftMap();
   const statusEl = document.getElementById("aircraft-status");
@@ -414,68 +450,48 @@ async function scanAdsb() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const adsbBtn = document.getElementById("btn-adsb");
-  if (adsbBtn) adsbBtn.addEventListener("click", scanAdsb);
-
-  // ─── ISM Sensor Feed ───────────────────────────────────────────────────────
-  const ismBtn = document.getElementById("btn-ism");
-  if (ismBtn) ismBtn.addEventListener("click", scanIsm);
-
   initAircraftMap();
+  fetchIsm();
+  fetchAdsb();
+  setInterval(fetchIsm,  5 * 60 * 1000);   // refresh every 5m
+  setInterval(fetchAdsb, 10 * 60 * 1000);  // refresh every 10m
 });
 
-async function scanIsm() {
+async function fetchIsm() {
   const statusEl = document.getElementById("ism-status");
-  const feedEl   = document.getElementById("ism-feed");
-  const btn      = document.getElementById("btn-ism");
-  if (btn) { btn.disabled = true; btn.textContent = "Scanning…"; }
-  if (statusEl) statusEl.textContent = "Listening on 433.92 MHz for 30s — waiting for packets…";
-
   try {
-    const res = await fetch("/api/decode", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ freq_hz: 433920000, tool: "rtl_433", duration: 30 }),
-    });
-    const { job_id } = await res.json();
-    let attempts = 0;
-    const poller = setInterval(async () => {
-      attempts++;
-      const r = await fetch(`/api/results/${job_id}`);
-      if (r.status === 200) {
-        clearInterval(poller);
-        const data = await r.json();
-        renderIsmPackets(data.output);
-        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
-      } else if (attempts > 15) {
-        clearInterval(poller);
-        if (statusEl) statusEl.textContent = "No packets — try again or move to 915 MHz area.";
-        if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
-      }
-    }, 3000);
-  } catch(e) {
-    if (statusEl) statusEl.textContent = `Error: ${e.message}`;
-    if (btn) { btn.disabled = false; btn.textContent = "▶ Scan 30s"; }
-  }
+    const res = await fetch("/api/ism");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (statusEl) {
+      const age = data.ts ? Math.round((Date.now() - new Date(data.ts).getTime()) / 1000) : null;
+      statusEl.textContent = data.message + (age != null ? ` — ${age}s ago` : "");
+    }
+    renderIsmPackets(data.packets || []);
+  } catch(e) { /* silent */ }
 }
 
-function renderIsmPackets(output) {
-  const statusEl = document.getElementById("ism-status");
-  const feedEl   = document.getElementById("ism-feed");
+async function fetchAdsb() {
+  const statusEl = document.getElementById("aircraft-status");
+  try {
+    const res = await fetch("/api/adsb");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (statusEl) {
+      const age = data.ts ? Math.round((Date.now() - new Date(data.ts).getTime()) / 1000) : null;
+      statusEl.textContent = data.message + (age != null ? ` — ${age}s ago` : "");
+    }
+    renderAircraftData(data);
+  } catch(e) { /* silent */ }
+}
+
+function renderIsmPackets(packets) {
+  const feedEl = document.getElementById("ism-feed");
   if (!feedEl) return;
 
-  // Try to parse JSON packets
-  const lines = output.split("\n");
-  let packets = [];
-  lines.forEach(l => {
-    try { packets.push(JSON.parse(l)); } catch(e) {}
-  });
+  if (!Array.isArray(packets) || packets.length === 0) return;
 
-  if (packets.length === 0) {
-    if (statusEl) statusEl.textContent = output.slice(0, 120);
-    return;
-  }
-
-  if (statusEl) statusEl.textContent = `${packets.length} packet(s) decoded`;
+  feedEl.innerHTML = "";  // clear old entries
 
   const ts = new Date().toLocaleTimeString();
   packets.forEach(p => {

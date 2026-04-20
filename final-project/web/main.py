@@ -157,6 +157,34 @@ async def waterfall():
         raise HTTPException(500, "Failed to fetch spectrum data")
 
 
+@app.get("/api/ism")
+async def ism():
+    """Return latest auto-scan ISM result."""
+    try:
+        blob = get_blob().get_blob_client(BLOB_RESULTS, "ism_auto.json")
+        data = json.loads(blob.download_blob().readall())
+        return JSONResponse(data)
+    except ResourceNotFoundError:
+        return JSONResponse({"count": 0, "packets": [], "message": "No ISM scan yet"}, status_code=503)
+    except Exception as e:
+        log.error("ISM fetch error: %s", e)
+        raise HTTPException(500, "Failed to fetch ISM data")
+
+
+@app.get("/api/adsb")
+async def adsb():
+    """Return latest auto-scan ADS-B result."""
+    try:
+        blob = get_blob().get_blob_client(BLOB_RESULTS, "adsb_auto.json")
+        data = json.loads(blob.download_blob().readall())
+        return JSONResponse(data)
+    except ResourceNotFoundError:
+        return JSONResponse({"count": 0, "aircraft": [], "message": "No ADS-B scan yet"}, status_code=503)
+    except Exception as e:
+        log.error("ADS-B fetch error: %s", e)
+        raise HTTPException(500, "Failed to fetch ADS-B data")
+
+
 @app.get("/api/results/{job_id}")
 async def get_result(job_id: str):
     """Poll for a demodulation result by job ID."""
