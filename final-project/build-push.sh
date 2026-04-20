@@ -47,7 +47,8 @@ az containerapp update --name rf-worker --resource-group rf-survey-rg \
 
 echo ""
 echo "==> Deploying rf-web..."
-ansible-playbook -i inventory.ini setup_app.yml
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+ansible-playbook -i "${REPO_ROOT}/inventory.ini" "${REPO_ROOT}/setup_app.yml"
 
 echo ""
 echo "==> Done. Tag: ${TAG}"
