@@ -107,8 +107,10 @@ def sweep_once() -> dict | None:
     log.info("Starting sweep: %s", " ".join(cmd))
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
-    if result.returncode != 0:
-        log.error("rtl_power error: %s", result.stderr[:200])
+    # rtl_power writes info to stderr and may return non-zero even on success.
+    # Only fail if the output CSV is missing or empty.
+    if not SWEEP_CSV.exists() or SWEEP_CSV.stat().st_size == 0:
+        log.error("rtl_power produced no output. stderr: %s", result.stderr[:200])
         return None
 
     bins, freq_start, freq_step = parse_rtlpower_csv(SWEEP_CSV)
