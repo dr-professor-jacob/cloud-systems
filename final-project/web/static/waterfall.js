@@ -232,7 +232,6 @@ async function fetchSweep() {
     drawFreqAxis();
     updatePeakDisplay(data.peak);
     drawSpectrumChart();
-    updateStationList();
     autoLogActivity();
 
     const ts = new Date(data.ts).toLocaleTimeString();
@@ -284,53 +283,6 @@ function drawSpectrumChart() {
   sctx.fillText(`${dbLo}`, 2, h - 2);
 }
 
-// ─── FM / NOAA station detector ──────────────────────────────────────────────
-const FIXED_STATIONS = [
-  { freq: 162.425, label: "NOAA WX", tool: "rtl_fm" },
-  { freq: 162.550, label: "NOAA WX 2", tool: "rtl_fm" },
-];
-
-function findFmPeaks(peak) {
-  if (!peak || !nBins) return [];
-  const stations = [];
-  const fmLo = 87.5, fmHi = 108.0;
-  const threshold = DB_MIN + (DB_MAX - DB_MIN) * 0.55;
-  const minSpacing = 0.3; // MHz
-
-  for (let i = 1; i < nBins - 1; i++) {
-    const freq = freqStart + (i / nBins) * (freqEnd - freqStart);
-    if (freq < fmLo || freq > fmHi) continue;
-    if (peak[i] > threshold && peak[i] > peak[i-1] && peak[i] > peak[i+1]) {
-      // Check spacing from last added
-      if (!stations.length || freq - stations[stations.length-1].freq > minSpacing) {
-        stations.push({ freq: parseFloat(freq.toFixed(2)), label: `${freq.toFixed(1)} MHz`, tool: "rtl_fm" });
-      }
-    }
-  }
-  return stations;
-}
-
-function updateStationList() {
-  const el = document.getElementById("station-list");
-  if (!el) return;
-
-  const peaks = findFmPeaks(currentPeak);
-  const all = [...FIXED_STATIONS, ...peaks];
-
-  if (!all.length) {
-    el.innerHTML = `<span style="color:#444;font-size:11px;">No stations detected yet…</span>`;
-    return;
-  }
-
-  el.innerHTML = "";
-  all.forEach(s => {
-    const tag = document.createElement("span");
-    tag.style.cssText = "background:#0d0d0d;border:1px solid #1a1a1a;border-radius:3px;padding:3px 8px;font-size:11px;";
-    tag.style.color = s.label.startsWith("NOAA") ? "#5d5" : "#4af";
-    tag.textContent = s.label;
-    el.appendChild(tag);
-  });
-}
 
 
 // ─── Activity Ledger ─────────────────────────────────────────────────────────
