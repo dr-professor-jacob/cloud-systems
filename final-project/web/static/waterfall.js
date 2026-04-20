@@ -310,6 +310,11 @@ function findFmPeaks(peak) {
   return stations;
 }
 
+// ─── Continuous listening state ──────────────────────────────────────────────
+let _listenActive   = false;
+let _listenStation  = null;
+let _listenClip     = 0;
+
 function updateStationList() {
   const el = document.getElementById("station-list");
   if (!el) return;
@@ -325,46 +330,107 @@ function updateStationList() {
   el.innerHTML = "";
   all.forEach(s => {
     const btn = document.createElement("button");
-    btn.className = "btn";
+    btn.className = "btn" + (_listenActive && _listenStation && _listenStation.freq === s.freq ? " active" : "");
     btn.textContent = s.label;
     btn.style.color = s.label.startsWith("NOAA") ? "#5d5" : "#4af";
-    btn.addEventListener("click", () => listenToStation(s));
+    btn.dataset.freq = s.freq;
+    btn.addEventListener("click", () => {
+      if (_listenActive && _listenStation && _listenStation.freq === s.freq) {
+        stopListening();
+      } else {
+        startListening(s);
+      }
+    });
     el.appendChild(btn);
   });
 }
 
-async function listenToStation(station) {
+function stopListening() {
+  _listenActive  = false;
+  _listenStation = null;
   const audio = document.getElementById("audio-player");
-  const statusEl = document.getElementById("station-list");
-  audio.style.display = "none";
+  if (audio) { audio.pause(); audio.src = ""; audio.style.display = "none"; }
+  const statusEl = document.getElementById("listen-status");
+  if (statusEl) statusEl.textContent = "";
+  updateStationList();
+}
 
-  try {
-    const res = await fetch("/api/decode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ freq_hz: Math.round(station.freq * 1e6), tool: "rtl_fm", duration: 20 }),
-    });
-    const { job_id } = await res.json();
+async function submitCapture(freqHz, duration) {
+  const res = await fetch("/api/decode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ freq_hz: freqHz, tool: "rtl_fm", duration }),
+  });
+  const { job_id } = await res.json();
+  return job_id;
+}
 
-    let attempts = 0;
-    const poller = setInterval(async () => {
-      attempts++;
-      const r = await fetch(`/api/results/${job_id}`);
-      if (r.status === 200) {
-        clearInterval(poller);
-        const data = await r.json();
-        if (data.output && data.output.startsWith("audio_url:")) {
-          const url = data.output.replace("audio_url:", "");
-          audio.src = url;
-          audio.style.display = "block";
-        }
-      } else if (attempts > 25) {
-        clearInterval(poller);
+async function waitForAudio(jobId, timeoutMs = 90000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    await new Promise(r => setTimeout(r, 3000));
+    const r = await fetch(`/api/results/${jobId}`);
+    if (r.status === 200) {
+      const data = await r.json();
+      if (data.output && data.output.startsWith("audio_url:")) {
+        return data.output.replace("audio_url:", "");
       }
-    }, 3000);
-  } catch (err) {
-    console.error("listenToStation:", err);
+      return null;
+    }
   }
+  return null;
+}
+
+async function startListening(station) {
+  if (_listenActive) stopListening();
+  _listenActive  = true;
+  _listenStation = station;
+  _listenClip    = 0;
+  updateStationList();
+
+  const audio     = document.getElementById("audio-player");
+  const statusEl  = document.getElementById("listen-status");
+  const freqHz    = Math.round(station.freq * 1e6);
+  const CLIP_DUR  = 60;  // seconds per clip
+
+  if (audio) { audio.style.display = "block"; audio.src = ""; }
+
+  // Pre-fetch pipeline: submit next job while current is playing
+  let nextJobId = null;
+  try {
+    // Submit first job
+    let jobId = await submitCapture(freqHz, CLIP_DUR);
+    if (statusEl) statusEl.textContent = `Capturing ${station.label} — ~60s until first audio…`;
+
+    while (_listenActive) {
+      _listenClip++;
+      // Submit next clip immediately so it queues behind current
+      nextJobId = await submitCapture(freqHz, CLIP_DUR);
+
+      // Wait for current clip
+      const url = await waitForAudio(jobId);
+      if (!url || !_listenActive) break;
+
+      // Play it
+      if (statusEl) statusEl.textContent = `▶ Live — ${station.label} (clip ${_listenClip})`;
+      audio.src = url;
+      audio.play().catch(() => {});
+
+      // Wait for clip to finish, then move to next
+      await new Promise(resolve => {
+        audio.onended = resolve;
+        // Fallback in case onended doesn't fire
+        setTimeout(resolve, (CLIP_DUR + 5) * 1000);
+      });
+
+      jobId = nextJobId;
+      nextJobId = null;
+    }
+  } catch (e) {
+    console.error("listen error:", e);
+  }
+
+  if (_listenActive) stopListening();
 }
 
 
