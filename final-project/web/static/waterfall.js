@@ -161,10 +161,15 @@ function drawBandLabels() {
     // Band background stripe
     lctx.fillStyle = b.color + "22";
     lctx.fillRect(x1, 0, Math.max(w, 2), 18);
-    // Label
+    // Label — clip to band width so text never overflows
     if (w >= minWidthPx) {
+      lctx.save();
+      lctx.beginPath();
+      lctx.rect(x1, 0, w, 18);
+      lctx.clip();
       lctx.fillStyle = b.color;
       lctx.fillText(b.label, x1 + 2, 12);
+      lctx.restore();
     } else {
       // Narrow band — just a tick mark
       lctx.fillStyle = b.color;
@@ -343,9 +348,9 @@ function initAircraftMap() {
     boxZoom: false,
     keyboard: false,
   }).setView([39.3292, -82.1013], 8);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
     maxZoom: 13,
-    attribution: '© OpenStreetMap'
+    attribution: '© OpenStreetMap © CARTO'
   }).addTo(acMap);
   // Center on user's location if available
   if (navigator.geolocation) {
