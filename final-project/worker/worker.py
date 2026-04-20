@@ -112,15 +112,18 @@ def _write_sweep_blob() -> None:
     if avg is None:
         return
     ts = datetime.now(timezone.utc).isoformat()
+    def clean(arr):
+        return [0.0 if (v != v or v == float('inf') or v == float('-inf')) else round(float(v), 2) for v in arr]
+
     payload = {
         "ts":         ts,
         "freq_start": freq_meta["freq_start"],
         "freq_step":  freq_meta["freq_step"],
         "n_bins":     freq_meta["n_bins"],
-        "avg":        avg.tolist(),
-        "peak":       peak.tolist(),
-        "min_hold":   min_hold.tolist(),
-        "raw":        raw.tolist() if raw is not None else [],
+        "avg":        clean(avg),
+        "peak":       clean(peak),
+        "min_hold":   clean(min_hold),
+        "raw":        clean(raw) if raw is not None else [],
     }
     blob = blob_client.get_blob_client(BLOB_SWEEPS, "latest.json")
     blob.upload_blob(json.dumps(payload), overwrite=True)
