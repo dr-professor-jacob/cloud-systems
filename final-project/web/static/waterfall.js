@@ -303,11 +303,9 @@ function updateStationList() {
 }
 
 async function listenToStation(station) {
-  const resultsEl = document.getElementById("results");
   const audio = document.getElementById("audio-player");
+  const statusEl = document.getElementById("station-list");
   audio.style.display = "none";
-  resultsEl.innerHTML = `<p class="pending">⏳ Tuning to ${station.label} — capturing 20s of audio…</p>`;
-  document.getElementById("results-panel").scrollIntoView({ behavior: "smooth" });
 
   try {
     const res = await fetch("/api/decode", {
@@ -328,17 +326,13 @@ async function listenToStation(station) {
           const url = data.output.replace("audio_url:", "");
           audio.src = url;
           audio.style.display = "block";
-          resultsEl.innerHTML = `<div class="result-meta">Now playing: ${station.label}</div>`;
-        } else {
-          resultsEl.innerHTML = `<div class="result-meta">${station.label}</div><pre>${escapeHtml(data.output)}</pre>`;
         }
       } else if (attempts > 25) {
         clearInterval(poller);
-        resultsEl.innerHTML = `<p class="error">Timed out waiting for audio.</p>`;
       }
     }, 3000);
   } catch (err) {
-    resultsEl.innerHTML = `<p class="error">Error: ${err.message}</p>`;
+    console.error("listenToStation:", err);
   }
 }
 
@@ -385,10 +379,6 @@ canvas.addEventListener("click", async (e) => {
   if (freqMhz >= 910 && freqMhz <= 920) tool = "rtl_433";
   if (freqMhz >= 1088 && freqMhz <= 1092) tool = "dump1090";
 
-  const resultsEl = document.getElementById("results");
-  resultsEl.innerHTML = `<p class="pending">⏳ Dispatching ${tool} on ${freqMhz.toFixed(3)} MHz — waiting up to 35s for Pi…</p>`;
-  document.getElementById("results-panel").scrollIntoView({ behavior: "smooth" });
-
   try {
     const res = await fetch("/api/decode", {
       method: "POST",
@@ -407,24 +397,18 @@ canvas.addEventListener("click", async (e) => {
         const data = await r.json();
         logActivity(freqMhz, null);
 
-        // Route dump1090 results to the aircraft map
         if (tool === "dump1090") {
           renderAircraft(data.output);
-          resultsEl.innerHTML = `<div class="result-meta">ADS-B scan complete — see Aircraft Radar panel</div>`;
-        } else {
-          resultsEl.innerHTML = `
-            <div class="result">
-              <div class="result-meta">${tool} @ ${freqMhz.toFixed(3)} MHz — ${new Date(data.ts).toLocaleTimeString()}</div>
-              <pre>${escapeHtml(data.output)}</pre>
-            </div>`;
+        } else if (tool === "rtl_433") {
+          renderIsmPackets(data.output);
         }
+        // rtl_power_scan result logged to activity ledger via logActivity above
       } else if (attempts > 20) {
         clearInterval(poller);
-        resultsEl.innerHTML = `<p class="error">Timed out waiting for Pi result.</p>`;
       }
     }, 3000);
   } catch (err) {
-    resultsEl.innerHTML = `<p class="error">Dispatch error: ${err.message}</p>`;
+    console.error("decode error:", err);
   }
 });
 
