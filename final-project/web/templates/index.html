@@ -213,10 +213,7 @@
 
   <!-- Cloud Pipeline panel -->
   <div class="panel" id="pipeline-panel" style="padding:10px 14px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Cloud Pipeline</span>
-      <span id="pipeline-noise" style="font-size:11px;color:#4af;"></span>
-    </div>
+    <div style="margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Cloud Pipeline</div>
     <!-- Flow diagram -->
     <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px;">
       <div class="pipe-node" id="pipe-pi">
@@ -232,6 +229,7 @@
       <div class="pipe-node" id="pipe-worker">
         <div class="pipe-label">Container App Worker</div>
         <div class="pipe-val" id="pipe-worker-val">—</div>
+        <div id="pipeline-noise" style="font-size:10px;color:#4af;margin-top:2px;"></div>
       </div>
       <div class="pipe-arrow">→</div>
       <div class="pipe-node">

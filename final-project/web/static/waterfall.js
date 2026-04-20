@@ -732,8 +732,7 @@ async function fetchPipeline() {
     }
 
     if (noiseEl && d.noise_reduction_db != null) {
-      noiseEl.textContent =
-        `EMA α=${d.ema_alpha} · ${d.sweep_count} sweeps · noise floor ↓${d.noise_reduction_db} dB vs single sweep`;
+      noiseEl.textContent = `noise floor ↓${d.noise_reduction_db} dB`;
     }
   } catch(e) { /* silent */ }
 }
