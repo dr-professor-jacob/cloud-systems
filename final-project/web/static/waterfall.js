@@ -138,6 +138,36 @@ function drawBands() {
   bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
+// ─── Band labels bar (top of waterfall) ──────────────────────────────────────
+function drawBandLabels() {
+  const lc = document.getElementById("band-labels");
+  if (!lc) return;
+  lc.width = canvas.width;
+  const lctx = lc.getContext("2d");
+  lctx.clearRect(0, 0, lc.width, lc.height);
+  lctx.font = "9px monospace";
+
+  // Only draw named bands wide enough to fit a label
+  const minWidthPx = 20;
+  for (const b of BANDS) {
+    const x1 = freqToX(b.start);
+    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
+    const w  = x2 - x1;
+    // Band background stripe
+    lctx.fillStyle = b.color + "22";
+    lctx.fillRect(x1, 0, Math.max(w, 2), 18);
+    // Label
+    if (w >= minWidthPx) {
+      lctx.fillStyle = b.color;
+      lctx.fillText(b.label, x1 + 2, 12);
+    } else {
+      // Narrow band — just a tick mark
+      lctx.fillStyle = b.color;
+      lctx.fillRect(x1, 0, 1, 18);
+    }
+  }
+}
+
 // ─── Frequency axis ───────────────────────────────────────────────────────────
 function drawFreqAxis() {
   const axisCanvas = document.getElementById("freq-axis");
@@ -198,6 +228,7 @@ async function fetchSweep() {
 
     redrawWaterfall();
     drawBands();
+    drawBandLabels();
     drawFreqAxis();
     updatePeakDisplay(data.peak);
     drawSpectrumChart();
@@ -336,81 +367,6 @@ async function listenToStation(station) {
   }
 }
 
-// ─── Hover tooltip ───────────────────────────────────────────────────────────
-const tooltip = document.getElementById("freq-tooltip");
-
-canvas.addEventListener("mousemove", (e) => {
-  const rect    = canvas.getBoundingClientRect();
-  const x       = e.clientX - rect.left;
-  const freqMhz = xToFreq(x * canvas.width / rect.width);
-
-  let band = null;
-  for (const b of BANDS) {
-    if (freqMhz >= b.start && freqMhz <= b.end) { band = b; break; }
-  }
-
-  // Find power at this frequency
-  let powerStr = "";
-  if (currentAvg && nBins > 0) {
-    const binIdx = Math.min(Math.floor((freqMhz - freqStart) / (freqEnd - freqStart) * nBins), nBins - 1);
-    if (binIdx >= 0) powerStr = `  ${currentAvg[binIdx].toFixed(1)} dBm`;
-  }
-
-  tooltip.style.display = "block";
-  tooltip.style.left = `${Math.min(e.offsetX + 12, rect.width - 160)}px`;
-  tooltip.style.top  = `${Math.max(e.offsetY - 28, 4)}px`;
-  tooltip.innerHTML  = band
-    ? `<span style="color:${band.color}">${band.label}</span> &nbsp;${freqMhz.toFixed(2)} MHz${powerStr}`
-    : `${freqMhz.toFixed(2)} MHz${powerStr}`;
-});
-
-canvas.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
-
-// ─── Click to decode ──────────────────────────────────────────────────────────
-canvas.addEventListener("click", async (e) => {
-  const rect    = canvas.getBoundingClientRect();
-  const x       = e.clientX - rect.left;
-  const freqMhz = xToFreq(x * canvas.width / rect.width);
-  const freqHz  = Math.round(freqMhz * 1e6);
-
-  // Auto-select best tool
-  let tool = "rtl_power_scan";
-  if (freqMhz >= 430 && freqMhz <= 436) tool = "rtl_433";
-  if (freqMhz >= 910 && freqMhz <= 920) tool = "rtl_433";
-  if (freqMhz >= 1088 && freqMhz <= 1092) tool = "dump1090";
-
-  try {
-    const res = await fetch("/api/decode", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ freq_hz: freqHz, tool, duration: 30 }),
-    });
-    const { job_id } = await res.json();
-
-    // Poll for result
-    let attempts = 0;
-    const poller = setInterval(async () => {
-      attempts++;
-      const r = await fetch(`/api/results/${job_id}`);
-      if (r.status === 200) {
-        clearInterval(poller);
-        const data = await r.json();
-        logActivity(freqMhz, null);
-
-        if (tool === "dump1090") {
-          renderAircraft(data.output);
-        } else if (tool === "rtl_433") {
-          renderIsmPackets(data.output);
-        }
-        // rtl_power_scan result logged to activity ledger via logActivity above
-      } else if (attempts > 20) {
-        clearInterval(poller);
-      }
-    }, 3000);
-  } catch (err) {
-    console.error("decode error:", err);
-  }
-});
 
 // ─── Activity Ledger ─────────────────────────────────────────────────────────
 const activityLog = [];  // [{ts, freq, band, dbm}]
@@ -692,7 +648,10 @@ function resizeCanvases() {
   if (axisCanvas) axisCanvas.width = w;
   const specChart   = document.getElementById("spectrum-chart");
   if (specChart) specChart.width = w;
+  const labelsCanvas = document.getElementById("band-labels");
+  if (labelsCanvas) labelsCanvas.width = w;
   drawBands();
+  drawBandLabels();
   drawFreqAxis();
   redrawWaterfall();
   drawSpectrumChart();

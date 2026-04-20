@@ -42,7 +42,6 @@
       display: block;
       width: 100%;
       height: 240px;
-      cursor: crosshair;
       image-rendering: pixelated;
       background: #000;
     }
@@ -144,21 +143,6 @@
     #pipe-worker.active .pipe-val { color: #4fa; }
     #pipe-worker.idle   .pipe-val { color: #fa5; }
 
-    /* ── Hover tooltip ─────────────────────────────── */
-    #freq-tooltip {
-      position: absolute;
-      background: rgba(0,0,0,0.82);
-      border: 1px solid #333;
-      border-radius: 3px;
-      padding: 4px 8px;
-      font-size: 11px;
-      color: #ddd;
-      pointer-events: none;
-      white-space: nowrap;
-      display: none;
-      z-index: 10;
-    }
-
     /* ── Color scale bar ───────────────────────────── */
     #colorscale {
       display: flex;
@@ -185,9 +169,8 @@
     <div id="waterfall-container">
       <canvas id="waterfall" height="240"></canvas>
       <canvas id="band-overlay" height="240"></canvas>
-      <span id="click-hint">Click to decode</span>
-      <div id="freq-tooltip"></div>
-    </div>
+      <canvas id="band-labels" style="position:absolute;top:0;left:0;width:100%;height:18px;pointer-events:none;"></canvas>
+      </div>
     <!-- Spectrum chart shares the same x-axis as the waterfall -->
     <canvas id="spectrum-chart" height="60" style="width:100%;display:block;background:#000;border-top:1px solid #1a1a1a;"></canvas>
     <canvas id="freq-axis" height="18" style="display:block;width:100%;background:#0a0a0a;"></canvas>
