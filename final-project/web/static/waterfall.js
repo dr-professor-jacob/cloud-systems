@@ -39,6 +39,7 @@ let freqEnd      = 1150;  // MHz — display end (capped at DISPLAY_MAX_MHZ)
 let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
+let lastSweepTs  = null;  // ISO string of last Pi-originated sweep
 let currentPeak    = null;
 let currentMinHold = null;
 let currentAvg     = null;
@@ -236,9 +237,13 @@ async function fetchSweep() {
     currentMinHold = data.min_hold;
     currentRaw     = data.raw && data.raw.length ? data.raw : null;
 
-    // Push new row to history
-    history.push(new Float32Array(data.avg));
-    if (history.length > WATERFALL_ROWS) history.shift();
+    // Only push a new waterfall row when Pi has sent fresh data
+    const isNewSweep = data.ts !== lastSweepTs;
+    if (isNewSweep) {
+      lastSweepTs = data.ts;
+      history.push(new Float32Array(data.avg));
+      if (history.length > WATERFALL_ROWS) history.shift();
+    }
 
     redrawWaterfall();
     drawBands();
@@ -246,10 +251,13 @@ async function fetchSweep() {
     drawFreqAxis();
     updatePeakDisplay(data.peak);
     drawSpectrumChart();
-    autoLogActivity();
+    if (isNewSweep) autoLogActivity();
 
-    const ts = new Date(data.ts).toLocaleTimeString();
-    statusEl.textContent = `Live — last update ${ts} — ${nBins} bins`;
+    const ts   = new Date(data.ts).toLocaleTimeString();
+    const age  = (Date.now() - new Date(data.ts).getTime()) / 1000;
+    statusEl.textContent = age > 120
+      ? `Frozen — Pi last seen ${humanAge(age)} ago — ${nBins} bins`
+      : `Live — last update ${ts} — ${nBins} bins`;
 
   } catch (e) {
     statusEl.textContent = `Error: ${e.message}`;
