@@ -40,6 +40,8 @@ let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
 let lastSweepSig = null;  // fingerprint of last avg array (detects real Pi data change)
+let sweepFrozen    = false; // true when Pi is offline and waterfall is frozen
+let lastLiveSweepTime = ""; // human-readable time of last real Pi sweep
 let currentPeak    = null;
 let currentMinHold = null;
 let currentAvg     = null;
@@ -142,6 +144,22 @@ function redrawWaterfall() {
   }
   ctx.putImageData(img, 0, 0);
   drawBandLabels();  // overlay labels directly on waterfall canvas
+
+  // Frozen overlay — dim the waterfall when Pi is offline
+  if (sweepFrozen && isLiveMode) {
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = "#f55";
+    ctx.font = "bold 13px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("PI OFFLINE — WATERFALL FROZEN", w / 2, h / 2 - 8);
+    ctx.fillStyle = "#555";
+    ctx.font = "11px monospace";
+    ctx.fillText("last live sweep: " + (lastLiveSweepTime || "unknown"), w / 2, h / 2 + 12);
+    ctx.textAlign = "left";
+  }
 }
 
 // ─── Band annotation overlay ──────────────────────────────────────────────────
@@ -247,8 +265,10 @@ async function fetchSweep() {
       : '';
 
     const isNewSweep = sig !== lastSweepSig;
+    sweepFrozen = !isNewSweep;
     if (isNewSweep) {
       lastSweepSig = sig;
+      lastLiveSweepTime = new Date(data.ts).toLocaleTimeString();
       history.push(new Float32Array(data.avg));
       if (history.length > WATERFALL_ROWS) history.shift();
     }
