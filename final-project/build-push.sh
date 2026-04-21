@@ -48,7 +48,8 @@ az containerapp update --name rf-worker --resource-group rf-survey-rg \
 echo ""
 echo "==> Deploying rf-web..."
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-ansible-playbook -i "${REPO_ROOT}/inventory.ini" "${REPO_ROOT}/setup_app.yml"
+# cd to repo root so ./cloud-systems key path in inventory.ini resolves correctly
+(cd "${REPO_ROOT}" && ansible-playbook -i inventory.ini setup_app.yml)
 
 echo ""
 echo "==> Done. Tag: ${TAG}"
