@@ -151,38 +151,30 @@ function drawBands() {
 // ─── Band labels — drawn directly on the waterfall canvas ────────────────────
 function drawBandLabels() {
   const BAR_H    = 22;
-  const minWidthPx = 18;
-  ctx.font = "bold 11px monospace";
+  const minWidthPx = 6;   // min band width to draw anything
+  ctx.font = "bold 10px monospace";
 
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
 
-    // Tinted band stripe
-    ctx.globalAlpha = 0.30;
+    if (w < minWidthPx) continue;
+
+    // Tinted band stripe (clipped to band)
+    ctx.globalAlpha = 0.28;
     ctx.fillStyle = b.color;
     ctx.fillRect(x1, 0, Math.max(w, 2), BAR_H);
     ctx.globalAlpha = 1.0;
 
-    // Label with dark pill background
-    if (w >= minWidthPx) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(x1, 0, w, BAR_H);
-      ctx.clip();
-      const tw = ctx.measureText(b.label).width;
-      ctx.fillStyle = "rgba(0,0,0,0.82)";
-      ctx.fillRect(x1 + 2, 4, tw + 6, 15);
-      ctx.fillStyle = b.color;
-      ctx.fillText(b.label, x1 + 5, 15);
-      ctx.restore();
-    } else {
-      ctx.globalAlpha = 0.8;
-      ctx.fillStyle = b.color;
-      ctx.fillRect(x1, 0, Math.max(w, 1), BAR_H);
-      ctx.globalAlpha = 1.0;
-    }
+    // Label pill — NOT clipped, drawn at band start; pill shows full text
+    const tw = ctx.measureText(b.label).width;
+    const px = x1 + 2;
+    const py = 3;
+    ctx.fillStyle = "rgba(0,0,0,0.88)";
+    ctx.fillRect(px, py, tw + 6, 14);
+    ctx.fillStyle = b.color;
+    ctx.fillText(b.label, px + 3, py + 11);
   }
 }
 
@@ -224,6 +216,9 @@ function updatePeakDisplay(peak) {
 
 // ─── Fetch and update ─────────────────────────────────────────────────────────
 async function fetchSweep() {
+  // Don't overwrite historical playback
+  if (!isLiveMode) return;
+
   try {
     const res  = await fetch("/api/waterfall");
     if (!res.ok) {
@@ -508,8 +503,8 @@ async function fetchIsm() {
     if (!res.ok) return;
     const data = await res.json();
     if (statusEl) {
-      const age = data.ts ? Math.round((Date.now() - new Date(data.ts).getTime()) / 1000) : null;
-      statusEl.textContent = data.message + (age != null ? ` — ${age}s ago` : "");
+      const age = data.ts ? (Date.now() - new Date(data.ts).getTime()) / 1000 : null;
+      statusEl.textContent = data.message + (age != null ? ` — ${humanAge(age)} ago` : "");
     }
     renderIsmPackets(data.packets || []);
   } catch(e) { /* silent */ }
@@ -522,8 +517,8 @@ async function fetchAdsb() {
     if (!res.ok) return;
     const data = await res.json();
     if (statusEl) {
-      const age = data.ts ? Math.round((Date.now() - new Date(data.ts).getTime()) / 1000) : null;
-      statusEl.textContent = data.message + (age != null ? ` — ${age}s ago` : "");
+      const age = data.ts ? (Date.now() - new Date(data.ts).getTime()) / 1000 : null;
+      statusEl.textContent = data.message + (age != null ? ` — ${humanAge(age)} ago` : "");
     }
     renderAircraftData(data);
   } catch(e) { /* silent */ }
@@ -638,6 +633,13 @@ window.addEventListener("resize", resizeCanvases);
 resizeCanvases();
 drawNoData();
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function humanAge(s) {
+  if (s < 120)    return `${Math.round(s)}s`;
+  if (s < 3600)   return `${Math.round(s / 60)}m`;
+  return `${Math.round(s / 3600)}h`;
+}
+
 // ─── Cloud Pipeline panel ────────────────────────────────────────────────────
 async function fetchPipeline() {
   try {
@@ -650,21 +652,34 @@ async function fetchPipeline() {
     const blobVal   = document.getElementById("pipe-blob-val");
     const noiseEl   = document.getElementById("pipeline-noise");
 
+    // Pi connectivity — use last_pi_sweep_ts (only updated when Pi sends data)
+    const piEl  = document.getElementById("pipe-pi");
+    const piVal = document.getElementById("pipe-pi-val");
+    const piAge = d.last_pi_sweep_ts
+      ? (Date.now() - new Date(d.last_pi_sweep_ts).getTime()) / 1000
+      : 9999;
+    const piOffline = piAge > 120;
+    if (piEl)  piEl.className  = "pipe-node " + (piOffline ? "offline" : "active");
+    if (piVal) piVal.textContent = piOffline
+      ? `OFFLINE — ${humanAge(piAge)} ago`
+      : "sweep every ~15s";
+
     if (workerVal) {
       workerVal.textContent = `${d.sweep_count} sweeps · ${Math.floor(d.uptime_s / 60)}m uptime`;
       if (workerEl) {
-        const age = d.last_sweep_ts
-          ? (Date.now() - new Date(d.last_sweep_ts).getTime()) / 1000
+        const age = d.last_pi_sweep_ts
+          ? (Date.now() - new Date(d.last_pi_sweep_ts).getTime()) / 1000
           : 999;
         workerEl.className = "pipe-node " + (age < 60 ? "active" : "idle");
       }
     }
 
     if (blobVal) {
-      const age = d.last_sweep_ts
-        ? Math.round((Date.now() - new Date(d.last_sweep_ts).getTime()) / 1000)
-        : null;
-      blobVal.textContent = age != null ? `last write ${age}s ago` : "—";
+      blobVal.textContent = piOffline
+        ? `Pi offline — ${humanAge(piAge)} since last sweep`
+        : d.last_pi_sweep_ts
+          ? `last sweep ${humanAge(piAge)} ago`
+          : "—";
     }
 
     if (noiseEl && d.noise_reduction_db != null) {
@@ -716,66 +731,77 @@ let historySnapshots = [];
 let historyIndex     = -1;   // -1 = live
 let isLiveMode       = true;
 
-async function initHistory() {
+async function refreshHistoryList() {
   try {
     const res = await fetch("/api/history");
     if (!res.ok) return;
     const data = await res.json();
     historySnapshots = data.snapshots || [];
     const rangeEl = document.getElementById("history-range");
-    if (rangeEl && historySnapshots.length > 0)
-      rangeEl.textContent = `${historySnapshots.length} snapshots today`;
+    if (rangeEl) rangeEl.textContent = historySnapshots.length
+      ? `${historySnapshots.length} snapshots today`
+      : "No snapshots yet";
   } catch(e) {}
+}
+
+async function initHistory() {
+  await refreshHistoryList();
 
   document.getElementById("btn-live")?.addEventListener("click", () => {
     isLiveMode   = true;
     historyIndex = -1;
     document.getElementById("history-ts").textContent = "● Live";
     document.getElementById("btn-live").style.color = "#4af";
+    // Resume live: immediately fetch current state
+    fetchSweep();
   });
 
-  document.getElementById("btn-history-prev")?.addEventListener("click", () => stepHistory(1));
+  // ◀ = go further back in time (higher index = older in sorted-desc list)
+  document.getElementById("btn-history-prev")?.addEventListener("click", () => stepHistory(+1));
+  // ▶ = go forward in time (lower index = newer)
   document.getElementById("btn-history-next")?.addEventListener("click", () => stepHistory(-1));
+
+  // Refresh snapshot list every 2 minutes
+  setInterval(refreshHistoryList, 2 * 60 * 1000);
 }
 
 async function stepHistory(dir) {
-  // Refresh snapshot list first
-  try {
-    const res = await fetch("/api/history");
-    if (res.ok) { const d = await res.json(); historySnapshots = d.snapshots || []; }
-  } catch(e) {}
-
-  if (historySnapshots.length === 0) return;
+  if (historySnapshots.length === 0) {
+    await refreshHistoryList();
+    if (historySnapshots.length === 0) return;
+  }
 
   if (isLiveMode) {
+    // First step out of live: land on most recent snapshot
     historyIndex = 0;
     isLiveMode   = false;
   } else {
     historyIndex = Math.max(0, Math.min(historySnapshots.length - 1, historyIndex + dir));
   }
 
-  const snap = historySnapshots[historyIndex];
   document.getElementById("btn-live").style.color = "#555";
 
-  // Extract timestamp from path: "2026-04-20/2026-04-20T18:45:21.123456+00:00.json"
-  const parts = snap.split("/");
-  const tsRaw = parts[parts.length - 1].replace(".json", "");
+  const snap = historySnapshots[historyIndex];
+  const total = historySnapshots.length;
+
+  // Extract timestamp from path: "2026-04-20/2026-04-20T18:45:21+00:00.json"
+  const tsRaw = snap.split("/").pop().replace(".json", "");
+  const tsEl  = document.getElementById("history-ts");
   try {
-    document.getElementById("history-ts").textContent =
-      new Date(tsRaw).toLocaleTimeString() + " (archived)";
+    const d = new Date(tsRaw);
+    tsEl.textContent = `${d.toLocaleTimeString()} — ${historyIndex + 1}/${total}`;
   } catch(e) {
-    document.getElementById("history-ts").textContent = tsRaw;
+    tsEl.textContent = `${historyIndex + 1}/${total}`;
   }
 
   try {
     const r = await fetch(`/api/history/${snap}`);
-    if (!r.ok) return;
+    if (!r.ok) { tsEl.textContent += " (load failed)"; return; }
     const data = await r.json();
-    // Load into waterfall without affecting live state
-    freqStart   = data.freq_start / 1e6;
-    freqEndData = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
-    freqEnd     = Math.min(freqEndData, DISPLAY_MAX_MHZ);
-    nBins       = data.n_bins;
+    freqStart      = data.freq_start / 1e6;
+    freqEndData    = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
+    freqEnd        = Math.min(freqEndData, DISPLAY_MAX_MHZ);
+    nBins          = data.n_bins;
     currentAvg     = data.avg;
     currentPeak    = data.peak;
     currentMinHold = data.min_hold;
@@ -786,5 +812,5 @@ async function stepHistory(dir) {
     drawFreqAxis();
     drawSpectrumChart();
     updatePeakDisplay(data.peak);
-  } catch(e) { /* silent */ }
+  } catch(e) { tsEl.textContent += " (error)"; }
 }

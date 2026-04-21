@@ -79,7 +79,8 @@ min_hold = None
 raw      = None   # last single sweep, unaveraged
 freq_meta = None  # {freq_start, freq_step, n_bins}
 last_blob_write = 0.0
-sweep_count  = 0
+sweep_count      = 0
+last_pi_sweep_ts = ""   # set only when a real sweep arrives from Pi
 start_time   = time.time()
 anomaly_cache = {}   # freq_mhz_rounded -> last_flagged_timestamp
 anomaly_log   = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, band}]
@@ -87,7 +88,7 @@ anomaly_log   = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, b
 
 def process_sweep(data: dict) -> None:
     """Update running avg, peak, min_hold, and raw from a new sweep."""
-    global avg, peak, min_hold, raw, freq_meta, last_blob_write, sweep_count
+    global avg, peak, min_hold, raw, freq_meta, last_blob_write, sweep_count, last_pi_sweep_ts
 
     bins = np.array(data["bins"], dtype=np.float32)
     n = len(bins)
@@ -109,6 +110,7 @@ def process_sweep(data: dict) -> None:
         min_hold = np.minimum(min_hold, bins)
 
     sweep_count += 1
+    last_pi_sweep_ts = datetime.now(timezone.utc).isoformat()
 
     # Anomaly detection — only after baseline is established
     if sweep_count >= MIN_SWEEPS_FOR_ANOM and raw is not None:
@@ -176,6 +178,7 @@ def _write_sweep_blob() -> None:
         "sweep_count":        sweep_count,
         "uptime_s":           int(time.time() - start_time),
         "last_sweep_ts":      ts,
+        "last_pi_sweep_ts":   last_pi_sweep_ts,   # only updated when Pi sends data
         "n_bins":             freq_meta["n_bins"],
         "peak_max_dbm":       round(float(np.max(peak)), 1),
         "peak_freq_mhz":      round(peak_freq, 2),
