@@ -45,7 +45,7 @@ def acquire_device(timeout=120) -> bool:
                  ["pkill", "-KILL", "-x", "rtl_433"],
                  ["pkill", "-KILL", "-f", "readsb"]):
         subprocess.run(proc, capture_output=True)
-    time.sleep(3.0)
+    time.sleep(8.0)   # USB needs ~5-7s to release after SIGKILL
     return True
 
 
