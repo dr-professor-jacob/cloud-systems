@@ -40,8 +40,9 @@ let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
 let lastSweepSig = null;  // fingerprint of last avg array (detects real Pi data change)
-let sweepFrozen    = false; // true when Pi is offline and waterfall is frozen
-let lastLiveSweepTime = ""; // human-readable time of last real Pi sweep
+let sweepFrozen      = false; // true when fingerprint unchanged (controls row pushing)
+let piOnline         = false; // true when last_pi_sweep_ts < 120s (drives overlay)
+let lastLiveSweepTime = "";   // human-readable time of last real Pi sweep
 let currentPeak    = null;
 let currentMinHold = null;
 let currentAvg     = null;
@@ -145,8 +146,8 @@ function redrawWaterfall() {
   ctx.putImageData(img, 0, 0);
   drawBandLabels();  // overlay labels directly on waterfall canvas
 
-  // Frozen overlay — dim the waterfall when Pi is offline
-  if (sweepFrozen && isLiveMode) {
+  // Frozen overlay — dim the waterfall when Pi is offline (driven by pipeline data, not fingerprint)
+  if (!piOnline && isLiveMode) {
     ctx.globalAlpha = 0.55;
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, w, h);
@@ -535,28 +536,34 @@ async function fetchIsm() {
   const statusEl = document.getElementById("ism-status");
   try {
     const res = await fetch("/api/ism");
-    if (!res.ok) return;
     const data = await res.json();
+    if (!res.ok) {
+      if (statusEl) statusEl.textContent = data.message || "No ISM scan yet — waiting for Pi scanner";
+      return;
+    }
     if (statusEl) {
       const age = data.ts ? (Date.now() - new Date(data.ts).getTime()) / 1000 : null;
       statusEl.textContent = data.message + (age != null ? ` — ${humanAge(age)} ago` : "");
     }
     renderIsmPackets(data.packets || []);
-  } catch(e) { /* silent */ }
+  } catch(e) { if (statusEl) statusEl.textContent = "ISM data unavailable"; }
 }
 
 async function fetchAdsb() {
   const statusEl = document.getElementById("aircraft-status");
   try {
     const res = await fetch("/api/adsb");
-    if (!res.ok) return;
     const data = await res.json();
+    if (!res.ok) {
+      if (statusEl) statusEl.textContent = data.message || "No ADS-B scan yet — waiting for Pi scanner";
+      return;
+    }
     if (statusEl) {
       const age = data.ts ? (Date.now() - new Date(data.ts).getTime()) / 1000 : null;
       statusEl.textContent = data.message + (age != null ? ` — ${humanAge(age)} ago` : "");
     }
     renderAircraftData(data);
-  } catch(e) { /* silent */ }
+  } catch(e) { if (statusEl) statusEl.textContent = "ADS-B data unavailable"; }
 }
 
 function renderIsmPackets(packets) {
@@ -694,6 +701,7 @@ async function fetchPipeline() {
       ? (Date.now() - new Date(d.last_pi_sweep_ts).getTime()) / 1000
       : 9999;
     const piOffline = piAge > 120;
+    piOnline = !piOffline;
     if (piEl)  piEl.className  = "pipe-node " + (piOffline ? "offline" : "active");
     if (piVal) piVal.textContent = piOffline
       ? `OFFLINE — ${humanAge(piAge)} ago`

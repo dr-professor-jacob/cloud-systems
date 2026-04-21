@@ -137,8 +137,8 @@ def main():
     log.info("Scanner started — ISM every %dm, ADS-B every %dm",
              ISM_INTERVAL // 60, ADSB_INTERVAL // 60)
 
-    last_ism  = 0.0
-    last_adsb = 0.0
+    last_ism  = time.time()           # don't scan immediately at startup
+    last_adsb = time.time() + 90      # stagger ADS-B 90s after ISM
 
     while True:
         now = time.time()
