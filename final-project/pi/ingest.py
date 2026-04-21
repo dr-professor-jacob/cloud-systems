@@ -94,6 +94,7 @@ def sweep_once() -> dict | None:
             log.warning("Lock held >120s — ignoring and attempting sweep")
             break
 
+    DEVICE_LOCK.touch()  # claim device while sweeping
     SWEEP_CSV.unlink(missing_ok=True)
 
     cmd = [
@@ -106,6 +107,7 @@ def sweep_once() -> dict | None:
     ]
     log.info("Starting sweep: %s", " ".join(cmd))
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    DEVICE_LOCK.unlink(missing_ok=True)  # release once sweep is done
 
     # rtl_power writes info to stderr and may return non-zero even on success.
     # Only fail if the output CSV is missing or empty.
