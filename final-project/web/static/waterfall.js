@@ -777,72 +777,44 @@ let historySnapshots = [];
 let historyIndex     = -1;   // -1 = live
 let isLiveMode       = true;
 
+function snapIndexToLabel(idx) {
+  // idx: 0=oldest … max=newest (slider value)
+  // historySnapshots is sorted newest-first, so map idx → snapshots[length-1-idx]
+  const snap = historySnapshots[historySnapshots.length - 1 - idx];
+  if (!snap) return "—";
+  const tsRaw = snap.split("/").pop().replace(".json", "");
+  try {
+    return new Date(tsRaw).toLocaleTimeString();
+  } catch(e) { return tsRaw.slice(0, 19); }
+}
+
 async function refreshHistoryList() {
   try {
     const res = await fetch("/api/history");
     if (!res.ok) return;
     const data = await res.json();
     historySnapshots = data.snapshots || [];
+    const slider  = document.getElementById("history-slider");
     const rangeEl = document.getElementById("history-range");
     if (rangeEl) rangeEl.textContent = historySnapshots.length
-      ? `${historySnapshots.length} snapshots today`
+      ? `${historySnapshots.length} snapshots`
       : "No snapshots yet";
+    if (slider) {
+      slider.max = Math.max(0, historySnapshots.length - 1);
+      slider.disabled = historySnapshots.length === 0;
+      if (isLiveMode) slider.value = slider.max;
+    }
   } catch(e) {}
 }
 
-async function initHistory() {
-  await refreshHistoryList();
-
-  document.getElementById("btn-live")?.addEventListener("click", () => {
-    isLiveMode   = true;
-    historyIndex = -1;
-    document.getElementById("history-ts").textContent = "● Live";
-    document.getElementById("btn-live").style.color = "#4af";
-    // Resume live: immediately fetch current state
-    fetchSweep();
-  });
-
-  // ◀ = go further back in time (higher index = older in sorted-desc list)
-  document.getElementById("btn-history-prev")?.addEventListener("click", () => stepHistory(+1));
-  // ▶ = go forward in time (lower index = newer)
-  document.getElementById("btn-history-next")?.addEventListener("click", () => stepHistory(-1));
-
-  // Refresh snapshot list every 2 minutes
-  setInterval(refreshHistoryList, 2 * 60 * 1000);
-}
-
-async function stepHistory(dir) {
-  if (historySnapshots.length === 0) {
-    await refreshHistoryList();
-    if (historySnapshots.length === 0) return;
-  }
-
-  if (isLiveMode) {
-    // First step out of live: land on most recent snapshot
-    historyIndex = 0;
-    isLiveMode   = false;
-  } else {
-    historyIndex = Math.max(0, Math.min(historySnapshots.length - 1, historyIndex + dir));
-  }
-
-  document.getElementById("btn-live").style.color = "#555";
-
-  const snap = historySnapshots[historyIndex];
-  const total = historySnapshots.length;
-
-  // Extract timestamp from path: "2026-04-20/2026-04-20T18:45:21+00:00.json"
-  const tsRaw = snap.split("/").pop().replace(".json", "");
+async function loadHistorySnapshot(idx) {
+  const snap  = historySnapshots[historySnapshots.length - 1 - idx];
   const tsEl  = document.getElementById("history-ts");
-  try {
-    const d = new Date(tsRaw);
-    tsEl.textContent = `${d.toLocaleTimeString()} — ${historyIndex + 1}/${total}`;
-  } catch(e) {
-    tsEl.textContent = `${historyIndex + 1}/${total}`;
-  }
-
+  if (!snap) return;
+  tsEl.textContent = snapIndexToLabel(idx) + " — loading…";
   try {
     const r = await fetch(`/api/history/${snap}`);
-    if (!r.ok) { tsEl.textContent += " (load failed)"; return; }
+    if (!r.ok) { tsEl.textContent = snapIndexToLabel(idx) + " (load failed)"; return; }
     const data = await r.json();
     freqStart      = data.freq_start / 1e6;
     freqEndData    = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
@@ -858,5 +830,40 @@ async function stepHistory(dir) {
     drawFreqAxis();
     drawSpectrumChart();
     updatePeakDisplay(data.peak);
-  } catch(e) { tsEl.textContent += " (error)"; }
+    tsEl.textContent = snapIndexToLabel(idx);
+  } catch(e) { tsEl.textContent = snapIndexToLabel(idx) + " (error)"; }
+}
+
+async function initHistory() {
+  await refreshHistoryList();
+
+  const slider = document.getElementById("history-slider");
+  const tsEl   = document.getElementById("history-ts");
+
+  // Update label while dragging (no fetch)
+  slider?.addEventListener("input", () => {
+    const idx = parseInt(slider.value);
+    tsEl.textContent = snapIndexToLabel(idx);
+    isLiveMode = false;
+    document.getElementById("btn-live").style.color = "#555";
+  });
+
+  // Load snapshot on release
+  slider?.addEventListener("change", () => {
+    const idx = parseInt(slider.value);
+    isLiveMode = false;
+    historyIndex = idx;
+    loadHistorySnapshot(idx);
+  });
+
+  document.getElementById("btn-live")?.addEventListener("click", () => {
+    isLiveMode   = true;
+    historyIndex = -1;
+    if (slider) { slider.value = slider.max; }
+    tsEl.textContent = "● Live";
+    document.getElementById("btn-live").style.color = "#4af";
+    fetchSweep();
+  });
+
+  setInterval(refreshHistoryList, 2 * 60 * 1000);
 }

@@ -198,16 +198,16 @@
 
   <!-- History Player -->
   <div class="panel" id="history-panel" style="padding:10px 14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">History Player</div>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
         <button class="btn" id="btn-live" style="color:#4af;border-color:#4af;">● Live</button>
-        <button class="btn" id="btn-history-prev">◀</button>
-        <span id="history-ts" style="font-size:11px;color:#888;min-width:160px;text-align:center;">—</span>
-        <button class="btn" id="btn-history-next">▶</button>
+        <span id="history-ts" style="font-size:11px;color:#888;min-width:180px;text-align:center;">—</span>
+        <span id="history-range" style="font-size:10px;color:#444;">No snapshots yet</span>
       </div>
-      <div id="history-range" style="font-size:10px;color:#444;">No snapshots yet</div>
     </div>
+    <input type="range" id="history-slider" min="0" max="0" value="0"
+      style="width:100%;accent-color:#4af;cursor:pointer;" disabled>
   </div>
 
   <!-- Two-column: Aircraft map + ISM sensor feed -->
