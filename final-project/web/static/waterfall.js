@@ -283,7 +283,7 @@ async function fetchSweep() {
     if (isNewSweep) autoLogActivity();
 
     const ts = new Date(data.ts).toLocaleTimeString();
-    statusEl.textContent = isNewSweep
+    statusEl.textContent = piOnline
       ? `Live — last update ${ts} — ${nBins} bins`
       : `Frozen — Pi offline — last sweep ${ts} — ${nBins} bins`;
 
