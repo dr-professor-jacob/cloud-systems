@@ -700,7 +700,7 @@ async function fetchPipeline() {
     const piAge = d.last_pi_sweep_ts
       ? (Date.now() - new Date(d.last_pi_sweep_ts).getTime()) / 1000
       : 9999;
-    const piOffline = piAge > 120;
+    const piOffline = piAge > 240;  // scanner holds device ~55s + sweep ~70s = up to 125s gap
     piOnline = !piOffline;
     if (piEl)  piEl.className  = "pipe-node " + (piOffline ? "offline" : "active");
     if (piVal) piVal.textContent = piOffline
@@ -708,7 +708,10 @@ async function fetchPipeline() {
       : "sweep every ~15s";
 
     if (workerVal) {
-      workerVal.textContent = `${d.sweep_count} sweeps · ${Math.floor(d.uptime_s / 60)}m uptime`;
+      const uptime = d.uptime_s < 3600
+        ? `${Math.floor(d.uptime_s / 60)}m`
+        : `${(d.uptime_s / 3600).toFixed(1)}h`;
+      workerVal.textContent = `${d.sweep_count} sweeps · ${uptime} uptime`;
       if (workerEl) {
         const age = d.last_pi_sweep_ts
           ? (Date.now() - new Date(d.last_pi_sweep_ts).getTime()) / 1000
