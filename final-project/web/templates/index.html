@@ -196,50 +196,6 @@
     </div>
   </div>
 
-  <!-- Cloud Pipeline panel -->
-  <div class="panel" id="pipeline-panel" style="padding:10px 14px;">
-    <div style="margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Cloud Pipeline</div>
-    <!-- Flow diagram -->
-    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px;">
-      <div class="pipe-node" id="pipe-pi">
-        <div class="pipe-label">Pi 4 + RTL-SDR</div>
-        <div class="pipe-val" id="pipe-pi-val">sweep every ~15s</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node">
-        <div class="pipe-label">Service Bus</div>
-        <div class="pipe-val" style="color:#888;">rf-sweeps queue</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" id="pipe-worker">
-        <div class="pipe-label">Container App Worker</div>
-        <div class="pipe-val" id="pipe-worker-val">—</div>
-        <div id="pipeline-noise" style="font-size:10px;color:#4af;margin-top:2px;"></div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node">
-        <div class="pipe-label">Blob Storage</div>
-        <div class="pipe-val" id="pipe-blob-val">—</div>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-node" id="pipe-web">
-        <div class="pipe-label">Dashboard</div>
-        <div class="pipe-val" style="color:#4af;">Live</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- Signal Anomaly Feed -->
-  <div class="panel" id="anomaly-panel">
-    <h2 style="display:flex;justify-content:space-between;align-items:center;">
-      <span>⚡ Signal Anomalies — AI Classified</span>
-      <span style="font-size:10px;color:#444;font-weight:normal;">signals &gt;15 dB above baseline · Claude Haiku</span>
-    </h2>
-    <div id="anomaly-status" style="color:#666;font-size:11px;margin-bottom:6px;">Waiting for baseline…</div>
-    <div id="anomaly-feed" style="display:flex;flex-direction:column;gap:4px;"></div>
-  </div>
-
   <!-- History Player -->
   <div class="panel" id="history-panel" style="padding:10px 14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -273,10 +229,47 @@
 
   </div>
 
-  <!-- Activity Ledger -->
-  <div class="panel" id="ledger-panel">
-    <h2>Frequency Activity</h2>
-    <div id="ledger" style="max-height:180px;overflow-y:auto;font-size:11px;color:#888;"></div>
+  <!-- Signal Anomaly Feed -->
+  <div class="panel" id="anomaly-panel">
+    <h2 style="display:flex;justify-content:space-between;align-items:center;">
+      <span>⚡ Signal Anomalies — AI Classified</span>
+      <span style="font-size:10px;color:#444;font-weight:normal;">signals &gt;15 dB above baseline · Claude Haiku</span>
+    </h2>
+    <div id="anomaly-status" style="color:#666;font-size:11px;margin-bottom:6px;">Waiting for baseline…</div>
+    <div id="anomaly-feed" style="display:flex;flex-direction:column;gap:4px;"></div>
+  </div>
+
+  <!-- Cloud Pipeline panel -->
+  <div class="panel" id="pipeline-panel" style="padding:10px 14px;">
+    <div style="margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#555;">Cloud Pipeline</div>
+    <!-- Flow diagram -->
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px;">
+      <div class="pipe-node" id="pipe-pi">
+        <div class="pipe-label">Pi 4 + RTL-SDR</div>
+        <div class="pipe-val" id="pipe-pi-val">sweep every ~15s</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node">
+        <div class="pipe-label">Service Bus</div>
+        <div class="pipe-val" style="color:#888;">rf-sweeps queue</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-worker">
+        <div class="pipe-label">Container App Worker</div>
+        <div class="pipe-val" id="pipe-worker-val">—</div>
+        <div id="pipeline-noise" style="font-size:10px;color:#4af;margin-top:2px;"></div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node">
+        <div class="pipe-label">Blob Storage</div>
+        <div class="pipe-val" id="pipe-blob-val">—</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-node" id="pipe-web">
+        <div class="pipe-label">Dashboard</div>
+        <div class="pipe-val" style="color:#4af;">Live</div>
+      </div>
+    </div>
   </div>
 
 
