@@ -46,10 +46,19 @@ az containerapp update --name rf-worker --resource-group rf-survey-rg \
   --image "${ACR}/rf-worker:${TAG}"
 
 echo ""
-echo "==> Deploying rf-web..."
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-# cd to repo root so ./cloud-systems key path in inventory.ini resolves correctly
-(cd "${REPO_ROOT}" && ansible-playbook -i inventory.ini setup_app.yml)
+echo "==> Deploying rf-web (via az vm run-command)..."
+VM_RG="CLOUD-V3"
+VM_NAME="app-vm"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+RAW="https://raw.githubusercontent.com/dr-professor-jacob/cloud-systems/${BRANCH}/final-project"
+az vm run-command invoke \
+  --resource-group "$VM_RG" --name "$VM_NAME" \
+  --command-id RunShellScript \
+  --scripts "
+    curl -fsSL '${RAW}/web/static/waterfall.js' -o /opt/rf-web/static/waterfall.js
+    curl -fsSL '${RAW}/web/templates/index.html' -o /opt/rf-web/templates/index.html
+    sudo systemctl restart rf-web && echo 'rf-web restarted'
+  " --query "value[0].message" -o tsv
 
 echo ""
 echo "==> Done. Tag: ${TAG}"
