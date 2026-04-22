@@ -86,9 +86,21 @@ anomaly_cache = {}   # freq_mhz_rounded -> last_flagged_timestamp
 anomaly_log   = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, band}]
 
 
+RECONNECT_RESET_S = 300   # reset averages if Pi was offline this long
+
 def process_sweep(data: dict) -> None:
     """Update running avg, peak, min_hold, and raw from a new sweep."""
     global avg, peak, min_hold, raw, freq_meta, last_blob_write, sweep_count, last_pi_sweep_ts
+
+    # If Pi reconnects after a long gap, stale averages from the old location
+    # would contaminate the new readings — reset and start fresh.
+    if last_pi_sweep_ts and avg is not None:
+        gap_s = (datetime.now(timezone.utc)
+                 - datetime.fromisoformat(last_pi_sweep_ts)).total_seconds()
+        if gap_s > RECONNECT_RESET_S:
+            log.info("Pi reconnected after %.0fs offline — resetting averages", gap_s)
+            avg = None; peak = None; min_hold = None
+            sweep_count = 0
 
     bins = np.array(data["bins"], dtype=np.float32)
     n = len(bins)
