@@ -184,6 +184,7 @@
       <button class="btn" id="btn-peak">Peak Hold</button>
       <button class="btn" id="btn-min">Min Hold</button>
       <button class="btn" id="btn-reset-peak">Reset Peak</button>
+      <button class="btn" id="btn-new-location" style="border-color:#fa5;color:#fa5;">📍 New Location</button>
       <div id="colorscale">
         <span>−10 dBm</span>
         <canvas id="scale-bar" width="120" height="10"></canvas>
@@ -315,6 +316,22 @@
     if (currentPeak) currentPeak = currentAvg ? [...currentAvg] : null;
     if (window.peak) peak = avg ? new Float32Array(avg) : null;
     redrawWaterfall();
+  });
+
+  document.getElementById("btn-new-location")?.addEventListener("click", async () => {
+    const btn = document.getElementById("btn-new-location");
+    btn.textContent = "📍 Resetting…";
+    btn.disabled = true;
+    try {
+      await fetch("/api/reset", { method: "POST" });
+      // Clear browser-side waterfall immediately
+      history.length = 0;
+      currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
+      lastSweepSig = null;
+      drawNoData();
+      document.getElementById("status").textContent = "New location — waiting for first sweep…";
+    } catch(e) { /* silent */ }
+    setTimeout(() => { btn.textContent = "📍 New Location"; btn.disabled = false; }, 2000);
   });
 
   // Expose displayMode so waterfall.js can read it

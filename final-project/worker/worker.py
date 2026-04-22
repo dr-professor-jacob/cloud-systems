@@ -81,16 +81,43 @@ freq_meta = None  # {freq_start, freq_step, n_bins}
 last_blob_write = 0.0
 sweep_count      = 0
 last_pi_sweep_ts = ""   # set only when a real sweep arrives from Pi
-start_time   = time.time()
-anomaly_cache = {}   # freq_mhz_rounded -> last_flagged_timestamp
-anomaly_log   = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, band}]
+start_time       = time.time()
+anomaly_cache    = {}   # freq_mhz_rounded -> last_flagged_timestamp
+anomaly_log      = []   # last 20 anomalies [{ts, freq_mhz, power_dbm, excess_db, band}]
+last_reset_ts    = ""   # ts of the last reset_requested.json we acted on
 
 
 RECONNECT_RESET_S = 300   # reset averages if Pi was offline this long
 
+
+def _reset_state(reason: str) -> None:
+    global avg, peak, min_hold, sweep_count, anomaly_cache, anomaly_log
+    avg = None; peak = None; min_hold = None
+    sweep_count = 0
+    anomaly_cache = {}; anomaly_log = []
+    log.info("Averages reset: %s", reason)
+
+
+def _check_reset_request() -> None:
+    """Check for a dashboard-triggered reset (new location button)."""
+    global last_reset_ts
+    try:
+        blob = blob_client.get_blob_client(BLOB_SWEEPS, "reset_requested.json")
+        data = json.loads(blob.download_blob().readall())
+        ts = data.get("ts", "")
+        if ts and ts != last_reset_ts:
+            last_reset_ts = ts
+            _reset_state(f"dashboard reset requested at {ts}")
+    except Exception:
+        pass  # blob doesn't exist = no reset pending
+
+
 def process_sweep(data: dict) -> None:
     """Update running avg, peak, min_hold, and raw from a new sweep."""
     global avg, peak, min_hold, raw, freq_meta, last_blob_write, sweep_count, last_pi_sweep_ts
+
+    # Check for dashboard-triggered location reset
+    _check_reset_request()
 
     # If Pi reconnects after a long gap, stale averages from the old location
     # would contaminate the new readings — reset and start fresh.
@@ -98,9 +125,7 @@ def process_sweep(data: dict) -> None:
         gap_s = (datetime.now(timezone.utc)
                  - datetime.fromisoformat(last_pi_sweep_ts)).total_seconds()
         if gap_s > RECONNECT_RESET_S:
-            log.info("Pi reconnected after %.0fs offline — resetting averages", gap_s)
-            avg = None; peak = None; min_hold = None
-            sweep_count = 0
+            _reset_state(f"Pi reconnected after {gap_s:.0f}s offline")
 
     bins = np.array(data["bins"], dtype=np.float32)
     n = len(bins)

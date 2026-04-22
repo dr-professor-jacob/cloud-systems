@@ -223,6 +223,20 @@ async def anomalies():
     return JSONResponse(items)
 
 
+@app.post("/api/reset")
+async def reset_location():
+    """Request a worker reset — clears accumulated averages for a new location."""
+    ts = datetime.now(timezone.utc).isoformat()
+    try:
+        blob = get_blob().get_blob_client(BLOB_SWEEPS, "reset_requested.json")
+        blob.upload_blob(json.dumps({"ts": ts}), overwrite=True)
+        log.info("Location reset requested at %s", ts)
+        return {"reset_requested": True, "ts": ts}
+    except Exception as e:
+        log.error("Reset request error: %s", e)
+        raise HTTPException(500, "Failed to request reset")
+
+
 @app.get("/api/history")
 async def history():
     """List recent archived sweep snapshots."""
