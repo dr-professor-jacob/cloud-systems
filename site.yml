@@ -1,3 +1,2 @@
 ---
 - import_playbook: setup_app.yml
-- import_playbook: setup_ts.yml

@@ -70,13 +70,23 @@ resource "azurerm_servicebus_queue" "results" {
 }
 
 # ---------------------------------------------------------------------------
-# SAS rule for Pi edge node (Send to sweeps/results, Receive from commands)
+# SAS rules
+# pi-edge: Pi sends sweeps/results, receives commands
+# keda-listen: listen-only, used by Container App KEDA scaler
 # ---------------------------------------------------------------------------
 resource "azurerm_servicebus_namespace_authorization_rule" "pi" {
   name         = "pi-edge"
   namespace_id = azurerm_servicebus_namespace.main.id
   listen       = true
   send         = true
+  manage       = false
+}
+
+resource "azurerm_servicebus_namespace_authorization_rule" "keda" {
+  name         = "keda-listen"
+  namespace_id = azurerm_servicebus_namespace.main.id
+  listen       = true
+  send         = false
   manage       = false
 }
 
@@ -198,9 +208,31 @@ resource "azurerm_container_app" "worker" {
     value = var.anthropic_api_key
   }
 
+  # KEDA needs a connection string secret (managed identity not supported for KEDA SB trigger)
+  secret {
+    name  = "sb-keda-conn"
+    value = azurerm_servicebus_namespace_authorization_rule.keda.primary_connection_string
+  }
+
   template {
     min_replicas = 0
-    max_replicas = 1
+    max_replicas = 3
+
+    # KEDA autoscale: scale out when rf-sweeps queue depth > 5 messages.
+    # Pi off → 0 replicas ($0). Pi on → queue fills → worker scales 1→3.
+    custom_scale_rule {
+      name             = "sb-sweeps-queue"
+      custom_rule_type = "azure-servicebus"
+      metadata = {
+        queueName    = azurerm_servicebus_queue.sweeps.name
+        namespace    = azurerm_servicebus_namespace.main.name
+        messageCount = "5"
+      }
+      authentication {
+        secret_name       = "sb-keda-conn"
+        trigger_parameter = "connection"
+      }
+    }
 
     container {
       name   = "rf-worker"
@@ -258,4 +290,10 @@ output "resource_group_name" {
 output "storage_account_name" {
   value       = azurerm_storage_account.main.name
   description = "Storage account name — used by deploy.sh to fetch connection string for Pi"
+}
+
+output "sb_keda_connection_string" {
+  value       = azurerm_servicebus_namespace_authorization_rule.keda.primary_connection_string
+  description = "Listen-only Service Bus connection string used by KEDA scaler"
+  sensitive   = true
 }

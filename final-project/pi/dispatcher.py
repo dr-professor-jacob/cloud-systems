@@ -71,19 +71,19 @@ def run_dump1090(duration: int) -> str:
     import tempfile, json as _json, os
     tmpdir = tempfile.mkdtemp(prefix="dump1090_")
     cmd = [
-        "dump1090",
+        "readsb",
         "--quiet",
         "--write-json", tmpdir,
         "--write-json-every", "1",
-        "--net",          # enable network output (needed for --write-json)
+        "--net",
     ]
-    log.info("Running dump1090 for %ds → %s", duration, tmpdir)
+    log.info("Running readsb for %ds → %s", duration, tmpdir)
     try:
         subprocess.run(cmd, capture_output=True, text=True, timeout=duration)
     except subprocess.TimeoutExpired:
         pass  # expected — we kill it after duration
     except FileNotFoundError:
-        return "dump1090 not installed. Install with: sudo apt install dump1090-mutability"
+        return "readsb not installed. Run: sudo apt install readsb"
 
     aircraft_file = os.path.join(tmpdir, "aircraft.json")
     if not os.path.exists(aircraft_file):
@@ -93,16 +93,22 @@ def run_dump1090(duration: int) -> str:
         data = _json.loads(open(aircraft_file).read())
         aircraft = data.get("aircraft", [])
         if not aircraft:
-            return "No aircraft tracked during capture window."
-        lines = []
-        for ac in aircraft[:20]:
-            parts = [ac.get("flight", "???").strip()]
+            return _json.dumps({"aircraft": [], "count": 0, "message": "No aircraft tracked — try again or check antenna."})
+        # Keep only useful fields, limit to 30
+        clean = []
+        for ac in aircraft[:30]:
+            entry = {"hex": ac.get("hex", ""), "flight": ac.get("flight", "").strip()}
             if "lat" in ac and "lon" in ac:
-                parts.append(f"pos={ac['lat']:.3f},{ac['lon']:.3f}")
+                entry["lat"] = round(ac["lat"], 4)
+                entry["lon"] = round(ac["lon"], 4)
             if "altitude" in ac:
-                parts.append(f"alt={ac['altitude']}ft")
-            lines.append("  " + "  ".join(parts))
-        return f"{len(aircraft)} aircraft tracked:\n" + "\n".join(lines)
+                entry["alt"] = ac["altitude"]
+            if "speed" in ac:
+                entry["speed"] = ac["speed"]
+            if "track" in ac:
+                entry["track"] = ac["track"]
+            clean.append(entry)
+        return _json.dumps({"aircraft": clean, "count": len(aircraft)})
     except Exception as e:
         return f"Parse error: {e}"
 
@@ -123,14 +129,15 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     else:
         mode, out_rate = "fm",   "24000"
 
-    # Step 1: capture raw PCM to file (avoids pipe issues with subprocess)
-    rtl_cmd = (
-        f"timeout {duration} rtl_fm -M {mode} -f {freq_hz} -s 1008000 -r {out_rate} - "
-        f"> {raw_file}"
-    )
+    # Step 1: capture raw PCM directly to file (no shell, no pipe)
+    rtl_cmd = [
+        "timeout", str(duration),
+        "rtl_fm", "-M", mode, "-f", str(freq_hz), "-s", "1008000", "-r", out_rate,
+        raw_file,
+    ]
     log.info("Step 1: rtl_fm capture %ds @ %.3f MHz → %s", duration, freq_mhz, raw_file)
-    r1 = subprocess.run(rtl_cmd, shell=True, capture_output=True, text=True, timeout=duration + 10)
-    log.info("rtl_fm stderr: %s", r1.stderr[:200])
+    r1 = subprocess.run(rtl_cmd, capture_output=True, text=True, timeout=duration + 10)
+    log.info("rtl_fm stderr: %s", r1.stderr[:300])
 
     if not os.path.exists(raw_file) or os.path.getsize(raw_file) < 1000:
         return f"rtl_fm capture failed. stderr: {r1.stderr[:300]}"
@@ -153,19 +160,32 @@ def run_rtl_fm(freq_hz: int, duration: int) -> str:
     if not os.path.exists(out_mp3) or os.path.getsize(out_mp3) < 1024:
         return f"ffmpeg encode failed or produced empty output."
 
-    # Upload to Blob Storage using connection string
+    # Upload to Blob Storage using connection string, return SAS URL (container is private)
     storage_conn = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
-    storage_url  = os.environ.get("STORAGE_ACCOUNT_URL", "")
     if storage_conn:
         try:
-            from azure.storage.blob import BlobServiceClient
+            from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+            from datetime import timedelta
             import time as _time
             blob_name = f"audio/{freq_hz}_{int(_time.time())}.mp3"
             client = BlobServiceClient.from_connection_string(storage_conn)
+            blob_client = client.get_blob_client("rfresults", blob_name)
             with open(out_mp3, "rb") as f:
-                client.get_blob_client("rfresults", blob_name).upload_blob(f, overwrite=True)
+                blob_client.upload_blob(f, overwrite=True)
             os.unlink(out_mp3)
-            return f"audio_url:{storage_url}/rfresults/{blob_name}"
+            # Generate SAS token valid for 2 hours so browser can play directly
+            account_name = client.account_name
+            account_key  = client.credential.account_key
+            sas = generate_blob_sas(
+                account_name=account_name,
+                container_name="rfresults",
+                blob_name=blob_name,
+                account_key=account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.now(timezone.utc) + timedelta(hours=2),
+            )
+            sas_url = f"https://{account_name}.blob.core.windows.net/rfresults/{blob_name}?{sas}"
+            return f"audio_url:{sas_url}"
         except Exception as e:
             log.error("Blob upload failed: %s", e)
 
@@ -187,8 +207,10 @@ def run_rtlpower_scan(freq_hz: int, duration: int) -> str:
     ]
     log.info("Running sub-scan: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=duration + 20)
-    if r.returncode != 0:
-        return f"Sub-scan failed: {r.stderr[:100]}"
+    # rtl_power writes info to stderr (e.g. "Number of frequency hops: N") even on success.
+    # Only fail if the output CSV is missing or empty.
+    if not Path(outfile).exists() or Path(outfile).stat().st_size == 0:
+        return f"Sub-scan produced no data. stderr: {r.stderr[:200]}"
 
     # Parse and summarize: find peak bin
     peak_freq, peak_dbm = None, -999.0
@@ -225,10 +247,16 @@ def dispatch(job: dict) -> str:
     if tool not in TOOL_ALLOWLIST:
         return f"Unknown tool: {tool!r}. Allowed: {', '.join(sorted(TOOL_ALLOWLIST))}"
 
-    # Stop ingest so we have exclusive device access, restart when done
-    log.info("Stopping rf-ingest for exclusive device access...")
-    subprocess.run(["systemctl", "stop", "rf-ingest"], capture_output=True)
-    time.sleep(1.0)   # let USB stack fully release
+    # 1. Set lock file — ingest.py polls this and won't start a new sweep
+    DEVICE_LOCK.touch()
+    log.info("Lock set — killing any running SDR processes...")
+    # 2. Kill ALL SDR processes (same user, no sudo needed); use SIGKILL to be sure
+    for proc in (["pkill", "-KILL", "-x", "rtl_power"],
+                 ["pkill", "-KILL", "-x", "rtl_fm"],
+                 ["pkill", "-KILL", "-x", "rtl_433"],
+                 ["pkill", "-KILL", "-f", "readsb"]):
+        subprocess.run(proc, capture_output=True)
+    time.sleep(3.0)   # let USB stack fully release
     log.info("Device acquired for tool=%s", tool)
     try:
         if tool == "rtl_433":
@@ -241,8 +269,9 @@ def dispatch(job: dict) -> str:
             return run_rtlpower_scan(freq_hz, duration)
         return "Unhandled tool"
     finally:
-        subprocess.run(["systemctl", "start", "rf-ingest"], capture_output=True)
-        log.info("rf-ingest restarted")
+        # 3. Release lock — ingest.py will resume sweeping
+        DEVICE_LOCK.unlink(missing_ok=True)
+        log.info("Lock released — ingest resuming")
 
 
 def main():
@@ -266,6 +295,13 @@ def main():
         while True:
             for msg in receiver.receive_messages(max_message_count=1, max_wait_time=30):
                 try:
+                    # Skip stale jobs — queue backlog from previous timeouts
+                    age = (datetime.now(timezone.utc) - msg.enqueued_time_utc).total_seconds()
+                    if age > 120:
+                        log.info("Dropping stale job (%.0fs old)", age)
+                        receiver.complete_message(msg)
+                        continue
+
                     job = json.loads(str(msg))
                     log.info("Job received: tool=%s freq=%.3f MHz duration=%ss",
                              job.get("tool"), job.get("freq_hz", 0) / 1e6, job.get("duration"))

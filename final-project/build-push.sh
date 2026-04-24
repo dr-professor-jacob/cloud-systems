@@ -18,6 +18,11 @@ if [[ -z "$ACR_NAME" ]]; then
 fi
 
 ACR="${ACR_NAME}.azurecr.io"
+
+# Always pull latest before building so the tag matches what's in the repo
+echo "==> Pulling latest from origin..."
+git -C "$(git rev-parse --show-toplevel)" pull --ff-only
+
 TAG="${TAG:-$(git rev-parse --short HEAD 2>/dev/null || echo "latest")}"
 
 echo "==> ACR:  $ACR"
@@ -36,12 +41,24 @@ az acr build \
 # Note: rf-web runs on the portfolio VM (nginx proxy → port 8080).
 # Only rf-worker lives in Container Apps.
 echo ""
-echo "==> Worker image pushed. Deploy with:"
+echo "==> Deploying rf-worker..."
+az containerapp update --name rf-worker --resource-group rf-survey-rg \
+  --image "${ACR}/rf-worker:${TAG}"
+
 echo ""
-echo "    tofu apply -var image_tag_worker=${TAG}"
+echo "==> Deploying rf-web (via az vm run-command)..."
+VM_RG="CLOUD-V3"
+VM_NAME="app-vm"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+RAW="https://raw.githubusercontent.com/dr-professor-jacob/cloud-systems/${BRANCH}/final-project"
+az vm run-command invoke \
+  --resource-group "$VM_RG" --name "$VM_NAME" \
+  --command-id RunShellScript \
+  --scripts "
+    curl -fsSL '${RAW}/web/static/waterfall.js' -o /opt/rf-web/static/waterfall.js
+    curl -fsSL '${RAW}/web/templates/index.html' -o /opt/rf-web/templates/index.html
+    sudo systemctl restart rf-web && echo 'rf-web restarted'
+  " --query "value[0].message" -o tsv
+
 echo ""
-echo "    Or to update the running container without full apply:"
-echo "    az containerapp update --name rf-worker --resource-group rf-survey-rg --image ${ACR}/rf-worker:${TAG}"
-echo ""
-echo "==> To deploy rf-web changes to the VM:"
-echo "    ansible-playbook -i inventory.ini setup_app.yml --tags rf-web"
+echo "==> Done. Tag: ${TAG}"
