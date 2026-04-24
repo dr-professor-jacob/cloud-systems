@@ -116,19 +116,11 @@ function redrawWaterfall() {
   const w   = canvas.width;
   const img = ctx.createImageData(w, h);
 
-  // Respect display mode: avg (history), peak hold, or min hold
-  const mode = window.getDisplayMode ? window.getDisplayMode() : "avg";
-
-  if (mode === "peak" && currentPeak) {
-    for (let row = 0; row < h; row++) renderRow(currentPeak, row, img);
-  } else if (mode === "min_hold" && currentMinHold) {
-    for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
-  } else {
-    // Rolling waterfall — newest row at top, tile to fill if not enough history yet
-    for (let row = 0; row < h; row++) {
-      const histIdx = history.length - 1 - (row % history.length);
-      renderRow(history[histIdx], row, img);
-    }
+  // Rolling waterfall — newest row at top, tile to fill if not enough history yet
+  // Peak/min hold are shown on the spectrum chart, not tiled across the waterfall
+  for (let row = 0; row < h; row++) {
+    const histIdx = history.length - 1 - (row % history.length);
+    renderRow(history[histIdx], row, img);
   }
   ctx.putImageData(img, 0, 0);
 }
@@ -240,9 +232,13 @@ function drawSpectrumChart() {
     sctx.globalAlpha = 1;
   }
 
-  // Draw raw first (behind), then avg on top
+  const mode = window.getDisplayMode ? window.getDisplayMode() : "avg";
+
+  // Draw raw first (behind), then avg on top, then hold overlay
   if (currentRaw) drawLine(currentRaw, "#666", 0.75);
   drawLine(currentAvg, "#4af", 1.0);
+  if (mode === "peak" && currentPeak) drawLine(currentPeak, "#f84", 1.0);
+  if (mode === "min_hold" && currentMinHold) drawLine(currentMinHold, "#a4f", 1.0);
 
   // Y axis labels
   sctx.fillStyle = "#444";
