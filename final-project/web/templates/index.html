@@ -325,10 +325,7 @@
     try {
       await fetch("/api/reset", { method: "POST" });
       // Clear browser-side waterfall immediately
-      history.length = 0;
-      currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
-      lastSweepSig = null;
-      drawNoData();
+      if (window.clearWaterfallHistory) window.clearWaterfallHistory();
       document.getElementById("status").textContent = "New location — waiting for first sweep…";
     } catch(e) { /* silent */ }
     setTimeout(() => { btn.textContent = "📍 New Location"; btn.disabled = false; }, 2000);

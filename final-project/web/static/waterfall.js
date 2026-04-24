@@ -137,10 +137,13 @@ function redrawWaterfall() {
   } else if (mode === "min_hold" && currentMinHold) {
     for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
   } else {
-    // Rolling waterfall — newest row at top, tile to fill if not enough history yet
+    // Rolling waterfall — newest row at top, black until history fills
     for (let row = 0; row < h; row++) {
-      const histIdx = history.length - 1 - (row % history.length);
-      renderRow(history[histIdx], row, img);
+      const histIdx = history.length - 1 - row;
+      if (histIdx >= 0) {
+        renderRow(history[histIdx], row, img);
+      }
+      // else: leave row as black (ImageData initializes to 0,0,0,0; canvas bg is black)
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -867,3 +870,11 @@ async function initHistory() {
 
   setInterval(refreshHistoryList, 2 * 60 * 1000);
 }
+
+// ─── Exposed reset helper (called by New Location button in index.html) ───────
+window.clearWaterfallHistory = function() {
+  history.length = 0;
+  currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
+  lastSweepSig = null;
+  drawNoData();
+};
