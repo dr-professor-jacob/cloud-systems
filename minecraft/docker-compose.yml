@@ -1,0 +1,26 @@
+services:
+  minecraft:
+    image: itzg/minecraft-server:latest
+    container_name: minecraft
+    restart: unless-stopped
+    ports:
+      - "25565:25565"
+      - "25575:25575"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      EULA: "TRUE"
+      TYPE: FTBA
+      FTB_MODPACK_ID: "123"
+      FTB_MODPACK_VERSION_ID: "100245"
+      MEMORY: 6G
+      ENABLE_RCON: "true"
+      RCON_PORT: "25575"
+      RCON_PASSWORD: "${RCON_PASSWORD}"
+      MAX_PLAYERS: "20"
+      DIFFICULTY: normal
+      MOTD: "FTB NeoTech"
+    volumes:
+      - /opt/minecraft/data:/data
+    tty: true
+    stdin_open: true

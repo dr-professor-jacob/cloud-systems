@@ -1,0 +1,166 @@
+---
+- name: Configure FTB NeoTech Minecraft server
+  hosts: minecraft
+  become: yes
+  vars_files:
+    - minecraft/group_vars/minecraft/secrets.yml
+  roles:
+    - docker
+  tasks:
+    - name: Create minecraft data directory
+      file:
+        path: /opt/minecraft/data
+        state: directory
+        owner: jrick
+        group: jrick
+        mode: "0755"
+
+    - name: Deploy docker-compose.yml
+      copy:
+        src: docker-compose.yml
+        dest: /opt/minecraft/docker-compose.yml
+        mode: "0644"
+
+    - name: Write .env with RCON password
+      copy:
+        dest: /opt/minecraft/.env
+        content: "RCON_PASSWORD={{ rcon_password }}\n"
+        mode: "0600"
+
+    - name: Install rclone
+      shell: curl -fsSL https://rclone.org/install.sh | bash
+      args:
+        creates: /usr/bin/rclone
+
+    - name: Create rclone config directory
+      file:
+        path: /root/.config/rclone
+        state: directory
+        mode: "0700"
+
+    - name: Write rclone config
+      copy:
+        dest: /root/.config/rclone/rclone.conf
+        content: |
+          [azure-backup]
+          type = azureblob
+          account = {{ azure_storage_account }}
+          key = {{ azure_storage_key }}
+        mode: "0600"
+
+    - name: Deploy backup script
+      copy:
+        src: backup.sh
+        dest: /usr/local/bin/mc-backup
+        mode: "0755"
+
+    - name: Schedule daily backup at 04:00 UTC
+      cron:
+        name: mc-world-backup
+        user: root
+        hour: "4"
+        minute: "0"
+        job: /usr/local/bin/mc-backup
+
+    - name: Write minecraft systemd service
+      copy:
+        dest: /etc/systemd/system/minecraft.service
+        content: |
+          [Unit]
+          Description=FTB NeoTech Minecraft Server
+          After=docker.service
+          Requires=docker.service
+
+          [Service]
+          WorkingDirectory=/opt/minecraft
+          ExecStart=/usr/bin/docker compose up
+          ExecStop=/usr/bin/docker compose down
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Enable and start minecraft service
+      systemd:
+        name: minecraft
+        daemon_reload: yes
+        enabled: yes
+        state: started
+
+    # ── GuideBot ────────────────────────────────────────────────────────────────
+
+    - name: Install Python3 and venv
+      apt:
+        name:
+          - python3
+          - python3-venv
+        state: present
+
+    - name: Create /opt/mc-guide
+      file:
+        path: /opt/mc-guide
+        state: directory
+        owner: jrick
+        group: jrick
+        mode: "0755"
+
+    - name: Deploy mc_guide.py
+      copy:
+        src: mc_guide.py
+        dest: /opt/mc-guide/mc_guide.py
+        mode: "0755"
+      notify: Restart mc-guide
+
+    - name: Create Python venv
+      command: python3 -m venv /opt/mc-guide/venv
+      args:
+        creates: /opt/mc-guide/venv/bin/python
+
+    - name: Install mc-guide dependencies
+      pip:
+        name:
+          - fastapi
+          - "uvicorn[standard]"
+          - anthropic
+        executable: /opt/mc-guide/venv/bin/pip
+
+    - name: Write mc-guide .env
+      copy:
+        dest: /opt/mc-guide/.env
+        content: "ANTHROPIC_API_KEY={{ anthropic_api_key }}\n"
+        mode: "0600"
+
+    - name: Deploy mc_guide.service
+      copy:
+        src: mc_guide.service
+        dest: /etc/systemd/system/mc_guide.service
+      notify: Restart mc-guide
+
+    - name: Enable and start mc-guide
+      systemd:
+        name: mc_guide
+        daemon_reload: yes
+        enabled: yes
+        state: started
+
+    - name: Ensure KubeJS server_scripts directory exists
+      file:
+        path: /opt/minecraft/data/kubejs/server_scripts
+        state: directory
+        owner: jrick
+        group: jrick
+        mode: "0755"
+
+    - name: Deploy KubeJS guide script
+      copy:
+        src: guide.js
+        dest: /opt/minecraft/data/kubejs/server_scripts/guide.js
+        mode: "0644"
+
+  handlers:
+    - name: Restart mc-guide
+      systemd:
+        name: mc_guide
+        state: restarted
+        daemon_reload: yes
