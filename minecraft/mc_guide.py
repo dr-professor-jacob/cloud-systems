@@ -14,6 +14,8 @@ client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 rate_limits: dict[str, float] = {}
 COOLDOWN = 60  # seconds per player
+history: dict[str, list] = {}
+HISTORY_MAX = 6  # messages kept per player (3 exchanges)
 
 SYSTEM_PROMPT = """\
 You are GuideBot, embedded in FTB NeoTech (Minecraft 1.20.4, NeoForge).
@@ -57,11 +59,11 @@ Each block entry has:
   nbt      — tile entity data (energy stored, inventory, recipe, etc.) if present
 
 == Response rules ==
-- Under 200 words — must fit Minecraft chat
+- 2-3 sentences maximum — one thing at a time
 - Lead with the single most important issue or next step
-- Name specific blocks and relative positions when relevant (e.g. "the block at +2, 0, -1")
-- If the setup looks correct, confirm it and suggest the natural next upgrade
-- Plain text only, no markdown
+- Name specific blocks and positions when relevant (e.g. "block at +2, 0, -1")
+- If the setup looks correct, confirm it and suggest only the immediate next step
+- Plain text only, no markdown, no bullet points, no lists
 """
 
 
@@ -118,10 +120,16 @@ async def guide(payload: ScanPayload):
         f"Block scan ({len(payload.blocks)} blocks found):\n{block_summary}"
     )
 
+    player_history = history.get(payload.player, [])
+    player_history.append({"role": "user", "content": user_msg})
+
     response = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=450,
+        max_tokens=150,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_msg}],
+        messages=player_history,
     )
-    return {"answer": response.content[0].text}
+    answer = response.content[0].text
+    player_history.append({"role": "assistant", "content": answer})
+    history[payload.player] = player_history[-HISTORY_MAX:]
+    return {"answer": answer}
