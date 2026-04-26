@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-mod_shop.py — Expanded Mod-Ready Workshop v2
+mod_shop.py — Expanded Mod-Ready Workshop v3
 X: 1285-1305, Z: 1890-1910, Y: 65
-Wall-mounted essentials with wiring sub-floor.
+Restores the hill (dirt on top) and adds rows of mod machines.
 """
 import subprocess, time
 
@@ -33,18 +33,21 @@ Z1, Z2 = CZ - 10, CZ + 10
 Y_SUB = YF - 2
 Y_WALL_TOP = YF + 5
 
-print(f"=== Constructing Wall-Integrated Workshop at {CX}, {CZ} ===")
+print(f"=== Restoring Hill and Building Workshop at {CX}, {CZ} ===")
 
-# 1. Clear Volume
-safe_fill(X1-5, Y_SUB, Z1-5, X2+5, Y_WALL_TOP+5, Z2+5, 'air')
+# 1. Clear Interior ONLY (Protect the hill above Y=72)
+safe_fill(X1, Y_SUB, Z1, X2, Y_WALL_TOP, Z2, 'air')
 
-# 2. Sub-floor (Hollow basement for wiring)
+# 2. RESTORE THE DIRT ON TOP (Fixing the "Bunker Buster" mistake)
+# Re-filling the hill from the roof (72) up to Y=85
+safe_fill(X1-5, Y_WALL_TOP+2, Z1-5, X2+5, 84, Z2+5, 'dirt', 'replace air')
+safe_fill(X1-5, 85, Z1-5, X2+5, 85, Z2+5, 'grass_block', 'replace air')
+
+# 3. Sub-floor & Main Floor
 safe_fill(X1, Y_SUB, Z1, X2, YF-1, Z2, 'deepslate_bricks', 'hollow')
-
-# 3. Main Floor (Solid)
 safe_fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
 
-# 4. Access Hatches to Sub-floor
+# 4. Access Hatches
 for ox, oz in [(-9,-9), (9,-9), (-9,9), (9,9)]:
     setblock(CX+ox, YF, CZ+oz, 'oak_trapdoor')
 
@@ -54,38 +57,41 @@ safe_fill(X1, YF+1, Z2, X2, Y_WALL_TOP, Z2, 'deepslate_bricks')
 safe_fill(X1, YF+1, Z1, X1, Y_WALL_TOP, Z2, 'deepslate_bricks')
 safe_fill(X2, YF+1, Z1, X2, Y_WALL_TOP, Z2, 'deepslate_bricks')
 
-# 6. Wall-Integrated Essentials (Inside the north/south walls)
-# Replacing parts of the Deepslate Brick wall with useful blocks at Y=66
-# South wall essentials (at Z2)
+# 6. Wall-Integrated Essentials (South wall)
 setblock(CX, YF+1, Z2, 'crafting_table')
 for ox in [-1, 1]: setblock(CX+ox, YF+1, Z2, 'furnace')
 for ox in [-3, -2, 2, 3]: setblock(CX+ox, YF+1, Z2, 'chest')
 
-# 7. Windows
-safe_fill(X1, YF+2, CZ-4, X1, YF+4, CZ+4, 'glass_pane')
-safe_fill(X2, YF+2, CZ-4, X2, YF+4, CZ+4, 'glass_pane')
-
-# 8. North Entrance
-fill(CX-2, YF+1, Z1, CX+2, YF+3, Z1, 'air')
-
-# 9. Roof & Lighting
-safe_fill(X1, Y_WALL_TOP+1, Z1, X2, Y_WALL_TOP+1, Z2, 'deepslate_tiles')
+# 7. Lighting
 for lx in range(X1+3, X2, 6):
     for lz in range(Z1+3, Z2, 6):
         setblock(lx, Y_WALL_TOP, lz, 'glowstone')
 
-# 10. Mod Machine Placement (Un-wired)
-# NW: Power
-setblock(X1+2, YF+1, Z1+2, 'modern_industrialization:bronze_boiler')
-setblock(X1+2, YF+1, Z1+4, 'mekanism:advanced_energy_cube')
-# NE: Mekanism
-setblock(X2-2, YF+1, Z1+2, 'mekanism:digital_miner')
-setblock(X2-2, YF+1, Z1+5, 'mekanism:enrichment_chamber')
-# SW: MI
-setblock(X1+2, YF+1, Z2-2, 'modern_industrialization:electric_macerator')
-# SE: AE2
-setblock(X2-4, YF+1, Z2-4, 'ae2:controller')
-setblock(X2-5, YF+1, Z2-4, 'ae2:energy_acceptor')
-setblock(X2-2, YF+1, Z2-2, 'ae2:drive')
+# 8. THE MOD STUFF (Heavy Deployment)
 
-print("=== Mod Workshop Ready (Wall-Integrated)! ===")
+# NW: POWER GEN
+for i in range(4):
+    setblock(X1+1, YF+1, Z1+1+i, 'modern_industrialization:bronze_boiler')
+    setblock(X1+3, YF+1, Z1+1+i, 'mekanism:advanced_energy_cube')
+
+# NE: MEKANISM
+setblock(X2-1, YF+1, Z1+1, 'mekanism:digital_miner')
+machines = ['enrichment_chamber', 'crusher', 'energized_smelter', 'osmium_compressor']
+for i, m in enumerate(machines):
+    setblock(X2-3, YF+1, Z1+1+i, f'mekanism:{m}')
+
+# SW: MI PROCESSING
+mi_machines = ['electric_macerator', 'electric_furnace', 'electrolyzer', 'chemical_reactor']
+for i, m in enumerate(mi_machines):
+    setblock(X1+1, YF+1, Z2-1-i, f'modern_industrialization:{m}')
+
+# SE: AE2 STORAGE
+# 3x3 Controller Cluster
+for dx in range(3):
+    for dy in range(3):
+        setblock(X2-5+dx, YF+1+dy, Z2-5, 'ae2:controller')
+setblock(X2-6, YF+1, Z2-5, 'ae2:energy_acceptor')
+for i in range(6):
+    setblock(X2-1, YF+1+i, Z2-1, 'ae2:drive')
+
+print("=== Mod Workshop Restored & Upgraded! ===")
