@@ -20,9 +20,9 @@ def safe_fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     z1, z2 = min(z1, z2), max(z1, z2)
     
     # Break into Y-slices to stay under limit
-    # Max volume is 32768. Area of typical footprint is ~2500.
-    # So we can safely do 10-12 layers at a time.
-    chunk_size = 8
+    # Max volume is 32768. Footprint is ~4500.
+    # We use chunk_size = 6 to stay safe.
+    chunk_size = 6
     for y in range(y1, y2 + 1, chunk_size):
         ey = min(y + chunk_size - 1, y2)
         args = ['fill', x1, y, z1, x2, ey, z2, blk]
@@ -46,9 +46,9 @@ print("=== Clearing volume (Chunked) ===")
 safe_fill(X1-10, YF, Z1-15, X2+10, YF+TH+30, Z2+15, 'air')
 
 print("=== Foundation ===")
-safe_fill(X1-15, YF-15, Z1-15, X2+15, YF-1, 'dirt', 'keep')
-safe_fill(X1-TW, YF-1, Z1-TW, X2+TW, YF-1, 'obsidian')
-safe_fill(X1, YF, Z1, X2, YF, 'polished_deepslate')
+safe_fill(X1-15, YF-15, Z1-15, X2+15, YF-1, Z2+15, 'dirt', 'keep')
+safe_fill(X1-TW, YF-1, Z1-TW, X2+TW, YF-1, Z2+TW, 'obsidian')
+safe_fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
 
 print("=== Main Hall (Chunked) ===")
 # Hollow fill for walls - split into 4 side-fills to be safe
@@ -61,8 +61,8 @@ safe_fill(X1, YF, Z1, X1+1, Y2, Z2, 'deepslate_bricks')
 # East Wall
 safe_fill(X2-1, YF, Z1, X2, Y2, Z2, 'deepslate_bricks')
 # Inner Obsidian Lining
-safe_fill(X1+1, YF, Z1+1, X2-1, Y2-1, Z1+1, 'obsidian')
-safe_fill(X1+1, YF, Z2-1, X2-1, Y2-1, Z2-1, 'obsidian')
+safe_fill(X1+1, YF, Z1+1, X2-1, Y2-1, Z1+2, 'obsidian')
+safe_fill(X1+1, YF, Z2-2, X2-1, Y2-1, Z2-1, 'obsidian')
 
 print("=== Roof ===")
 safe_fill(X1, Y2, Z1, X2, Y2+2, Z2, 'deepslate_tiles')

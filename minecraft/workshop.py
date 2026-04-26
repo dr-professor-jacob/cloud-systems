@@ -16,7 +16,7 @@ def safe_fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     y1, y2 = min(y1, y2), max(y1, y2)
     z1, z2 = min(z1, z2), max(z1, z2)
     
-    chunk_size = 8
+    chunk_size = 6
     for y in range(y1, y2 + 1, chunk_size):
         ey = min(y + chunk_size - 1, y2)
         args = ['fill', x1, y, z1, x2, ey, z2, blk]
