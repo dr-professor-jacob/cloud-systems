@@ -10,7 +10,7 @@ echo "=== tofu init ==="
 tofu init
 
 echo "=== tofu apply ==="
-tofu apply -var "allowed_ssh_cidr=${MY_IP}" "$@"
+tofu apply -var "allowed_ssh_ip=${MY_IP}" "$@"
 
 PUBLIC_IP=$(tofu output -raw public_ip)
 echo "=== Instance ready at ${PUBLIC_IP} — waiting for SSH ==="
