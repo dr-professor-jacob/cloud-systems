@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Cathedral Workshop Interior - INLAND ELEVATED (Safe Build)
-Fixes the "partial building" issue by chunking large fill commands.
+Cathedral Workshop Interior - FAR INLAND HIGH
+Connected and functional, elevated at Y=85.
 """
 import subprocess, time
 
@@ -15,7 +15,6 @@ def safe_fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     x1, x2 = min(x1, x2), max(x1, x2)
     y1, y2 = min(y1, y2), max(y1, y2)
     z1, z2 = min(z1, z2), max(z1, z2)
-    
     chunk_size = 6
     for y in range(y1, y2 + 1, chunk_size):
         ey = min(y + chunk_size - 1, y2)
@@ -27,7 +26,7 @@ def setblock(x, y, z, blk):
     rcon('setblock', x, y, z, blk)
 
 # --- COORDINATES ---
-CX, CZ, YF = -80, 280, 75
+CX, CZ, YF = -80, 450, 85
 YC1 = YF + 15
 YC2 = YF + 39
 MID_X = CX - 1
@@ -44,14 +43,6 @@ safe_fill(CX-21, YF, MID_Z+1, MID_X, YF, CZ+17, 'gray_terracotta')
 safe_fill(MID_X+1, YF, MID_Z+1, CX+21, YF, CZ+17, 'purple_terracotta')
 safe_fill(MID_X-2, YF, MID_Z-2, MID_X+2, YF, MID_Z+2, 'crying_obsidian')
 safe_fill(CX-21, YC1, CZ-17, CX+21, YC1, MID_Z-5, 'deepslate_tiles')
-safe_fill(CX-9, YC1, CZ-16, CX+7, YC1, MID_Z-7, 'air')
-
-print("=== Room Dividers ===")
-safe_fill(CX-21, YF+1, MID_Z, CX+21, YC1-1, MID_Z, 'obsidian')
-safe_fill(CX-4, YF+1, MID_Z, CX+4, YF+6, MID_Z, 'air')
-safe_fill(MID_X, YF+1, CZ-17, MID_X, YC1-1, CZ+17, 'obsidian')
-safe_fill(MID_X, YF+1, CZ-11, MID_X, YF+6, CZ-5, 'air')
-safe_fill(MID_X, YF+1, CZ+5, MID_X, YF+6, CZ+11, 'air')
 
 print("=== Networks ===")
 safe_fill(CX-19, YC1-1, CZ-11, CX+18, YC1-1, CZ-11, 'mekanism:basic_universal_cable')
