@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-terrain_blend.py — Soil Specialist & Gap Sealer
-Fills the area with rich soil (dirt/mud/coarse_dirt) and ensures a flush building fit.
+terrain_blend.py — Inland Plateau Edition
+Levels the ground with soil and mud, ensuring a flush building fit in the new location.
 """
 import subprocess, time, random
 
@@ -15,43 +15,32 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     if mode: args.append(mode)
     rcon(*args)
 
-# Center and Bounds (Elevated to Y=75)
-CX, CZ, YF = -80, 149, 75
-X1, X2 = -103, -57
-Z1, Z2 = 130, 168
+# --- COORDINATES (Matches Cathedral Inland Edition) ---
+CX, CZ, YF = -80, 280, 64
+X1, X2 = CX - 23, CX + 23
+Z1, Z2 = CZ - 19, CZ + 19
 
-print("=== Applying Soil & Sealing Perimeter ===")
+print(f"=== Leveling Plateau at New Location: {CX}, {YF}, {CZ} ===")
 
-# 1. Fill the "One Block Gap" with Soil
+# 1. Fill Building Gaps
 print("--- Packing soil into building gaps ---")
-# Fill dirt directly against the walls to ensure no air remains
 fill(X1-2, YF-1, Z1-2, X2+2, YF-1, Z2+2, 'dirt', 'replace air')
 fill(X1-1, YF, Z1-1, X2+1, YF, Z2+1, 'grass_block', 'replace air')
 
-# 2. Large Scale Soil Infill
-print("--- Raising the plateau with mixed soil ---")
+# 2. Level the Earthen Plateau
+print("--- Raising the inland plateau ---")
+# Fill from sea level (62) to floor level (64) in a 60x60 area
 for y in range(60, YF):
-    # Base layer of dirt
-    fill(X1-25, y, Z1-25, X2+25, y, Z2+25, 'dirt', 'keep')
-    
-    # Randomly inject coarse dirt and mud for texture
-    for _ in range(10):
-        rx = random.randint(X1-25, X2+25)
-        rz = random.randint(Z1-25, Z2+25)
+    fill(CX-30, y, CZ-30, CX+30, y, CZ+30, 'dirt', 'keep')
+    # Texture with mud/coarse dirt
+    for _ in range(15):
+        rx = random.randint(CX-30, CX+30)
+        rz = random.randint(CZ-30, CZ+30)
         block = random.choice(['coarse_dirt', 'mud'])
-        fill(rx, y, rz, rx+3, y, rz+3, block, 'replace dirt')
+        fill(rx, y, rz, rx+2, y, rz+2, block, 'replace dirt')
 
-# 3. Smooth Soil Transition
-print("--- Creating natural soil slopes ---")
-for i in range(1, 15):
-    dist = 25 + i
-    h = YF - (i // 2)
-    if h < 62: h = 62
-    fill(X1-dist, h, Z1-dist, X2+dist, h, Z2+dist, 'dirt', 'keep')
+# 3. Naturalize Surface
+print("--- Surface greening ---")
+fill(CX-32, YF-1, CZ-32, CX+32, YF-1, CZ+32, 'grass_block', 'replace dirt')
 
-# 4. Final Surface Greening (Soil topcoat)
-fill(X1-25, YF-1, Z1-25, X2+25, YF-1, Z2+25, 'grass_block', 'replace dirt')
-fill(X1-25, YF-1, Z1-25, X2+25, YF-1, Z2+25, 'grass_block', 'replace coarse_dirt')
-fill(X1-25, YF-1, Z1-25, X2+25, YF-1, Z2+25, 'grass_block', 'replace mud')
-
-print("=== Soil leveling complete! ===")
+print("=== Plateau Leveling Complete! ===")

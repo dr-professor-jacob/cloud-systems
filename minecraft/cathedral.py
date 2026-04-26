@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Sci-Fi Cathedral "Church of the Void" - NORTH FACING & ELEVATED
-Elevated to avoid the "recessed cube" look and integrated with natural soil.
+Sci-Fi Cathedral "Church of the Void" - INLAND EDITION
+Moved to flat ground further from the shore.
 """
 import subprocess, time
 
@@ -20,22 +20,23 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
 def setblock(x, y, z, blk):
     rcon('setblock', x, y, z, blk)
 
-# Coordinates - Elevated to Y=75 to clear the deep recess
-CX, CZ, YF = -80, 149, 75
+# --- NEW COORDINATES (Further Inland) ---
+CX, CZ, YF = -80, 280, 64
 HW, HD, HH = 23, 19, 40
 X1, X2 = CX - HW, CX + HW
 Z1, Z2 = CZ - HD, CZ + HD
 Y1, Y2 = YF, YF + HH
 TW, TH = 4, 65
 
-print("=== Clearing upper airspace ===")
+print(f"=== Building at New Location: {CX}, {YF}, {CZ} ===")
+
+print("=== Clearing area ===")
 fill(X1-TW-5, YF, Z1-TW-10, X2+TW+5, YF+TH+30, Z2+TW+10, 'air')
 
 print("=== Foundation & Soil Leveling ===")
-# Build a massive earthen/mud foundation to level the terrain
-fill(X1-10, YF-15, Z1-10, X2+10, YF-1, Z2+10, 'dirt')
-fill(X1-8, YF-5, Z1-8, X2+8, YF-1, Z2+8, 'mud')
-fill(X1-TW-2, YF-1, Z1-TW-2, X2+TW+2, YF-1, Z2+TW+2, 'obsidian')
+# Level the flat ground with soil/mud first
+fill(X1-15, YF-5, Z1-15, X2+15, YF-1, Z2+15, 'dirt', 'keep')
+fill(X1-TW, YF-1, Z1-TW, X2+TW, YF-1, Z2+TW, 'obsidian')
 fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
 
 print("=== Main hall walls ===")
@@ -51,10 +52,8 @@ for tx, tz in towers:
     fill(tx-TW, YF+TH, tz-TW, tx+TW, YF+TH+5, tz+TW, 'obsidian')
     setblock(tx, YF+TH-2, tz, 'lava')
 
-print("=== North Entrance (Facing North) ===")
-# Cut entrance into the North wall (Z=Z1)
+print("=== North Entrance ===")
 fill(CX-4, YF, Z1-1, CX+4, YF+14, Z1+1, 'air')
-# Arch frame
 fill(CX-5, YF, Z1-1, CX-5, YF+15, Z1+1, 'obsidian')
 fill(CX+5, YF, Z1-1, CX+5, YF+15, Z1+1, 'obsidian')
 fill(CX-4, YF+15, Z1-1, CX+4, YF+15, Z1+1, 'obsidian')
@@ -64,4 +63,4 @@ print("=== Central Spire ===")
 fill(CX-5, Y2+7, CZ-5, CX+5, Y2+40, CZ+5, 'obsidian', 'hollow')
 setblock(CX, Y2+61, CZ, 'beacon')
 
-print("=== Cathedral Elevated! ===")
+print("=== Cathedral Complete! ===")

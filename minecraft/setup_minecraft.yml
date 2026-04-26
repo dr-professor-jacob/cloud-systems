@@ -137,26 +137,26 @@
         enabled: yes
         state: started
 
-    # ── Automatic World Building (DISABLED - REVERTING) ───────────────────
+    # ── Automatic World Building ─────────────────────────────────────────────
 
-    # - name: Wait for RCON to be ready (port 25575)
-    #   wait_for:
-    #     port: 25575
-    #     delay: 10
-    #     timeout: 300
+    - name: Wait for RCON to be ready (port 25575)
+      wait_for:
+        port: 25575
+        delay: 10
+        timeout: 300
 
-    # - name: Run cathedral builder
-    #   command: "python3 /home/{{ ansible_user }}/cathedral.py"
-    #   become: no
+    - name: Run cathedral builder
+      command: "python3 /home/{{ ansible_user }}/cathedral.py"
+      become: no
 
-    # - name: Run workshop builder
-    #   command: "python3 /home/{{ ansible_user }}/workshop.py"
-    #   become: no
+    - name: Run workshop builder
+      command: "python3 /home/{{ ansible_user }}/workshop.py"
+      become: no
 
-    # - name: Run terrain blending and fix
-    #   command: "python3 /home/{{ ansible_user }}/terrain_blend.py"
-    #   become: no
+    - name: Run terrain blending and fix
+      command: "python3 /home/{{ ansible_user }}/terrain_blend.py"
+      become: no
 
-    # - name: Rescue buddy shop
-    #   command: "python3 /home/{{ ansible_user }}/rescue_shop.py"
-    #   become: no
+    - name: Rescue buddy shop
+      command: "python3 /home/{{ ansible_user }}/rescue_shop.py"
+      become: no
