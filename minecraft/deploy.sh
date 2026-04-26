@@ -13,9 +13,10 @@ echo "=== tofu apply ==="
 tofu apply -var "allowed_ssh_ip=${MY_IP}" "$@"
 
 PUBLIC_IP=$(tofu output -raw public_ip)
+ADMIN_USER=$(tofu output -raw admin_username 2>/dev/null || echo "jrick")
 echo "=== Instance ready at ${PUBLIC_IP} — waiting for SSH ==="
-until ssh -i ./mc-server -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
-    ubuntu@"${PUBLIC_IP}" true 2>/dev/null; do
+until ssh -i ../cloud-systems -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 \
+    "${ADMIN_USER}@"${PUBLIC_IP} true 2>/dev/null; do
   echo "  waiting..."
   sleep 10
 done
