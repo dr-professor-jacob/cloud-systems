@@ -201,6 +201,7 @@ resource "azurerm_monitor_action_group" "mc_restart" {
 resource "azurerm_monitor_activity_log_alert" "mc_deallocated" {
   name                = "mc-vm-deallocated"
   resource_group_name = azurerm_resource_group.mc.name
+  location            = "global"
   scopes              = [azurerm_linux_virtual_machine.mc.id]
   description         = "Fires when spot VM is evicted — triggers auto-restart runbook"
 
