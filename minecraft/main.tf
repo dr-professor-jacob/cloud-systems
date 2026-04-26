@@ -135,7 +135,7 @@ resource "azurerm_linux_virtual_machine" "mc" {
 
 resource "azurerm_automation_account" "mc" {
   name                = "mc-automation"
-  location            = azurerm_resource_group.mc.location
+  location            = "eastus"
   resource_group_name = azurerm_resource_group.mc.name
   sku_name            = "Basic"
 
@@ -152,7 +152,7 @@ resource "azurerm_role_assignment" "automation_vm_start" {
 
 resource "azurerm_automation_runbook" "mc_restart" {
   name                    = "mc-auto-restart"
-  location                = azurerm_resource_group.mc.location
+  location                = "eastus"
   resource_group_name     = azurerm_resource_group.mc.name
   automation_account_name = azurerm_automation_account.mc.name
   log_verbose             = false
