@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-industrial_base.py — MI Starter Complex
+industrial_base.py — MI Starter Complex (Mob-Proof Edition)
 X: 1271-1308, Z: 1886-1929, Y: 60-69
-Focused on Early-Mid MI (Multi-blocks, Tanks, Pipes).
+Early-Mid MI setup with high-density lighting to prevent mobs.
 """
 import subprocess, time
 
@@ -25,7 +25,7 @@ Z1, Z2 = 1886, 1929
 YF = 61
 CX, CZ = (X1 + X2) // 2, (Z1 + Z2) // 2
 
-print(f"=== Constructing MI Industrial Complex at {CX}, {CZ} ===")
+print(f"=== Constructing Mob-Proof MI Complex at {CX}, {CZ} ===")
 
 # 1. Clear & Structural
 fill(X1, 60, Z1, X2, 69, Z2, 'air')
@@ -34,20 +34,20 @@ fill(X1, 61, Z1, X2, 68, Z1, 'deepslate_bricks') # Walls
 fill(X1, 61, Z2, X2, 68, Z2, 'deepslate_bricks')
 fill(X1, 61, Z1, X1, 68, Z2, 'deepslate_bricks')
 fill(X2, 61, Z1, X2, 68, Z2, 'deepslate_bricks')
+fill(X1, 69, Z1, X2, 69, Z2, 'deepslate_tiles') # Roof
 
 # 2. NW: MULTI-BLOCK ZONE
 # Bronze Blast Furnace (3x3x3 footprint)
 fill(X1+1, YF, Z1+1, X1+3, YF+2, Z1+3, 'modern_industrialization:firebrick')
-setblock(X1+2, YF+1, Z1+1, 'modern_industrialization:bronze_blast_furnace') # The controller
+setblock(X1+2, YF+1, Z1+1, 'modern_industrialization:bronze_blast_furnace')
 # Coke Oven (3x3x3 footprint)
 fill(X1+5, YF, Z1+1, X1+7, YF+2, Z1+3, 'modern_industrialization:coke_oven_brick')
 setblock(X1+6, YF+1, Z1+1, 'modern_industrialization:coke_oven')
 
-# 3. NE: FLUID STORAGE (Tanks & Pipes)
+# 3. NE: FLUID STORAGE
 for i in range(4):
     tx = X2-2-i*2
     setblock(tx, YF, Z1+1, 'modern_industrialization:bronze_tank')
-    # Connect with fluid pipes
     setblock(tx, YF-1, Z1+1, 'modern_industrialization:fluid_pipe')
 fill(X2-8, YF-1, Z1+1, X2-2, YF-1, Z1+1, 'modern_industrialization:fluid_pipe')
 
@@ -55,20 +55,32 @@ fill(X2-8, YF-1, Z1+1, X2-2, YF-1, Z1+1, 'modern_industrialization:fluid_pipe')
 setblock(X1+1, YF, Z2-2, 'modern_industrialization:bronze_boiler')
 setblock(X1+3, YF, Z2-2, 'modern_industrialization:bronze_macerator')
 setblock(X1+5, YF, Z2-2, 'modern_industrialization:bronze_furnace')
-# Pre-wire with Bronze Pipes
 fill(X1+1, YF-1, Z2-2, X1+5, YF-1, Z2-2, 'modern_industrialization:pipe')
 
 # 5. SE: QUARRY ZONE
 setblock(X2-2, YF, Z2-2, 'modern_industrialization:quarry')
-setblock(X2-2, YF, Z2-4, 'modern_industrialization:bronze_tank') # Steam buffer for quarry
+setblock(X2-2, YF, Z2-4, 'modern_industrialization:bronze_tank')
 
-# 6. STORAGE & LOGISTICS
+# 6. STORAGE
 for i in range(4):
     setblock(X2-1, YF, Z2-1-i, 'pneumaticcraft:reinforced_chest')
 
-# 7. LIGHTING
-for x in [X1+4, CX, X2-4]:
-    for z in [Z1+4, CZ, Z2-4]:
-        setblock(x, 68, z, 'sea_lantern')
+# 7. HIGH-DENSITY LIGHTING (Anti-Mob)
+print("--- Installing Anti-Mob Lighting Grid ---")
+# Ceiling Recessed Grid
+for lx in range(X1+2, X2, 6):
+    for lz in range(Z1+2, Z2, 6):
+        setblock(lx, 68, lz, 'sea_lantern')
 
-print("=== MI Complex Built and Ready for Steel! ===")
+# Wall Recessed Lighting (Eye level Y=63)
+for x in range(X1+4, X2, 8):
+    setblock(x, 63, Z1, 'sea_lantern')
+    setblock(x, 63, Z2, 'sea_lantern')
+for z in range(Z1+4, Z2, 8):
+    setblock(X1, 63, z, 'sea_lantern')
+    setblock(X2, 63, z, 'sea_lantern')
+
+# Final Sweep: Purge any mobs currently inside
+rcon('kill', f'@e[type=!player,x={CX},y={YF},z={CZ},distance=..40]')
+
+print("=== MI Complex Built. Area is Lit and Mob-Free! ===")
