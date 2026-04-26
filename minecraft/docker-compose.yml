@@ -6,8 +6,6 @@ services:
     ports:
       - "25565:25565"
       - "25575:25575"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     environment:
       EULA: "TRUE"
       TYPE: FTBA
@@ -20,6 +18,8 @@ services:
       MAX_PLAYERS: "20"
       DIFFICULTY: normal
       MOTD: "FTB NeoTech"
+      # Server stays active even when empty (for AFK automation)
+      STOP_SERVER_ANNOUNCE_DELAY: "60"
     volumes:
       - /opt/minecraft/data:/data
     tty: true

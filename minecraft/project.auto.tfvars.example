@@ -1,0 +1,7 @@
+# Copy to project.auto.tfvars — no credentials needed, uses your existing
+# Azure CLI login (same as the root Terraform config).
+
+location            = "southcentralus"
+admin_username      = "jrick"
+ssh_public_key_path = "../cloud-systems.pub"
+allowed_ssh_ip      = "YOUR_IP/32"
