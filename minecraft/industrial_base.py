@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-industrial_base.py — Dense MI Automation Base v7
-X: 1271-1308, Z: 1886-1929, Y: 60-69
-Full Multiblocks, Item/Fluid Pipe Networks, and Steam Power Grid.
+industrial_base.py — Pro MI Industrial Complex v8
+X: 1271-1308, Z: 1886-1929, Y: 58-69
+Hollow Multiblocks, Logic Basement, and High-Density Automation.
 """
 import subprocess, time
 
@@ -25,77 +25,70 @@ Z1, Z2 = 1886, 1929
 YF = 61
 CX, CZ = (X1 + X2) // 2, (Z1 + Z2) // 2
 
-print(f"=== Constructing Dense MI Industrial Base at {CX}, {CZ} ===")
+print(f"=== Constructing Pro MI Complex at {CX}, {CZ} ===")
 
-# 1. Structural Reset
-fill(X1, 60, Z1, X2, 69, Z2, 'air')
-fill(X1, 60, Z1, X2, 60, Z2, 'polished_deepslate')
-fill(X1, 61, Z1, X2, 68, Z1, 'deepslate_bricks')
+# 1. Total Reset (Deep clearing for basement)
+fill(X1, 58, Z1, X2, 69, Z2, 'air')
+fill(X1, 57, Z1, X2, 57, Z2, 'polished_deepslate') # Foundation floor
+fill(X1, 61, Z1, X2, 68, Z1, 'deepslate_bricks') # Walls
 fill(X1, 61, Z2, X2, 68, Z2, 'deepslate_bricks')
 fill(X1, 61, Z1, X1, 68, Z2, 'deepslate_bricks')
 fill(X2, 61, Z1, X2, 68, Z2, 'deepslate_bricks')
-fill(X1, 69, Z1, X2, 69, Z2, 'deepslate_tiles')
+fill(X1, 69, Z1, X2, 69, Z2, 'deepslate_tiles') # Roof
 
-# 2. SW: FULL MULTIBLOCKS (Blast Furnaces & Coke Ovens)
-# Coke Oven 1
-fill(X1+2, YF, Z2-5, X1+4, YF+2, Z2-3, 'modern_industrialization:coke_oven_brick')
-setblock(X1+3, YF+1, Z2-5, 'modern_industrialization:coke_oven')
-# Coke Oven 2
-fill(X1+6, YF, Z2-5, X1+8, YF+2, Z2-3, 'modern_industrialization:coke_oven_brick')
-setblock(X1+7, YF+1, Z2-5, 'modern_industrialization:coke_oven')
+# 2. LOGISTICS BASEMENT (Hollow space for pipes/cables)
+fill(X1+1, 58, Z1+1, X2-1, 60, Z2-1, 'air')
+fill(X1+1, 61, Z1+1, X2-1, 61, Z2-1, 'polished_deepslate') # Main Working Floor
 
-# Bronze Blast Furnace 1
-fill(X1+10, YF, Z2-5, X1+12, YF+2, Z2-3, 'modern_industrialization:firebrick')
-setblock(X1+11, YF+1, Z2-5, 'modern_industrialization:bronze_blast_furnace')
-# Bronze Blast Furnace 2
-fill(X1+14, YF, Z2-5, X1+16, YF+2, Z2-3, 'modern_industrialization:firebrick')
-setblock(X1+15, YF+1, Z2-5, 'modern_industrialization:bronze_blast_furnace')
+# 3. HOLLOW COKE OVENS (NW)
+for i in range(2):
+    oz = Z1 + 2 + (i*4)
+    # 3x3x3 Hollow Structure
+    fill(X1+2, YF, oz, X1+4, YF+2, oz+2, 'modern_industrialization:coke_oven_brick', 'hollow')
+    setblock(X1+3, YF+1, oz, 'modern_industrialization:coke_oven') # Controller
+    # Hatches
+    setblock(X1+2, YF+1, oz+1, 'modern_industrialization:bronze_item_input_hatch')
+    setblock(X1+4, YF+1, oz+1, 'modern_industrialization:bronze_item_output_hatch')
+    setblock(X1+3, YF, oz+1, 'modern_industrialization:bronze_fluid_output_hatch')
 
-# 3. NW: STEAM POWER GRID
-# 4 Boilers in a row
+# 4. HOLLOW BLAST FURNACES (NE)
+for i in range(2):
+    oz = Z1 + 2 + (i*4)
+    # 3x3x3 Hollow Firebrick
+    fill(X2-4, YF, oz, X2-2, YF+2, oz+2, 'modern_industrialization:firebrick', 'hollow')
+    setblock(X2-3, YF+1, oz, 'modern_industrialization:bronze_blast_furnace')
+    # Hatches
+    setblock(X2-2, YF+1, oz+1, 'modern_industrialization:bronze_item_input_hatch')
+    setblock(X2-4, YF+1, oz+1, 'modern_industrialization:bronze_item_output_hatch')
+    setblock(X2-3, YF, oz+1, 'modern_industrialization:bronze_energy_input_hatch')
+
+# 5. DENSE PROCESSING (SW)
 for i in range(4):
-    bx = X1+2 + (i*2)
-    setblock(bx, YF, Z1+2, 'modern_industrialization:bronze_boiler')
-    # Fluid pipe bus for Steam (above boilers)
-    setblock(bx, YF+1, Z1+2, 'modern_industrialization:fluid_pipe')
-fill(X1+2, YF+1, Z1+2, X1+8, YF+1, Z1+2, 'modern_industrialization:fluid_pipe')
+    setblock(X1+2, YF, Z2-2-i, 'modern_industrialization:bronze_macerator')
+    setblock(X1+4, YF, Z2-2-i, 'modern_industrialization:bronze_furnace')
+    # Item Pipe Spine
+    setblock(X1+3, YF, Z2-2-i, 'modern_industrialization:item_pipe')
 
-# 4. NE: AUTOMATED ORE LINE
-# Processing Machines
-machines = ['bronze_macerator', 'bronze_furnace', 'bronze_macerator', 'bronze_furnace']
-for i, m in enumerate(machines):
-    mx = X2-10 + (i*2)
-    setblock(mx, YF, Z1+2, f'modern_industrialization:{m}')
-    # Item Pipe Bus (behind machines)
-    setblock(mx, YF, Z1+1, 'modern_industrialization:item_pipe')
-    # Fluid Pipe Bus (under floor for Steam)
-    setblock(mx, YF-1, Z1+2, 'modern_industrialization:fluid_pipe')
-fill(X2-10, YF, Z1+1, X2-4, YF, Z1+1, 'modern_industrialization:item_pipe')
-fill(X2-10, YF-1, Z1+2, X2-4, YF-1, Z1+2, 'modern_industrialization:fluid_pipe')
+# 6. TANK FARM (SE)
+for tx in range(2):
+    for tz in range(2):
+        bx, bz = X2-5+tx*2, Z2-5+tz*2
+        fill(bx, YF, bz, bx, YF+2, bz, 'modern_industrialization:bronze_tank')
+        setblock(bx, YF-1, bz, 'modern_industrialization:fluid_pipe')
 
-# 5. SE: STORAGE & FLUID TANKS
-for i in range(4):
-    tx = X2-2-i*2
-    setblock(tx, YF, Z2-2, 'modern_industrialization:bronze_tank')
-    setblock(tx, YF-1, Z2-2, 'modern_industrialization:fluid_pipe')
-fill(X2-8, YF-1, Z2-2, X2-2, YF-1, Z2-2, 'modern_industrialization:fluid_pipe')
+# 7. QUARRY & STEAM GEN (Center-North)
+setblock(CX, YF, Z1+2, 'modern_industrialization:quarry')
+setblock(CX-2, YF, Z1+2, 'modern_industrialization:bronze_boiler')
+setblock(CX+2, YF, Z1+2, 'modern_industrialization:bronze_boiler')
+# Steam pipe under floor
+fill(CX-2, YF-1, Z1+2, CX+2, YF-1, Z1+2, 'modern_industrialization:fluid_pipe')
 
-# 8 Reinforced Chests
-for i in range(8):
-    setblock(X2-1, YF, Z2-2-i, 'pneumaticcraft:reinforced_chest')
-
-# 6. INFRASTRUCTURE: The Quarry
-setblock(X2-2, YF, CZ, 'modern_industrialization:quarry')
-setblock(X2-3, YF, CZ, 'modern_industrialization:fluid_pipe')
-
-# 7. MOB-PROOF LIGHTING
+# 8. LIGHTING
 for x in range(X1+4, X2, 8):
     for z in range(Z1+4, Z2, 8):
         setblock(x, 68, z, 'sea_lantern')
-        setblock(x, 63, Z1, 'sea_lantern')
-        setblock(x, 63, Z2, 'sea_lantern')
 
-# Kill mobs currently inside
+# Kill any stray mobs
 rcon('kill', f'@e[type=!player,x={CX},y={YF},z={CZ},distance=..50]')
 
-print("=== MI Factory Floor Initialized with Multiblocks and Piping! ===")
+print("=== Pro MI Factory floor initialized with hollow multiblocks! ===")
