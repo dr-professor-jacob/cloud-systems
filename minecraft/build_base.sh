@@ -1,39 +1,40 @@
 #!/bin/bash
-# build_base.sh — v21 Integrated Automation
-# Using simplified MI IDs and identity spoofing.
+# build_base.sh — v22 "Fire Clay" Edition
+# Using verified fire_clay_bricks ID.
 # X: 1271-1309, Z: 1886-1930, Y: 60-69
 
 RCON="sudo docker exec minecraft rcon-cli --"
 PLAYER="Dr4g0nS14yer"
 EXEC="execute as $PLAYER at $PLAYER run"
 
-echo "=== 1. Re-Shelling ==="
+echo "=== 1. Wiping and Re-Shelling ==="
 $RCON "$EXEC fill 1271 60 1886 1309 69 1930 air"
 $RCON "$EXEC fill 1271 60 1886 1309 60 1930 polished_deepslate"
 $RCON "$EXEC fill 1271 69 1886 1309 69 1930 deepslate_tiles"
 $RCON "$EXEC fill 1271 61 1886 1309 69 1886 deepslate_bricks"
-$RCON "$EXEC fill 1271 61 1929 1309 69 1929 deepslate_bricks"
+$RCON "$EXEC fill 1271 61 1929 1309 69 1930 deepslate_bricks"
+$RCON "$EXEC fill 1271 61 1886 1271 69 1929 deepslate_bricks"
+$RCON "$EXEC fill 1309 61 1886 1309 69 1929 deepslate_bricks"
 
-echo "=== 2. MI Multiblocks (Using confirmed IDs) ==="
+echo "=== 2. MI Multiblocks (Using verified IDs) ==="
 # Coke Oven
 $RCON "$EXEC fill 1273 61 1889 1275 63 1891 modern_industrialization:coke_oven_bricks hollow"
 $RCON "$EXEC setblock 1274 62 1889 modern_industrialization:coke_oven"
 
-# Blast Furnace
-$RCON "$EXEC fill 1304 61 1889 1306 63 1891 modern_industrialization:firebricks hollow"
+# Blast Furnace (Using FIRE CLAY BRICKS)
+$RCON "$EXEC fill 1304 61 1889 1306 63 1891 modern_industrialization:fire_clay_bricks hollow"
 $RCON "$EXEC setblock 1305 62 1889 modern_industrialization:bronze_blast_furnace"
 
-echo "=== 3. Processing Line & Simplified Pipes ==="
+echo "=== 3. Processing Line & Pipes ==="
 for i in {0..7}; do
   pz=$((1925 - i*3))
   $RCON "$EXEC setblock 1273 61 $pz modern_industrialization:bronze_macerator"
   $RCON "$EXEC setblock 1275 61 $pz modern_industrialization:bronze_furnace"
-  # Using the confirmed simplified ID ':pipe'
   $RCON "$EXEC setblock 1272 61 $pz modern_industrialization:pipe"
   $RCON "$EXEC setblock 1273 60 $pz modern_industrialization:pipe"
 done
 
-# Infrastructure
+# Quarry
 $RCON "$EXEC setblock 1305 61 1925 modern_industrialization:quarry"
 $RCON "$EXEC setblock 1304 61 1925 modern_industrialization:pipe"
 
@@ -47,4 +48,4 @@ done
 # Kill mobs
 $RCON "$EXEC kill @e[type=!player,distance=..60]"
 
-echo "=== v21 Build Complete! ==="
+echo "=== v22 Build Complete! ==="
