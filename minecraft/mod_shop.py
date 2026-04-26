@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-mod_shop.py — Simplified Automation Workshop v5
+mod_shop.py — Simplified Stealth Workshop v6
 Buries the entire structure for stealth.
 Automates Ore -> Ingot with minimal footprint.
-Removed AE2.
+Height trimmed to Y=77.
 """
 import subprocess, time
 
@@ -31,11 +31,17 @@ CX, CZ = 1295, 1900
 YF = 65
 X1, X2 = CX - 8, CX + 8
 Z1, Z2 = CZ - 8, CZ + 8
-Y_WALL_TOP = YF + 4
+Y_WALL_TOP = YF + 4 # 69
+Y_HILL_TOP = 77
 
-print(f"=== Building Simplified Stealth Workshop at {CX}, {CZ} ===")
+print(f"=== Building Simplified Stealth Workshop (Trimmed to Y:{Y_HILL_TOP}) at {CX}, {CZ} ===")
 
-# 1. CONSTRUCT INTERIOR (Smaller footprint: 17x17)
+# 1. CLEAR EXCESS TERRAIN (Trim the high hill down to 77)
+# Wipe anything above 77 back to air
+print("--- Trimming excess hill height ---")
+safe_fill(X1-15, Y_HILL_TOP + 1, Z1-15, X2+15, 100, Z2+15, 'air')
+
+# 2. CONSTRUCT INTERIOR
 safe_fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
 safe_fill(X1, YF+1, Z1, X2, Y_WALL_TOP, Z1, 'deepslate_bricks')
 safe_fill(X1, YF+1, Z2, X2, Y_WALL_TOP, Z2, 'deepslate_bricks')
@@ -43,45 +49,33 @@ safe_fill(X1, YF+1, Z1, X1, Y_WALL_TOP, Z2, 'deepslate_bricks')
 safe_fill(X2, YF+1, Z1, X2, Y_WALL_TOP, Z2, 'deepslate_bricks')
 safe_fill(X1, Y_WALL_TOP+1, Z1, X2, Y_WALL_TOP+1, Z2, 'deepslate_tiles')
 
-# 2. BURY FOR STEALTH (No Moat)
-print("--- Burying structure for stealth ---")
+# 3. BURY FOR STEALTH (Flush with Y=77)
+print("--- Burying structure to Y=77 ---")
 # Surround with dirt
-safe_fill(X1-5, 60, Z1-5, X2+5, 84, Z1-1, 'dirt', 'replace air')
-safe_fill(X1-5, 60, Z2+1, X2+5, 84, Z2+10, 'dirt', 'replace air')
-safe_fill(X1-5, 60, Z1-5, X1-1, 84, Z2+5, 'dirt', 'replace air')
-safe_fill(X2+1, 60, Z1-5, X2+5, 84, Z2+5, 'dirt', 'replace air')
-# Cover roof
-safe_fill(X1-5, Y_WALL_TOP+2, Z1-5, X2+5, 84, Z2+5, 'dirt', 'replace air')
-# Grass cap
-safe_fill(X1-6, 85, Z1-6, X2+6, 85, Z2+6, 'grass_block', 'replace air')
+safe_fill(X1-5, 60, Z1-5, X2+5, Y_HILL_TOP-1, Z1-1, 'dirt', 'replace air')
+safe_fill(X1-5, 60, Z2+1, X2+5, Y_HILL_TOP-1, Z2+10, 'dirt', 'replace air')
+safe_fill(X1-5, 60, Z1-5, X1-1, Y_HILL_TOP-1, Z2+5, 'dirt', 'replace air')
+safe_fill(X2+1, 60, Z1-5, X2+5, Y_HILL_TOP-1, Z2+5, 'dirt', 'replace air')
+# Cover roof up to 76
+safe_fill(X1-5, Y_WALL_TOP+2, Z1-5, X2+5, Y_HILL_TOP-1, Z2+5, 'dirt', 'replace air')
+# Grass cap exactly at 77
+safe_fill(X1-10, Y_HILL_TOP, Z1-10, X2+10, Y_HILL_TOP, Z2+10, 'grass_block', 'replace air')
+safe_fill(X1-10, Y_HILL_TOP, Z1-10, X2+10, Y_HILL_TOP, Z2+10, 'grass_block', 'replace dirt')
 
-# 3. ORE AUTOMATION LINE
+# 4. ORE AUTOMATION LINE
 print("--- Deploying Ore-to-Ingot Line ---")
-
-# NW: Power gen (2 Boilers + 2 Energy Cubes)
 setblock(X1+1, YF+1, Z1+1, 'modern_industrialization:bronze_boiler')
 setblock(X1+1, YF+1, Z1+2, 'modern_industrialization:bronze_boiler')
 setblock(X1+3, YF+1, Z1+1, 'mekanism:advanced_energy_cube')
 setblock(X1+3, YF+1, Z1+2, 'mekanism:advanced_energy_cube')
-
-# NE: The Input (Digital Miner)
 setblock(X2-2, YF+1, Z1+1, 'mekanism:digital_miner')
-
-# Processing Line (Center-North)
-# Crusher -> Enrichment -> Smelter
 setblock(CX-2, YF+1, Z1+2, 'mekanism:crusher')
 setblock(CX,   YF+1, Z1+2, 'mekanism:enrichment_chamber')
 setblock(CX+2, YF+1, Z1+2, 'mekanism:energized_smelter')
-
-# Output Storage (Center)
 setblock(CX, YF+1, CZ, 'chest')
-
-# Wall Essentials (South wall)
 setblock(CX, YF+1, Z2, 'crafting_table')
 setblock(CX-1, YF+1, Z2, 'furnace')
 setblock(CX+1, YF+1, Z2, 'furnace')
-
-# Lighting (Center)
 setblock(CX, Y_WALL_TOP, CZ, 'glowstone')
 
-print("=== Simplified Stealth Base Complete! ===")
+print("=== Trimmed Stealth Base Complete! ===")
