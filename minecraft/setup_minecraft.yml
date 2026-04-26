@@ -14,24 +14,24 @@
       file:
         path: /opt/minecraft/data
         state: directory
-        owner: {{ ansible_user }}
-        group: {{ ansible_user }}
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0755"
 
     - name: Deploy docker-compose.yml
       copy:
         src: docker-compose.yml
         dest: /opt/minecraft/docker-compose.yml
-        owner: {{ ansible_user }}
-        group: {{ ansible_user }}
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0644"
 
     - name: Write .env with RCON password
       copy:
         dest: /opt/minecraft/.env
         content: "RCON_PASSWORD={{ rcon_password }}\n"
-        owner: {{ ansible_user }}
-        group: {{ ansible_user }}
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0600"
 
     # ── rclone ──────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@
 
     - name: Create scripts directory
       file:
-        path: /home/{{ ansible_user }}/scripts
+        path: "/home/{{ ansible_user }}/scripts"
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
@@ -134,13 +134,13 @@
         timeout: 300
 
     - name: Run cathedral builder
-      command: python3 /home/{{ ansible_user }}/cathedral.py
+      command: "python3 /home/{{ ansible_user }}/cathedral.py"
       become: no
 
     - name: Run workshop builder
-      command: python3 /home/{{ ansible_user }}/workshop.py
+      command: "python3 /home/{{ ansible_user }}/workshop.py"
       become: no
 
     - name: Run terrain blending and fix
-      command: python3 /home/{{ ansible_user }}/terrain_blend.py
+      command: "python3 /home/{{ ansible_user }}/terrain_blend.py"
       become: no
