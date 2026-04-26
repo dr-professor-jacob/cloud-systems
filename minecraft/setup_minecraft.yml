@@ -14,24 +14,24 @@
       file:
         path: /opt/minecraft/data
         state: directory
-        owner: ubuntu
-        group: ubuntu
+        owner: {{ ansible_user }}
+        group: {{ ansible_user }}
         mode: "0755"
 
     - name: Deploy docker-compose.yml
       copy:
         src: docker-compose.yml
         dest: /opt/minecraft/docker-compose.yml
-        owner: ubuntu
-        group: ubuntu
+        owner: {{ ansible_user }}
+        group: {{ ansible_user }}
         mode: "0644"
 
     - name: Write .env with RCON password
       copy:
         dest: /opt/minecraft/.env
         content: "RCON_PASSWORD={{ rcon_password }}\n"
-        owner: ubuntu
-        group: ubuntu
+        owner: {{ ansible_user }}
+        group: {{ ansible_user }}
         mode: "0600"
 
     # ── rclone ──────────────────────────────────────────────────────────────
