@@ -106,7 +106,6 @@
         - terrain_blend.py
         - fixes.py
         - validate.py
-        - rescue_shop.py
         - restore.sh
 
     # ── systemd service for docker-compose ───────────────────────────────────
@@ -155,8 +154,4 @@
 
     - name: Run terrain blending and fix
       command: "python3 /home/{{ ansible_user }}/terrain_blend.py"
-      become: no
-
-    - name: Rescue buddy shop
-      command: "python3 /home/{{ ansible_user }}/rescue_shop.py"
       become: no
