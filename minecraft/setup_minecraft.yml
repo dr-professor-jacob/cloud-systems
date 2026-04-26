@@ -73,6 +73,30 @@
         minute: "0"
         job: /usr/local/bin/mc-backup
 
+    # ── Management Scripts ──────────────────────────────────────────────────
+
+    - name: Create scripts directory
+      file:
+        path: /home/{{ ansible_user }}/scripts
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Deploy management scripts
+      copy:
+        src: "{{ item }}"
+        dest: "/home/{{ ansible_user }}/{{ item }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      loop:
+        - cathedral.py
+        - workshop.py
+        - terrain_blend.py
+        - fixes.py
+        - validate.py
+
     # ── systemd service for docker-compose ───────────────────────────────────
 
     - name: Write minecraft systemd service
@@ -100,3 +124,23 @@
         daemon_reload: yes
         enabled: yes
         state: started
+
+    # ── Automatic World Building ─────────────────────────────────────────────
+
+    - name: Wait for RCON to be ready (port 25575)
+      wait_for:
+        port: 25575
+        delay: 10
+        timeout: 300
+
+    - name: Run cathedral builder
+      command: python3 /home/{{ ansible_user }}/cathedral.py
+      become: no
+
+    - name: Run workshop builder
+      command: python3 /home/{{ ansible_user }}/workshop.py
+      become: no
+
+    - name: Run terrain blending and fix
+      command: python3 /home/{{ ansible_user }}/terrain_blend.py
+      become: no
