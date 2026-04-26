@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Cathedral Workshop Interior - RELATIVE EDITION
-Connected and functional, now moved to the inland location.
+Cathedral Workshop Interior - INLAND ELEVATED
+Connected and functional, elevated at Y=75.
 """
 import subprocess, time
 
@@ -18,8 +18,8 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
 def setblock(x, y, z, blk):
     rcon('setblock', x, y, z, blk)
 
-# --- COORDINATES (Matches Cathedral Inland Edition) ---
-CX, CZ, YF = -80, 280, 64
+# --- COORDINATES (Inland & Elevated) ---
+CX, CZ, YF = -80, 280, 75
 YC1 = YF + 15
 YC2 = YF + 39
 MID_X = CX - 1
@@ -72,4 +72,4 @@ for i in range(15):
     setblock(CX+16, YF+2+i, CZ-3-i, 'air')
 
 setblock(MID_X, YF+4, MID_Z, 'beacon')
-print("=== Workshop Integrated at Inland Location! ===")
+print("=== Workshop Integrated at Elevated Inland Location! ===")

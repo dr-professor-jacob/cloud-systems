@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-terrain_blend.py — Inland Plateau Edition
-Levels the ground with soil and mud, ensuring a flush building fit in the new location.
+terrain_blend.py — Elevated Inland Plateau
+Raised to Y=75 to match the cathedral floor.
 """
 import subprocess, time, random
 
@@ -15,12 +15,12 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     if mode: args.append(mode)
     rcon(*args)
 
-# --- COORDINATES (Matches Cathedral Inland Edition) ---
-CX, CZ, YF = -80, 280, 64
+# --- COORDINATES (Inland & Elevated) ---
+CX, CZ, YF = -80, 280, 75
 X1, X2 = CX - 23, CX + 23
 Z1, Z2 = CZ - 19, CZ + 19
 
-print(f"=== Leveling Plateau at New Location: {CX}, {YF}, {CZ} ===")
+print(f"=== Leveling Elevated Plateau: {CX}, {YF}, {CZ} ===")
 
 # 1. Fill Building Gaps
 print("--- Packing soil into building gaps ---")
@@ -28,19 +28,26 @@ fill(X1-2, YF-1, Z1-2, X2+2, YF-1, Z2+2, 'dirt', 'replace air')
 fill(X1-1, YF, Z1-1, X2+1, YF, Z2+1, 'grass_block', 'replace air')
 
 # 2. Level the Earthen Plateau
-print("--- Raising the inland plateau ---")
-# Fill from sea level (62) to floor level (64) in a 60x60 area
+print("--- Raising the massive inland plateau ---")
+# Build from current ground (approx 64) up to floor (75)
 for y in range(60, YF):
-    fill(CX-30, y, CZ-30, CX+30, y, CZ+30, 'dirt', 'keep')
+    fill(CX-35, y, CZ-35, CX+35, y, CZ+35, 'dirt', 'keep')
     # Texture with mud/coarse dirt
-    for _ in range(15):
-        rx = random.randint(CX-30, CX+30)
-        rz = random.randint(CZ-30, CZ+30)
+    for _ in range(20):
+        rx = random.randint(CX-35, CX+35)
+        rz = random.randint(CZ-35, CZ+35)
         block = random.choice(['coarse_dirt', 'mud'])
         fill(rx, y, rz, rx+2, y, rz+2, block, 'replace dirt')
 
-# 3. Naturalize Surface
-print("--- Surface greening ---")
-fill(CX-32, YF-1, CZ-32, CX+32, YF-1, CZ+32, 'grass_block', 'replace dirt')
+# 3. Create Natural Slopes
+print("--- Creating slopes down to natural ground ---")
+for i in range(1, 20):
+    dist = 35 + i
+    h = YF - (i // 2)
+    if h < 62: h = 62
+    fill(CX-dist, h, CZ-dist, CX+dist, h, CZ+dist, 'dirt', 'keep')
 
-print("=== Plateau Leveling Complete! ===")
+# 4. Surface Greening
+fill(CX-35, YF-1, CZ-35, CX+35, YF-1, CZ+35, 'grass_block', 'replace dirt')
+
+print("=== Elevated Plateau Complete! ===")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Sci-Fi Cathedral "Church of the Void" - INLAND EDITION
-Moved to flat ground further from the shore.
+Sci-Fi Cathedral "Church of the Void" - INLAND ELEVATED
+Elevated to Y=75 at the inland location.
 """
 import subprocess, time
 
@@ -20,22 +20,22 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
 def setblock(x, y, z, blk):
     rcon('setblock', x, y, z, blk)
 
-# --- NEW COORDINATES (Further Inland) ---
-CX, CZ, YF = -80, 280, 64
+# --- COORDINATES (Inland & Elevated) ---
+CX, CZ, YF = -80, 280, 75
 HW, HD, HH = 23, 19, 40
 X1, X2 = CX - HW, CX + HW
 Z1, Z2 = CZ - HD, CZ + HD
 Y1, Y2 = YF, YF + HH
 TW, TH = 4, 65
 
-print(f"=== Building at New Location: {CX}, {YF}, {CZ} ===")
+print(f"=== Building at Elevated Inland Site: {CX}, {YF}, {CZ} ===")
 
-print("=== Clearing area ===")
+print("=== Clearing upper airspace ===")
 fill(X1-TW-5, YF, Z1-TW-10, X2+TW+5, YF+TH+30, Z2+TW+10, 'air')
 
 print("=== Foundation & Soil Leveling ===")
-# Level the flat ground with soil/mud first
-fill(X1-15, YF-5, Z1-15, X2+15, YF-1, Z2+15, 'dirt', 'keep')
+# Massive soil mound
+fill(X1-15, YF-15, Z1-15, X2+15, YF-1, Z2+15, 'dirt', 'keep')
 fill(X1-TW, YF-1, Z1-TW, X2+TW, YF-1, Z2+TW, 'obsidian')
 fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
 
@@ -52,7 +52,7 @@ for tx, tz in towers:
     fill(tx-TW, YF+TH, tz-TW, tx+TW, YF+TH+5, tz+TW, 'obsidian')
     setblock(tx, YF+TH-2, tz, 'lava')
 
-print("=== North Entrance ===")
+print("=== North Entrance (Facing North) ===")
 fill(CX-4, YF, Z1-1, CX+4, YF+14, Z1+1, 'air')
 fill(CX-5, YF, Z1-1, CX-5, YF+15, Z1+1, 'obsidian')
 fill(CX+5, YF, Z1-1, CX+5, YF+15, Z1+1, 'obsidian')
