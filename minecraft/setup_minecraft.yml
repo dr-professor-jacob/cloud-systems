@@ -59,11 +59,14 @@
 
     # ── Backup script + cron ─────────────────────────────────────────────────
 
-    - name: Deploy backup script
+    - name: Deploy backup scripts
       copy:
-        src: backup.sh
-        dest: /usr/local/bin/mc-backup
+        src: "{{ item }}"
+        dest: /usr/local/bin/{{ item | basename | replace('.sh', '') }}
         mode: "0755"
+      loop:
+        - backup.sh
+        - quicksave.sh
 
     - name: Schedule daily backup at 04:00 UTC
       cron:
@@ -71,7 +74,14 @@
         user: root
         hour: "4"
         minute: "0"
-        job: /usr/local/bin/mc-backup
+        job: /usr/local/bin/backup
+
+    - name: Schedule quicksave every 30 mins
+      cron:
+        name: mc-quicksave
+        user: root
+        minute: "*/30"
+        job: /usr/local/bin/quicksave
 
     # ── Management Scripts ──────────────────────────────────────────────────
 
