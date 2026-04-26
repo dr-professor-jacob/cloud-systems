@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-industrial_base.py — Pro MI Industrial Complex v9
-Maximum Lighting Edition (Anti-Spider).
+industrial_base.py — High-Ceiling Cathedral Factory v10
+X: 1271-1308, Z: 1886-1929, Y: 55-80
+Massive interior volume, high-tech aesthetic, and mob-proof.
 """
 import subprocess, time
 
@@ -18,39 +19,85 @@ def fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
     if mode: args.append(mode)
     rcon(*args)
 
+def safe_fill(x1, y1, z1, x2, y2, z2, blk, mode=None):
+    x1, x2 = min(int(x1), int(x2)), max(int(x1), int(x2))
+    y1, y2 = min(int(y1), int(y2)), max(int(y1), int(y2))
+    z1, z2 = min(int(z1), int(z2)), max(int(z1), int(z2))
+    chunk_size = 6
+    for y in range(y1, y2 + 1, chunk_size):
+        ey = min(y + chunk_size - 1, y2)
+        args = ['fill', x1, y, z1, x2, ey, z2, blk]
+        if mode: args.append(mode)
+        rcon(*args)
+
 # --- COORDINATES ---
 X1, X2 = 1271, 1308
 Z1, Z2 = 1886, 1929
-YF = 61
+YF = 60 # Floor
+YH = 75 # High Ceiling (15 blocks tall!)
 CX, CZ = (X1 + X2) // 2, (Z1 + Z2) // 2
 
-print(f"=== Re-Constructing with Maximum Lighting at {CX}, {CZ} ===")
+print(f"=== Constructing High-Ceiling Industrial Base at {CX}, {CZ} ===")
 
-# (Structural/Multiblock code stays same as v8...)
-fill(X1, 58, Z1, X2, 69, Z2, 'air')
-fill(X1, 57, Z1, X2, 57, Z2, 'polished_deepslate')
-fill(X1, 61, Z1, X2, 68, Z1, 'deepslate_bricks')
-fill(X1, 61, Z2, X2, 68, Z2, 'deepslate_bricks')
-fill(X1, 61, Z1, X1, 68, Z2, 'deepslate_bricks')
-fill(X2, 61, Z1, X2, 68, Z2, 'deepslate_bricks')
-fill(X1, 69, Z1, X2, 69, Z2, 'deepslate_tiles')
-fill(X1+1, 58, Z1+1, X2-1, 60, Z2-1, 'air')
-fill(X1+1, 61, Z1+1, X2-1, 61, Z2-1, 'polished_deepslate')
+# 1. MASSIVE EXCAVATION (Safe Build)
+# Clear the interior volume from 60 up to 76
+safe_fill(X1+1, YF+1, Z1+1, X2-1, YH+1, Z2-1, 'air')
 
-# 8. MAXIMUM LIGHTING GRID
-print("--- Flooding area with Sea Lanterns ---")
-# Dense 4x4 Grid in ceiling
-for lx in range(X1+2, X2, 4):
-    for lz in range(Z1+2, Z2, 4):
-        setblock(lx, 68, lz, 'sea_lantern')
+# 2. ARCHITECTURAL SHELL
+# Polished Deepslate Floor
+safe_fill(X1, YF, Z1, X2, YF, Z2, 'polished_deepslate')
+# Reinforced Walls (Deepslate Bricks with Obsidian Support Pillars)
+safe_fill(X1, YF, Z1, X2, YH, Z1, 'deepslate_bricks')
+safe_fill(X1, YF, Z2, X2, YH, Z2, 'deepslate_bricks')
+safe_fill(X1, YF, Z1, X1, YH, Z2, 'deepslate_bricks')
+safe_fill(X2, YF, Z1, X2, YH, Z2, 'deepslate_bricks')
+# Pillars in corners
+for px, pz in [(X1, Z1), (X1, Z2), (X2, Z1), (X2, Z2)]:
+    safe_fill(px, YF, pz, px, YH, pz, 'obsidian')
 
-# Floor Recessed Grid (under glass)
-for lx in range(X1+2, X2, 6):
-    for lz in range(Z1+2, Z2, 6):
-        setblock(lx, 60, lz, 'sea_lantern')
-        setblock(lx, 61, lz, 'glass')
+# 3. HIGH-TECH ROOF (Deepslate Tiles with Industrial Girders)
+safe_fill(X1, YH+1, Z1, X2, YH+1, Z2, 'deepslate_tiles')
+# Girders across the ceiling
+for z in range(Z1+5, Z2, 10):
+    safe_fill(X1+1, YH, z, X2-1, YH, z, 'obsidian')
 
-# Kill any existing spiders
-rcon('kill', '@e[type=spider,x=1295,y=65,z=1900,distance=..50]')
+# 4. ADVANCED LIGHTING (Industrial Lanterns & Beams)
+print("--- Installing High-Altitude Lighting ---")
+# Ceiling Spotlights (Recessed in roof)
+for lx in range(X1+4, X2, 8):
+    for lz in range(Z1+4, Z2, 8):
+        setblock(lx, YH+1, lz, 'glowstone')
+# Floating Light Beams (Using Tinted Glass and Sea Lanterns)
+for lx in [CX-10, CX+10]:
+    for lz in [CZ-15, CZ+15]:
+        safe_fill(lx, YF+1, lz, lx, YH-1, lz, 'sea_lantern')
 
-print("=== Base is now Sun-Bright and Spider-Free! ===")
+# 5. MULTI-BLOCK STAGING (Pre-built platforms)
+# NW: Coke Oven Row
+for i in range(3):
+    oz = Z1 + 2 + (i*4)
+    fill(X1+2, YF+1, oz, X1+4, YF+3, oz+2, 'modern_industrialization:coke_oven_brick', 'hollow')
+    setblock(X1+3, YF+2, oz, 'modern_industrialization:coke_oven')
+
+# NE: Blast Furnace Row
+for i in range(3):
+    oz = Z1 + 2 + (i*4)
+    fill(X2-4, YF+1, oz, X2-2, YF+3, oz+2, 'modern_industrialization:firebrick', 'hollow')
+    setblock(X2-3, YF+2, oz, 'modern_industrialization:bronze_blast_furnace')
+
+# 6. LOGISTICS HUB (Center Cross)
+# 4-block wide main corridor
+safe_fill(X1+1, YF, CZ-2, X2-1, YF, CZ+2, 'polished_andesite')
+safe_fill(CX-2, YF, Z1+1, CX+2, YF, Z2-1, 'polished_andesite')
+# Central Beacon Buff
+fill(CX-1, YF-1, CZ-1, CX+1, YF-1, CZ+1, 'iron_block')
+setblock(CX, YF, CZ, 'beacon')
+
+# 7. MACHINE AUTOMATION (Early MI)
+# SW processing line
+for i in range(5):
+    setblock(X1+2, YF+1, Z2-2-i*2, 'modern_industrialization:bronze_macerator')
+    setblock(X1+4, YF+1, Z2-2-i*2, 'modern_industrialization:bronze_furnace')
+    setblock(X1+3, YF+1, Z2-2-i*2, 'modern_industrialization:item_pipe')
+
+print("=== High-Ceiling Cathedral Factory Initialized! ===")
