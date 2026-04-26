@@ -97,6 +97,7 @@
         - fixes.py
         - validate.py
         - rescue_shop.py
+        - restore.sh
 
     # ── systemd service for docker-compose ───────────────────────────────────
 
