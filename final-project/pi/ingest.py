@@ -106,7 +106,13 @@ def sweep_once() -> dict | None:
         str(SWEEP_CSV),
     ]
     log.info("Starting sweep: %s", " ".join(cmd))
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        log.error("rtl_power timed out — killing and retrying")
+        subprocess.run(["pkill", "-KILL", "-x", "rtl_power"], capture_output=True)
+        DEVICE_LOCK.unlink(missing_ok=True)
+        return None
     DEVICE_LOCK.unlink(missing_ok=True)  # release once sweep is done
 
     # rtl_power writes info to stderr and may return non-zero even on success.
@@ -146,6 +152,7 @@ def main():
     sb = ServiceBusClient.from_connection_string(conn_str)
     sender = sb.get_queue_sender(QUEUE_SWEEPS)
 
+    DEVICE_LOCK.unlink(missing_ok=True)  # clear any stale lock from previous crash
     log.info("Ingest started — publishing to queue '%s'", QUEUE_SWEEPS)
 
     with sender:

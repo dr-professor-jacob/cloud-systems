@@ -216,7 +216,10 @@
 
     <!-- Aircraft Radar -->
     <div class="panel" id="aircraft-panel">
-      <h2>Aircraft Radar — ADS-B 1090 MHz</h2>
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Aircraft Radar — ADS-B 1090 MHz</span>
+        <button class="btn" id="btn-adsb" style="font-size:10px;padding:3px 8px;">▶ Scan 30s</button>
+      </h2>
       <div id="aircraft-status" style="color:#666;font-size:11px;margin-bottom:6px;">Waiting for first scan…</div>
       <div id="aircraft-map" style="height:240px;border-radius:3px;background:#0a0a0a;border:1px solid #1a1a1a;"></div>
     </div>

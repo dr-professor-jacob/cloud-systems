@@ -863,7 +863,10 @@ async function prefillFromHistory() {
       currentPeak    = latest.peak;
       currentMinHold = latest.min_hold;
       currentRaw     = latest.raw || null;
-      lastSweepSig   = latest.avg.slice(0,5).join(',');  // prevent immediate re-push
+      // Use same fingerprint as fetchSweep to prevent duplicate row on first poll
+      const _a = latest.avg;
+      lastSweepSig = _a.length ? [_a[0], _a[Math.floor(_a.length*0.25)],
+        _a[Math.floor(_a.length*0.5)], _a[Math.floor(_a.length*0.75)], _a[_a.length-1]].join(',') : '';
       updatePeakDisplay(latest.peak);
     }
     redrawWaterfall();
