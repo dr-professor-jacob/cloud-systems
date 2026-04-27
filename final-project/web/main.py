@@ -210,9 +210,9 @@ async def anomalies():
                     resp = client.messages.create(
                         model="claude-haiku-4-5-20251001",
                         max_tokens=80,
-                        system="You are a concise RF signal identifier. Given a frequency and signal info, identify what service likely uses it. One sentence, no more.",
+                        system="You are a concise RF signal identifier. Identify what service or device likely uses the EXACT frequency given. Never mention frequencies other than the one provided. One sentence, no more.",
                         messages=[{"role": "user", "content":
-                            f"{item['freq_mhz']} MHz, {item['power_dbm']} dBm, {item['excess_db']} dB above baseline, band: {item['band']}. What is this?"}],
+                            f"Frequency: {item['freq_mhz']} MHz. Power: {item['power_dbm']} dBm, {item['excess_db']} dB above local baseline. Allocated band: {item['band']}. What service or device is this?"}],
                     )
                     _anomaly_classifications[key] = next(
                         (b.text for b in resp.content if hasattr(b, "text")), "")
