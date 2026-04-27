@@ -329,6 +329,11 @@
       await fetch("/api/reset", { method: "POST" });
       // Clear browser-side waterfall immediately
       if (window.clearWaterfallHistory) window.clearWaterfallHistory();
+      // Zero out pipeline stats immediately — worker will confirm within ~2min
+      const wv = document.getElementById("pipe-worker-val");
+      const ne = document.getElementById("pipeline-noise");
+      if (wv) wv.textContent = "0 sweeps — new location";
+      if (ne) ne.textContent = "noise floor ↓0 dB";
       document.getElementById("status").textContent = "New location — waiting for first sweep…";
     } catch(e) { /* silent */ }
     setTimeout(() => { btn.textContent = "📍 New Location"; btn.disabled = false; }, 2000);
