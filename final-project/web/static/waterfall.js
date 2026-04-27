@@ -303,8 +303,9 @@ async function fetchSweep() {
     freqEnd     = Math.min(freqEndData, DISPLAY_MAX_MHZ);
     nBins       = data.n_bins;
     currentAvg     = data.avg;
-    currentPeak    = data.peak;
-    currentMinHold = data.min_hold;
+    // After New Location, keep peak/min null until fresh Pi data arrives
+    currentPeak    = locationReset ? null : data.peak;
+    currentMinHold = locationReset ? null : data.min_hold;
     currentRaw     = data.raw && data.raw.length ? data.raw : null;
 
     // Fingerprint the avg array using a few spread samples
@@ -970,6 +971,16 @@ window.clearWaterfallHistory = function() {
   lastSweepSig = null;
   locationReset = true;
   drawNoData();
+
+  // Clear spectrum chart
+  const sc = document.getElementById("spectrum-chart");
+  if (sc) { const sctx = sc.getContext("2d"); sctx.clearRect(0, 0, sc.width, sc.height); }
+
+  // Clear anomaly feed
+  const af = document.getElementById("anomaly-feed");
+  if (af) af.innerHTML = "";
+  const as = document.getElementById("anomaly-status");
+  if (as) as.textContent = "Waiting for baseline…";
 };
 
 window.setViewRows = function(n) {
