@@ -134,15 +134,17 @@ function redrawWaterfall() {
   // Respect display mode: avg (history), peak hold, or min hold
   const mode = window.getDisplayMode ? window.getDisplayMode() : "avg";
 
+  // All modes: only fill as many rows as we have history for
+  const pxPerRow   = Math.max(1, Math.floor(h / viewRows));
+  const rowsToShow = Math.min(history.length, viewRows);
+  const fillHeight = rowsToShow * pxPerRow;
+
   if (mode === "peak" && currentPeak) {
-    for (let row = 0; row < h; row++) renderRow(currentPeak, row, img);
+    for (let row = 0; row < fillHeight; row++) renderRow(currentPeak, row, img);
   } else if (mode === "min_hold" && currentMinHold) {
-    for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
+    for (let row = 0; row < fillHeight; row++) renderRow(currentMinHold, row, img);
   } else {
-    // Rolling waterfall — newest at top, fixed px/row, rest stays black
-    const pxPerRow   = Math.max(1, Math.floor(h / viewRows));
-    const rowsToShow = Math.min(history.length, viewRows);
-    const fillHeight = rowsToShow * pxPerRow;
+    // Rolling waterfall — newest at top
     for (let row = 0; row < fillHeight; row++) {
       const histSlot = Math.floor(row / pxPerRow);
       const histIdx  = history.length - 1 - histSlot;
