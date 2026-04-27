@@ -186,8 +186,8 @@
       <button class="btn" id="btn-reset-peak">Reset Peak</button>
       <button class="btn" id="btn-new-location" style="border-color:#fa5;color:#fa5;">📍 New Location</button>
       <span style="color:#444;font-size:10px;margin-left:4px;">Zoom:</span>
-      <button class="btn active" id="btn-zoom-all" onclick="window.setViewRows(120);document.querySelectorAll('.zoom-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');" class="btn zoom-btn">All</button>
-      <button class="btn zoom-btn" id="btn-zoom-recent" onclick="window.setViewRows(20);document.querySelectorAll('.zoom-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');">Recent</button>
+      <button class="btn zoom-btn active" id="btn-zoom-all">All</button>
+      <button class="btn zoom-btn" id="btn-zoom-recent">Recent</button>
       <div id="colorscale">
         <span>−10 dBm</span>
         <canvas id="scale-bar" width="120" height="10"></canvas>
@@ -336,6 +336,16 @@
 
   // Expose displayMode so waterfall.js can read it
   window.getDisplayMode = () => displayMode;
+
+  // ── Zoom buttons ────────────────────────────────────────────────────────────
+  document.querySelectorAll('.zoom-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const rows = btn.id === 'btn-zoom-recent' ? 20 : 120;
+      if (window.setViewRows) window.setViewRows(rows);
+    });
+  });
 </script>
 
 </body>
