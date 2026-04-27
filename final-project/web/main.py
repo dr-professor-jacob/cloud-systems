@@ -210,9 +210,23 @@ async def anomalies():
                     resp = client.messages.create(
                         model="claude-haiku-4-5-20251001",
                         max_tokens=80,
-                        system="You are a concise RF signal identifier. Identify what service or device likely uses the EXACT frequency given. Never mention frequencies other than the one provided. One sentence, no more.",
+                        system=(
+                            "You are a concise RF signal identifier. "
+                            "Identify the most likely service or device at the EXACT frequency given. "
+                            "Use only factually correct allocations — key rules: "
+                            "Wi-Fi (802.11) is 2.4 GHz and 5 GHz ONLY, never below 2 GHz; "
+                            "900–928 MHz ISM is LoRa, Z-Wave, 900 MHz cordless phones, or ISM sensors; "
+                            "850–900 MHz is LTE Band 5/26 cellular; "
+                            "462–467 MHz is FRS/GMRS walkie-talkies; "
+                            "433 MHz is ISM consumer devices (key fobs, weather sensors); "
+                            "1090 MHz is ADS-B aircraft transponders. "
+                            "One sentence, no more. Never mention frequencies other than the one given."
+                        ),
                         messages=[{"role": "user", "content":
-                            f"Frequency: {item['freq_mhz']} MHz. Power: {item['power_dbm']} dBm, {item['excess_db']} dB above local baseline. Allocated band: {item['band']}. What service or device is this?"}],
+                            f"Frequency: {item['freq_mhz']} MHz. "
+                            f"Power: {item['power_dbm']} dBm, {item['excess_db']} dB above local average. "
+                            f"Allocated band: {item['band']}. "
+                            f"What specific service or device type operates at {item['freq_mhz']} MHz?"}],
                     )
                     _anomaly_classifications[key] = next(
                         (b.text for b in resp.content if hasattr(b, "text")), "")
@@ -226,10 +240,12 @@ async def anomalies():
 @app.post("/api/reset")
 async def reset_location():
     """Request a worker reset — clears accumulated averages for a new location."""
+    global _anomaly_classifications
     ts = datetime.now(timezone.utc).isoformat()
     try:
         blob = get_blob().get_blob_client(BLOB_SWEEPS, "reset_requested.json")
         blob.upload_blob(json.dumps({"ts": ts}), overwrite=True)
+        _anomaly_classifications = {}   # flush stale classifications from old location
         log.info("Location reset requested at %s", ts)
         return {"reset_requested": True, "ts": ts}
     except Exception as e:
