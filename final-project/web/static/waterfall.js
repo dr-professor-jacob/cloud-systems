@@ -177,7 +177,7 @@ function drawBands() {
 // ─── Band stripes — none on waterfall, labels handled by strip below ─────────
 function drawBandLabels() { /* no-op — see drawBandLabelStrip */ }
 
-// ─── Band label strip — alternating two-row layout ───────────────────────────
+// ─── Band label strip — alternating two-row colored rects, no text ───────────
 function drawBandLabelStrip() {
   const c = document.getElementById("band-label-strip");
   if (!c) return;
@@ -185,35 +185,90 @@ function drawBandLabelStrip() {
   const lctx = c.getContext("2d");
   lctx.fillStyle = "#0a0a0a";
   lctx.fillRect(0, 0, w, h);
-  lctx.font = "bold 10px monospace";
 
-  const rowH  = Math.floor(h / 2) - 2;   // height of each row block
-  const row0Y = 1;                         // top row y
-  const row1Y = Math.floor(h / 2) + 1;    // bottom row y
+  const rowH  = Math.floor(h / 2) - 2;
+  const row0Y = 1;
+  const row1Y = Math.floor(h / 2) + 1;
 
   let rowIdx = 0;
   for (const b of BANDS) {
-    const x1  = freqToX(b.start);
-    const x2  = freqToX(b.end < b.start + 0.5 ? b.start + 1.0 : b.end);
-    const bw  = Math.max(x2 - x1, 3);
-    const py  = rowIdx % 2 === 0 ? row0Y : row1Y;
-
-    // Colored rectangle — full band width
+    const x1 = freqToX(b.start);
+    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 1.0 : b.end);
+    const bw = Math.max(x2 - x1, 3);
+    const py = rowIdx % 2 === 0 ? row0Y : row1Y;
     lctx.globalAlpha = 0.75;
     lctx.fillStyle = b.color;
     lctx.fillRect(x1, py, bw, rowH);
     lctx.globalAlpha = 1.0;
-
-    // Centered label — only if it fits
-    const tw = lctx.measureText(b.label).width;
-    if (tw + 4 <= bw) {
-      lctx.fillStyle = "#000";
-      lctx.fillText(b.label, x1 + (bw - tw) / 2, py + rowH - 3);
-    }
-
     rowIdx++;
   }
 }
+
+// ─── Hover tooltip — freq + band name ────────────────────────────────────────
+function xToFreqMhz(x, canvasWidth) {
+  return freqStart + (x / canvasWidth) * (freqEnd - freqStart);
+}
+
+function bandAtFreq(mhz) {
+  // prefer longer label (specific over general) when overlapping
+  let best = null;
+  for (const b of BANDS) {
+    const lo = b.start;
+    const hi = b.end < b.start + 0.5 ? b.start + 1.0 : b.end;
+    if (mhz >= lo && mhz <= hi) {
+      if (!best || (hi - lo) < (best.hi - best.lo)) best = { ...b, hi };
+    }
+  }
+  return best;
+}
+
+(function setupHoverTooltip() {
+  // Create tooltip element once
+  const tip = document.createElement("div");
+  tip.id = "freq-tooltip";
+  tip.style.cssText = [
+    "position:fixed",
+    "padding:4px 8px",
+    "background:#111",
+    "border:1px solid #333",
+    "border-radius:3px",
+    "color:#d0d0d0",
+    "font:11px 'Courier New',monospace",
+    "pointer-events:none",
+    "display:none",
+    "z-index:999",
+    "white-space:nowrap",
+  ].join(";");
+  document.body.appendChild(tip);
+
+  function onMove(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x    = e.clientX - rect.left;
+    const mhz  = xToFreqMhz(x, rect.width);
+    const band = bandAtFreq(mhz);
+
+    tip.textContent = band
+      ? `${mhz.toFixed(1)} MHz — ${band.label}`
+      : `${mhz.toFixed(1)} MHz`;
+    tip.style.display = "block";
+    // keep tooltip from clipping off right edge
+    const tx = Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 8);
+    tip.style.left = tx + "px";
+    tip.style.top  = (e.clientY - 28) + "px";
+  }
+
+  function onLeave() { tip.style.display = "none"; }
+
+  // Attach to waterfall, spectrum chart, freq axes, and band strip
+  const targets = ["waterfall","spectrum-chart","freq-axis","freq-axis-top","band-label-strip"];
+  targets.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("mousemove", onMove);
+      el.addEventListener("mouseleave", onLeave);
+    }
+  });
+})();
 
 // ─── Frequency axis ───────────────────────────────────────────────────────────
 function _drawAxisOn(c, ticksUp) {
