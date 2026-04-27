@@ -174,20 +174,8 @@ function drawBands() {
   bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
-// ─── Band stripes — thin top-edge indicators only ────────────────────────────
-function drawBandLabels() {
-  const minWidthPx = 4;
-  for (const b of BANDS) {
-    const x1 = freqToX(b.start);
-    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
-    const w  = x2 - x1;
-    if (w < minWidthPx) continue;
-    ctx.globalAlpha = 0.6;
-    ctx.fillStyle = b.color;
-    ctx.fillRect(x1, 0, Math.max(w, 2), 3);  // 3px top-edge stripe only
-    ctx.globalAlpha = 1.0;
-  }
-}
+// ─── Band stripes — none on waterfall, labels handled by strip below ─────────
+function drawBandLabels() { /* no-op — see drawBandLabelStrip */ }
 
 // ─── Band label strip — below freq axis ──────────────────────────────────────
 function drawBandLabelStrip() {
@@ -203,24 +191,20 @@ function drawBandLabelStrip() {
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
-    const bw = x2 - x1;
-    if (bw < 4) continue;
+    if (x2 - x1 < 4) continue;
 
-    // Tinted block
-    lctx.globalAlpha = 0.5;
-    lctx.fillStyle = b.color;
-    lctx.fillRect(x1, 0, Math.max(bw, 2), h);
-    lctx.globalAlpha = 1.0;
-
-    // Label with collision detection
     const tw = lctx.measureText(b.label).width;
-    const px = x1 + 2;
+    const px = x1 + 1;
     if (px < nextAllowedX) continue;
-    lctx.fillStyle = "rgba(0,0,0,0.75)";
-    lctx.fillRect(px, 2, tw + 4, 13);
+
+    // Colored pill: colored background, dark text
     lctx.fillStyle = b.color;
-    lctx.fillText(b.label, px + 2, 12);
-    nextAllowedX = px + tw + 6;
+    lctx.globalAlpha = 0.85;
+    lctx.fillRect(px, 2, tw + 6, 13);
+    lctx.globalAlpha = 1.0;
+    lctx.fillStyle = "#000";
+    lctx.fillText(b.label, px + 3, 12);
+    nextAllowedX = px + tw + 9;
   }
 }
 
