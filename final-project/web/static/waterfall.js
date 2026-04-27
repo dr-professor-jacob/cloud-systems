@@ -816,8 +816,9 @@ async function fetchAnomalies() {
       return `<div style="border:1px solid #1a1a1a;border-radius:3px;padding:6px 10px;background:#0d0d0d;">
         <div style="display:flex;gap:10px;align-items:baseline;">
           <span style="color:#ff5;font-size:12px;font-weight:bold;">${a.freq_mhz} MHz</span>
-          <span style="color:#fa5;font-size:11px;">+${a.excess_db} dB above baseline</span>
           <span style="color:#f55;font-size:11px;">${a.power_dbm} dBm</span>
+          <span style="color:#888;font-size:11px;">baseline ${(a.power_dbm - a.excess_db).toFixed(1)} dBm</span>
+          <span style="color:#fa5;font-size:11px;">+${a.excess_db} dB</span>
           <span style="color:#555;font-size:10px;margin-left:auto;">${a.band}</span>
           <span style="color:#333;font-size:10px;">${ts}</span>
         </div>
