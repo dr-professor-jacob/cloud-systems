@@ -177,7 +177,7 @@ function drawBands() {
 // ─── Band stripes — none on waterfall, labels handled by strip below ─────────
 function drawBandLabels() { /* no-op — see drawBandLabelStrip */ }
 
-// ─── Band label strip — below freq axis ──────────────────────────────────────
+// ─── Band label strip — alternating two-row layout ───────────────────────────
 function drawBandLabelStrip() {
   const c = document.getElementById("band-label-strip");
   if (!c) return;
@@ -187,26 +187,31 @@ function drawBandLabelStrip() {
   lctx.fillRect(0, 0, w, h);
   lctx.font = "bold 10px monospace";
 
-  let nextAllowedX = -Infinity;
+  const rowH  = Math.floor(h / 2) - 2;   // height of each row block
+  const row0Y = 1;                         // top row y
+  const row1Y = Math.floor(h / 2) + 1;    // bottom row y
+
+  let rowIdx = 0;
   for (const b of BANDS) {
-    const x1 = freqToX(b.start);
-    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
-    if (x2 - x1 < 4) continue;
+    const x1  = freqToX(b.start);
+    const x2  = freqToX(b.end < b.start + 0.5 ? b.start + 1.0 : b.end);
+    const bw  = Math.max(x2 - x1, 3);
+    const py  = rowIdx % 2 === 0 ? row0Y : row1Y;
 
-    const tw = lctx.measureText(b.label).width;
-    const px = x1 + 1;
-    if (px < nextAllowedX) continue;
-
-    // Colored pill: dark background, colored border + text
-    lctx.fillStyle = "rgba(0,0,0,0.85)";
-    lctx.fillRect(px, 2, tw + 6, 13);
-    lctx.strokeStyle = b.color;
-    lctx.globalAlpha = 0.7;
-    lctx.strokeRect(px + 0.5, 2.5, tw + 5, 12);
-    lctx.globalAlpha = 1.0;
+    // Colored rectangle — full band width
+    lctx.globalAlpha = 0.75;
     lctx.fillStyle = b.color;
-    lctx.fillText(b.label, px + 3, 12);
-    nextAllowedX = px + tw + 9;
+    lctx.fillRect(x1, py, bw, rowH);
+    lctx.globalAlpha = 1.0;
+
+    // Centered label — only if it fits
+    const tw = lctx.measureText(b.label).width;
+    if (tw + 4 <= bw) {
+      lctx.fillStyle = "#000";
+      lctx.fillText(b.label, x1 + (bw - tw) / 2, py + rowH - 3);
+    }
+
+    rowIdx++;
   }
 }
 
