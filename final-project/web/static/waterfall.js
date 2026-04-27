@@ -837,8 +837,44 @@ async function loadHistorySnapshot(idx) {
   } catch(e) { tsEl.textContent = snapIndexToLabel(idx) + " (error)"; }
 }
 
+async function prefillFromHistory() {
+  if (historySnapshots.length === 0) return;
+  // Fetch up to WATERFALL_ROWS snapshots — newest-first list, so reverse for oldest-first push
+  const toFetch = historySnapshots.slice(0, WATERFALL_ROWS).reverse();
+  try {
+    const results = await Promise.all(
+      toFetch.map(snap => fetch(`/api/history/${snap}`).then(r => r.ok ? r.json() : null))
+    );
+    history.length = 0;
+    for (const data of results) {
+      if (!data) continue;
+      if (!nBins) {
+        freqStart   = data.freq_start / 1e6;
+        freqEndData = (data.freq_start + data.n_bins * data.freq_step) / 1e6;
+        freqEnd     = Math.min(freqEndData, DISPLAY_MAX_MHZ);
+        nBins       = data.n_bins;
+      }
+      history.push(new Float32Array(data.avg));
+    }
+    // Seed peak/min/avg from most recent snapshot
+    const latest = results[results.length - 1];
+    if (latest) {
+      currentAvg     = latest.avg;
+      currentPeak    = latest.peak;
+      currentMinHold = latest.min_hold;
+      currentRaw     = latest.raw || null;
+      lastSweepSig   = latest.avg.slice(0,5).join(',');  // prevent immediate re-push
+      updatePeakDisplay(latest.peak);
+    }
+    redrawWaterfall();
+    drawFreqAxis();
+    drawSpectrumChart();
+  } catch(e) { /* silent — live fetch will populate */ }
+}
+
 async function initHistory() {
   await refreshHistoryList();
+  await prefillFromHistory();
 
   const slider = document.getElementById("history-slider");
   const tsEl   = document.getElementById("history-ts");
@@ -872,9 +908,9 @@ async function initHistory() {
 }
 
 // ─── Exposed reset helper (called by New Location button in index.html) ───────
+// Resets stale peak/min hold so they refresh from the new location.
+// Keeps waterfall history visible so the demo doesn't go blank.
 window.clearWaterfallHistory = function() {
-  history.length = 0;
-  currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
-  lastSweepSig = null;
-  drawNoData();
+  currentPeak = null; currentMinHold = null;
+  lastSweepSig = null;  // force next fetch to be treated as new sweep
 };
