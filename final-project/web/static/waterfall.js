@@ -138,15 +138,14 @@ function redrawWaterfall() {
   } else if (mode === "min_hold" && currentMinHold) {
     for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
   } else {
-    // Rolling waterfall — newest row at top, zoomed by viewRows
-    const rows = Math.min(history.length, viewRows);
-    const pxPerRow = rows > 0 ? h / rows : h;
-    for (let row = 0; row < h; row++) {
+    // Rolling waterfall — newest at top, fixed px/row, rest stays black
+    const pxPerRow   = Math.max(1, Math.floor(h / viewRows));
+    const rowsToShow = Math.min(history.length, viewRows);
+    const fillHeight = rowsToShow * pxPerRow;
+    for (let row = 0; row < fillHeight; row++) {
       const histSlot = Math.floor(row / pxPerRow);
       const histIdx  = history.length - 1 - histSlot;
-      if (histIdx >= 0 && histSlot < rows) {
-        renderRow(history[histIdx], row, img);
-      }
+      if (histIdx >= 0) renderRow(history[histIdx], row, img);
     }
   }
   ctx.putImageData(img, 0, 0);
