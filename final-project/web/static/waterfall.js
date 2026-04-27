@@ -794,9 +794,7 @@ async function fetchPipeline() {
 fetchPipeline();
 setInterval(fetchPipeline, 10000);
 
-// ─── Start polling ────────────────────────────────────────────────────────────
-fetchSweep();
-setInterval(fetchSweep, POLL_INTERVAL);
+// fetchSweep started inside initHistory() after prefill completes
 
 // ─── Signal Anomalies ─────────────────────────────────────────────────────────
 async function fetchAnomalies() {
@@ -851,8 +849,8 @@ async function refreshHistoryList() {
     const res = await fetch("/api/history");
     if (!res.ok) return;
     const data = await res.json();
-    const prevCount   = historySnapshots.length;
-    historySnapshots  = data.snapshots || [];
+    const prevCount  = historySnapshots.length;
+    historySnapshots = data.snapshots || [];
     const slider  = document.getElementById("history-slider");
     const rangeEl = document.getElementById("history-range");
     if (rangeEl) rangeEl.textContent = historySnapshots.length
@@ -863,9 +861,19 @@ async function refreshHistoryList() {
       slider.disabled = historySnapshots.length === 0;
       if (isLiveMode) slider.value = slider.max;
     }
-    // New snapshots arrived — extend waterfall without waiting for user to refresh
-    if (isLiveMode && historySnapshots.length > prevCount && !locationReset) {
-      await prefillFromHistory();
+    // Append only genuinely new snapshots — never wipe history
+    if (isLiveMode && !locationReset && prevCount > 0 && historySnapshots.length > prevCount) {
+      const newSnaps = historySnapshots.slice(0, historySnapshots.length - prevCount).reverse();
+      for (const snap of newSnaps) {
+        try {
+          const r = await fetch(`/api/history/${snap}`);
+          if (!r.ok) continue;
+          const d = await r.json();
+          history.push(new Float32Array(d.avg));
+          if (history.length > WATERFALL_ROWS) history.shift();
+        } catch(e) {}
+      }
+      if (newSnaps.length) { redrawWaterfall(); drawFreqAxis(); drawSpectrumChart(); }
     }
   } catch(e) {}
 }
@@ -939,6 +947,10 @@ async function prefillFromHistory() {
 async function initHistory() {
   await refreshHistoryList();
   await prefillFromHistory();
+
+  // Start live polling AFTER prefill — eliminates race condition
+  fetchSweep();
+  setInterval(fetchSweep, POLL_INTERVAL);
 
   const slider = document.getElementById("history-slider");
   const tsEl   = document.getElementById("history-ts");
