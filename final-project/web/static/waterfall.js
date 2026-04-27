@@ -909,12 +909,13 @@ async function initHistory() {
     loadHistorySnapshot(idx);
   });
 
-  document.getElementById("btn-live")?.addEventListener("click", () => {
+  document.getElementById("btn-live")?.addEventListener("click", async () => {
     isLiveMode   = true;
     historyIndex = -1;
     if (slider) { slider.value = slider.max; }
     tsEl.textContent = "● Live";
     document.getElementById("btn-live").style.color = "#4af";
+    await prefillFromHistory();   // restore full history buffer
     fetchSweep();
   });
 
