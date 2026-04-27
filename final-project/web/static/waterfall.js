@@ -149,7 +149,7 @@ function redrawWaterfall() {
     }
   }
   ctx.putImageData(img, 0, 0);
-  drawBandLabels();  // overlay labels directly on waterfall canvas
+  drawBandLabels();  // tinted band stripes on waterfall
 
   // Frozen overlay — dim the waterfall when Pi is offline (driven by pipeline data, not fingerprint)
   if (!piOnline && isLiveMode) {
@@ -173,62 +173,76 @@ function drawBands() {
   bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
-// ─── Band labels — drawn directly on the waterfall canvas ────────────────────
+// ─── Band stripes on waterfall (tinted blocks, no text) ──────────────────────
 function drawBandLabels() {
-  const BAR_H     = 18;
   const minWidthPx = 4;
-  ctx.font = "bold 10px monospace";
-
-  // Draw tinted band stripes first
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
     if (w < minWidthPx) continue;
-    ctx.globalAlpha = 0.22;
+    ctx.globalAlpha = 0.18;
     ctx.fillStyle = b.color;
-    ctx.fillRect(x1, 0, Math.max(w, 2), BAR_H);
+    ctx.fillRect(x1, 0, Math.max(w, 2), canvas.height);
     ctx.globalAlpha = 1.0;
   }
+}
 
-  // Draw labels with collision detection — skip if overlapping previous label
+// ─── Band label strip — below freq axis ──────────────────────────────────────
+function drawBandLabelStrip() {
+  const c = document.getElementById("band-label-strip");
+  if (!c) return;
+  const w = c.width, h = c.height;
+  const lctx = c.getContext("2d");
+  lctx.fillStyle = "#0a0a0a";
+  lctx.fillRect(0, 0, w, h);
+  lctx.font = "bold 9px monospace";
+
   let nextAllowedX = -Infinity;
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
-    const w  = x2 - x1;
-    if (w < minWidthPx) continue;
+    const bw = x2 - x1;
+    if (bw < 4) continue;
 
-    const tw  = ctx.measureText(b.label).width;
-    const px  = x1 + 2;
-    if (px < nextAllowedX) continue;   // skip — would overlap previous label
+    // Tinted block
+    lctx.globalAlpha = 0.5;
+    lctx.fillStyle = b.color;
+    lctx.fillRect(x1, 0, Math.max(bw, 2), h);
+    lctx.globalAlpha = 1.0;
 
-    const py = 2;
-    ctx.fillStyle = "rgba(0,0,0,0.85)";
-    ctx.fillRect(px, py, tw + 6, 14);
-    ctx.fillStyle = b.color;
-    ctx.fillText(b.label, px + 3, py + 10);
-    nextAllowedX = px + tw + 8;        // reserve space + 2px gap
+    // Label with collision detection
+    const tw = lctx.measureText(b.label).width;
+    const px = x1 + 2;
+    if (px < nextAllowedX) continue;
+    lctx.fillStyle = "rgba(0,0,0,0.75)";
+    lctx.fillRect(px, 2, tw + 4, 13);
+    lctx.fillStyle = b.color;
+    lctx.fillText(b.label, px + 2, 12);
+    nextAllowedX = px + tw + 6;
   }
 }
 
 // ─── Frequency axis ───────────────────────────────────────────────────────────
-function drawFreqAxis() {
-  const axisCanvas = document.getElementById("freq-axis");
-  if (!axisCanvas) return;
-  const actx = axisCanvas.getContext("2d");
-  actx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
-  actx.fillStyle = "#888";
+function _drawAxisOn(c, ticksUp) {
+  if (!c) return;
+  const actx = c.getContext("2d");
+  const h = c.height;
+  actx.clearRect(0, 0, c.width, h);
   actx.font = "10px monospace";
-
-  const ticks = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700];
+  const ticks = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100];
   for (const mhz of ticks) {
     const x = freqToX(mhz);
-    actx.fillStyle = "#666";
-    actx.fillRect(x, 0, 1, 4);
+    actx.fillStyle = "#555";
+    actx.fillRect(x, ticksUp ? h - 4 : 0, 1, 4);
     actx.fillStyle = "#aaa";
-    actx.fillText(`${mhz}`, x - 12, 14);
+    actx.fillText(`${mhz}`, x - 12, ticksUp ? h - 6 : 14);
   }
+}
+
+function drawFreqAxis() {
+  _drawAxisOn(document.getElementById("freq-axis"),     false);
+  _drawAxisOn(document.getElementById("freq-axis-top"), true);
 }
 
 // ─── Update peak signal display ───────────────────────────────────────────────
@@ -291,6 +305,7 @@ async function fetchSweep() {
     redrawWaterfall();
     drawBands();
     drawBandLabels();
+    drawBandLabelStrip();
     drawFreqAxis();
     updatePeakDisplay(data.peak);
     drawSpectrumChart();
@@ -676,10 +691,13 @@ function resizeCanvases() {
   if (axisCanvas) axisCanvas.width = w;
   const specChart   = document.getElementById("spectrum-chart");
   if (specChart) specChart.width = w;
-  const labelsCanvas = document.getElementById("band-labels");
-  if (labelsCanvas) labelsCanvas.width = w;
+  const freqTop = document.getElementById("freq-axis-top");
+  if (freqTop) freqTop.width = w;
+  const bandStrip = document.getElementById("band-label-strip");
+  if (bandStrip) bandStrip.width = w;
   drawBands();
   drawBandLabels();
+  drawBandLabelStrip();
   drawFreqAxis();
   redrawWaterfall();
   drawSpectrumChart();
@@ -841,6 +859,7 @@ async function loadHistorySnapshot(idx) {
     history.length = 0;
     history.push(new Float32Array(data.avg));
     redrawWaterfall();
+    drawBandLabelStrip();
     drawFreqAxis();
     drawSpectrumChart();
     updatePeakDisplay(data.peak);
