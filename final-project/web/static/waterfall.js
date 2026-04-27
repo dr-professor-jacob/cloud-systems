@@ -177,32 +177,8 @@ function drawBands() {
 // ─── Band stripes — none on waterfall, labels handled by strip below ─────────
 function drawBandLabels() { /* no-op — see drawBandLabelStrip */ }
 
-// ─── Band label strip — alternating two-row colored rects, no text ───────────
-function drawBandLabelStrip() {
-  const c = document.getElementById("band-label-strip");
-  if (!c) return;
-  const w = c.width, h = c.height;
-  const lctx = c.getContext("2d");
-  lctx.fillStyle = "#0a0a0a";
-  lctx.fillRect(0, 0, w, h);
-
-  const rowH  = Math.floor(h / 2) - 2;
-  const row0Y = 1;
-  const row1Y = Math.floor(h / 2) + 1;
-
-  let rowIdx = 0;
-  for (const b of BANDS) {
-    const x1 = freqToX(b.start);
-    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 1.0 : b.end);
-    const bw = Math.max(x2 - x1, 3);
-    const py = rowIdx % 2 === 0 ? row0Y : row1Y;
-    lctx.globalAlpha = 0.75;
-    lctx.fillStyle = b.color;
-    lctx.fillRect(x1, py, bw, rowH);
-    lctx.globalAlpha = 1.0;
-    rowIdx++;
-  }
-}
+// ─── Band label strip — removed; hover tooltip handles band identification ────
+function drawBandLabelStrip() { /* no-op */ }
 
 // ─── Hover tooltip — freq + band name ────────────────────────────────────────
 function xToFreqMhz(x, canvasWidth) {
@@ -260,7 +236,7 @@ function bandAtFreq(mhz) {
   function onLeave() { tip.style.display = "none"; }
 
   // Attach to waterfall, spectrum chart, freq axes, and band strip
-  const targets = ["waterfall","spectrum-chart","freq-axis","freq-axis-top","band-label-strip"];
+  const targets = ["waterfall","spectrum-chart","freq-axis","freq-axis-top"];
   targets.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -741,8 +717,6 @@ function resizeCanvases() {
   if (specChart) specChart.width = w;
   const freqTop = document.getElementById("freq-axis-top");
   if (freqTop) freqTop.width = w;
-  const bandStrip = document.getElementById("band-label-strip");
-  if (bandStrip) bandStrip.width = w;
   drawBands();
   drawBandLabels();
   drawBandLabelStrip();
