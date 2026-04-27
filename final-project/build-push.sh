@@ -55,6 +55,7 @@ az vm run-command invoke \
   --resource-group "$VM_RG" --name "$VM_NAME" \
   --command-id RunShellScript \
   --scripts "
+    curl -fsSL '${RAW}/web/main.py' -o /opt/rf-web/main.py
     curl -fsSL '${RAW}/web/static/waterfall.js' -o /opt/rf-web/static/waterfall.js
     curl -fsSL '${RAW}/web/templates/index.html' -o /opt/rf-web/templates/index.html
     sudo systemctl restart rf-web && echo 'rf-web restarted'

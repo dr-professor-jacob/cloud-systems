@@ -125,12 +125,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
-async def index():
+def index():
     return FileResponse("templates/index.html")
 
 
 @app.get("/api/pipeline")
-async def pipeline():
+def pipeline():
     """Return worker stats for the Cloud Pipeline dashboard panel."""
     try:
         blob = get_blob().get_blob_client(BLOB_SWEEPS, "stats.json")
@@ -144,7 +144,7 @@ async def pipeline():
 
 
 @app.get("/api/waterfall")
-async def waterfall():
+def waterfall():
     """Return latest averaged spectrum snapshot from Blob."""
     try:
         blob = get_blob().get_blob_client(BLOB_SWEEPS, "latest.json")
@@ -158,7 +158,7 @@ async def waterfall():
 
 
 @app.get("/api/ism")
-async def ism():
+def ism():
     """Return latest auto-scan ISM result."""
     try:
         blob = get_blob().get_blob_client(BLOB_RESULTS, "ism_auto.json")
@@ -172,7 +172,7 @@ async def ism():
 
 
 @app.get("/api/adsb")
-async def adsb():
+def adsb():
     """Return latest auto-scan ADS-B result."""
     try:
         blob = get_blob().get_blob_client(BLOB_RESULTS, "adsb_auto.json")
@@ -189,7 +189,7 @@ async def adsb():
 _anomaly_classifications: dict = {}  # freq_mhz -> classification string
 
 @app.get("/api/anomalies")
-async def anomalies():
+def anomalies():
     """Return recent signal anomalies, enriched with Claude classification."""
     try:
         blob = get_blob().get_blob_client(BLOB_RESULTS, "anomalies.json")
@@ -238,7 +238,7 @@ async def anomalies():
 
 
 @app.post("/api/reset")
-async def reset_location():
+def reset_location():
     """Request a worker reset — clears accumulated averages for a new location."""
     global _anomaly_classifications
     ts = datetime.now(timezone.utc).isoformat()
@@ -254,7 +254,7 @@ async def reset_location():
 
 
 @app.get("/api/history")
-async def history():
+def history():
     """List recent archived sweep snapshots."""
     try:
         container = get_blob().get_container_client(BLOB_SWEEPS)
@@ -268,7 +268,7 @@ async def history():
 
 
 @app.get("/api/history/{blob_path:path}")
-async def history_snapshot(blob_path: str):
+def history_snapshot(blob_path: str):
     """Return a specific archived sweep snapshot by full blob path."""
     try:
         blob = get_blob().get_blob_client(BLOB_SWEEPS, blob_path)
@@ -282,7 +282,7 @@ async def history_snapshot(blob_path: str):
 
 
 @app.get("/api/results/{job_id}")
-async def get_result(job_id: str):
+def get_result(job_id: str):
     """Poll for a demodulation result by job ID."""
     try:
         blob = get_blob().get_blob_client(BLOB_RESULTS, f"{job_id}.json")
@@ -299,7 +299,7 @@ class DecodeRequest(BaseModel):
 
 
 @app.post("/api/decode")
-async def decode(req: DecodeRequest):
+def decode(req: DecodeRequest):
     """Publish a demodulation job to the Pi dispatcher."""
     ALLOWED_TOOLS = {"rtl_433", "dump1090", "rtl_power_scan", "rtl_fm"}
     if req.tool not in ALLOWED_TOOLS:
@@ -333,7 +333,7 @@ class AskRequest(BaseModel):
 
 
 @app.post("/api/ask")
-async def ask(req: AskRequest, request: Request):
+def ask(req: AskRequest, request: Request):
     ip = request.headers.get("X-Real-IP") or request.client.host
 
     text = req.question.strip()
