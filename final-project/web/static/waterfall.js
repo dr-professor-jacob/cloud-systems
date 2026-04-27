@@ -173,7 +173,7 @@ function drawBands() {
   bandCtx.clearRect(0, 0, bandCanvas.width, bandCanvas.height);
 }
 
-// ─── Band stripes on waterfall (tinted blocks, no text) ──────────────────────
+// ─── Band stripes — thin top-edge indicators only ────────────────────────────
 function drawBandLabels() {
   const minWidthPx = 4;
   for (const b of BANDS) {
@@ -181,9 +181,9 @@ function drawBandLabels() {
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
     if (w < minWidthPx) continue;
-    ctx.globalAlpha = 0.18;
+    ctx.globalAlpha = 0.6;
     ctx.fillStyle = b.color;
-    ctx.fillRect(x1, 0, Math.max(w, 2), canvas.height);
+    ctx.fillRect(x1, 0, Math.max(w, 2), 3);  // 3px top-edge stripe only
     ctx.globalAlpha = 1.0;
   }
 }
