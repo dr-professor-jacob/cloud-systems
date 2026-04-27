@@ -185,7 +185,7 @@ function drawBandLabelStrip() {
   const lctx = c.getContext("2d");
   lctx.fillStyle = "#0a0a0a";
   lctx.fillRect(0, 0, w, h);
-  lctx.font = "bold 9px monospace";
+  lctx.font = "bold 10px monospace";
 
   let nextAllowedX = -Infinity;
   for (const b of BANDS) {
@@ -197,12 +197,14 @@ function drawBandLabelStrip() {
     const px = x1 + 1;
     if (px < nextAllowedX) continue;
 
-    // Colored pill: colored background, dark text
-    lctx.fillStyle = b.color;
-    lctx.globalAlpha = 0.85;
+    // Colored pill: dark background, colored border + text
+    lctx.fillStyle = "rgba(0,0,0,0.85)";
     lctx.fillRect(px, 2, tw + 6, 13);
+    lctx.strokeStyle = b.color;
+    lctx.globalAlpha = 0.7;
+    lctx.strokeRect(px + 0.5, 2.5, tw + 5, 12);
     lctx.globalAlpha = 1.0;
-    lctx.fillStyle = "#000";
+    lctx.fillStyle = b.color;
     lctx.fillText(b.label, px + 3, 12);
     nextAllowedX = px + tw + 9;
   }
