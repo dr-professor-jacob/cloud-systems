@@ -39,7 +39,8 @@ let freqEnd      = 1150;  // MHz — display end (capped at DISPLAY_MAX_MHZ)
 let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
-let viewRows     = 120;   // how many history rows to display (zoom control)
+let viewRows         = 120;   // how many history rows to display (zoom control)
+let locationReset    = false; // true after New Location — don't restore old peak/min from history
 let lastSweepSig = null;  // fingerprint of last avg array (detects real Pi data change)
 let sweepFrozen      = false; // true when fingerprint unchanged (controls row pushing)
 let piOnline         = false; // true when last_pi_sweep_ts < 120s (drives overlay)
@@ -295,6 +296,7 @@ async function fetchSweep() {
 
     const isNewSweep = sig !== lastSweepSig;
     sweepFrozen = !isNewSweep;
+    if (isNewSweep && locationReset) locationReset = false; // fresh data arrived
     if (isNewSweep) {
       lastSweepSig = sig;
       lastLiveSweepTime = new Date(data.ts).toLocaleTimeString();
@@ -886,12 +888,12 @@ async function prefillFromHistory() {
       }
       history.push(new Float32Array(data.avg));
     }
-    // Seed peak/min/avg from most recent snapshot
+    // Seed peak/min/avg from most recent snapshot — skip stale peak/min after reset
     const latest = results[results.length - 1];
     if (latest) {
       currentAvg     = latest.avg;
-      currentPeak    = latest.peak;
-      currentMinHold = latest.min_hold;
+      currentPeak    = locationReset ? null : latest.peak;
+      currentMinHold = locationReset ? null : latest.min_hold;
       currentRaw     = latest.raw || null;
       // Use same fingerprint as fetchSweep to prevent duplicate row on first poll
       const _a = latest.avg;
@@ -946,6 +948,7 @@ window.clearWaterfallHistory = function() {
   history.length = 0;
   currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
   lastSweepSig = null;
+  locationReset = true;
   drawNoData();
 };
 
