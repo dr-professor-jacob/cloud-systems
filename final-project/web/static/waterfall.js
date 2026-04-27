@@ -851,7 +851,8 @@ async function refreshHistoryList() {
     const res = await fetch("/api/history");
     if (!res.ok) return;
     const data = await res.json();
-    historySnapshots = data.snapshots || [];
+    const prevCount   = historySnapshots.length;
+    historySnapshots  = data.snapshots || [];
     const slider  = document.getElementById("history-slider");
     const rangeEl = document.getElementById("history-range");
     if (rangeEl) rangeEl.textContent = historySnapshots.length
@@ -861,6 +862,10 @@ async function refreshHistoryList() {
       slider.max = Math.max(0, historySnapshots.length - 1);
       slider.disabled = historySnapshots.length === 0;
       if (isLiveMode) slider.value = slider.max;
+    }
+    // New snapshots arrived — extend waterfall without waiting for user to refresh
+    if (isLiveMode && historySnapshots.length > prevCount && !locationReset) {
+      await prefillFromHistory();
     }
   } catch(e) {}
 }
@@ -964,7 +969,7 @@ async function initHistory() {
     fetchSweep();
   });
 
-  setInterval(refreshHistoryList, 2 * 60 * 1000);
+  setInterval(refreshHistoryList, 30 * 1000);
 }
 
 // ─── Exposed helpers ──────────────────────────────────────────────────────────
