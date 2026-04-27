@@ -39,6 +39,7 @@ let freqEnd      = 1150;  // MHz — display end (capped at DISPLAY_MAX_MHZ)
 let freqEndData  = 1700;  // MHz — full data range from Pi
 let nBins        = 0;
 let history      = [];    // circular buffer of Float32Arrays
+let viewRows     = 120;   // how many history rows to display (zoom control)
 let lastSweepSig = null;  // fingerprint of last avg array (detects real Pi data change)
 let sweepFrozen      = false; // true when fingerprint unchanged (controls row pushing)
 let piOnline         = false; // true when last_pi_sweep_ts < 120s (drives overlay)
@@ -137,13 +138,15 @@ function redrawWaterfall() {
   } else if (mode === "min_hold" && currentMinHold) {
     for (let row = 0; row < h; row++) renderRow(currentMinHold, row, img);
   } else {
-    // Rolling waterfall — newest row at top, black until history fills
+    // Rolling waterfall — newest row at top, zoomed by viewRows
+    const rows = Math.min(history.length, viewRows);
+    const pxPerRow = rows > 0 ? h / rows : h;
     for (let row = 0; row < h; row++) {
-      const histIdx = history.length - 1 - row;
-      if (histIdx >= 0) {
+      const histSlot = Math.floor(row / pxPerRow);
+      const histIdx  = history.length - 1 - histSlot;
+      if (histIdx >= 0 && histSlot < rows) {
         renderRow(history[histIdx], row, img);
       }
-      // else: leave row as black (ImageData initializes to 0,0,0,0; canvas bg is black)
     }
   }
   ctx.putImageData(img, 0, 0);
@@ -173,31 +176,40 @@ function drawBands() {
 
 // ─── Band labels — drawn directly on the waterfall canvas ────────────────────
 function drawBandLabels() {
-  const BAR_H    = 22;
-  const minWidthPx = 6;   // min band width to draw anything
+  const BAR_H     = 18;
+  const minWidthPx = 4;
   ctx.font = "bold 10px monospace";
 
+  // Draw tinted band stripes first
   for (const b of BANDS) {
     const x1 = freqToX(b.start);
     const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
     const w  = x2 - x1;
-
     if (w < minWidthPx) continue;
-
-    // Tinted band stripe (clipped to band)
-    ctx.globalAlpha = 0.28;
+    ctx.globalAlpha = 0.22;
     ctx.fillStyle = b.color;
     ctx.fillRect(x1, 0, Math.max(w, 2), BAR_H);
     ctx.globalAlpha = 1.0;
+  }
 
-    // Label pill — NOT clipped, drawn at band start; pill shows full text
-    const tw = ctx.measureText(b.label).width;
-    const px = x1 + 2;
-    const py = 3;
-    ctx.fillStyle = "rgba(0,0,0,0.88)";
+  // Draw labels with collision detection — skip if overlapping previous label
+  let nextAllowedX = -Infinity;
+  for (const b of BANDS) {
+    const x1 = freqToX(b.start);
+    const x2 = freqToX(b.end < b.start + 0.5 ? b.start + 0.5 : b.end);
+    const w  = x2 - x1;
+    if (w < minWidthPx) continue;
+
+    const tw  = ctx.measureText(b.label).width;
+    const px  = x1 + 2;
+    if (px < nextAllowedX) continue;   // skip — would overlap previous label
+
+    const py = 2;
+    ctx.fillStyle = "rgba(0,0,0,0.85)";
     ctx.fillRect(px, py, tw + 6, 14);
     ctx.fillStyle = b.color;
-    ctx.fillText(b.label, px + 3, py + 11);
+    ctx.fillText(b.label, px + 3, py + 10);
+    nextAllowedX = px + tw + 8;        // reserve space + 2px gap
   }
 }
 
@@ -910,10 +922,15 @@ async function initHistory() {
   setInterval(refreshHistoryList, 2 * 60 * 1000);
 }
 
-// ─── Exposed reset helper (called by New Location button in index.html) ───────
-// Resets stale peak/min hold so they refresh from the new location.
-// Keeps waterfall history visible so the demo doesn't go blank.
+// ─── Exposed helpers ──────────────────────────────────────────────────────────
 window.clearWaterfallHistory = function() {
-  currentPeak = null; currentMinHold = null;
-  lastSweepSig = null;  // force next fetch to be treated as new sweep
+  history.length = 0;
+  currentAvg = null; currentPeak = null; currentMinHold = null; currentRaw = null;
+  lastSweepSig = null;
+  drawNoData();
+};
+
+window.setViewRows = function(n) {
+  viewRows = n;
+  redrawWaterfall();
 };
